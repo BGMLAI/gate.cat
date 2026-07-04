@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python /abs/path/to/packages/cacheback-integrations/examples/claude_code_hook/veto_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}

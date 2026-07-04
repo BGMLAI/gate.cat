@@ -1,0 +1,61 @@
+[project]
+name = "gate.cat"
+version = "0.2.0"
+description = "Block irreversible AI-agent actions before they run — deterministic action-veto (policy + koryto interpreter + human-in-the-loop), built for cheap/local model agents. Formerly cacheback-ai."
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Bogumił Jankiewicz", email = "bogumil@bgml.ai"},
+]
+keywords = ["llm", "agent", "guardrail", "action-veto", "truth-pipeline", "cache", "semantic", "openai", "anthropic", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "hnswlib>=0.8.0",
+    "onnxruntime>=1.17.0",
+    "huggingface-hub>=0.20.0",
+    "tokenizers>=0.15.0",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.20.0"]
+image = ["Pillow>=10.0.0"]
+voice = ["soundfile>=0.12.0"]
+proxy = ["fastapi>=0.110.0", "uvicorn[standard]>=0.27.0", "httpx>=0.27.0", "pydantic>=2.0.0"]
+# framework adapters (cacheback.integrations) — lazy-imported, never pulled by core
+crewai = ["crewai>=0.80,<2"]
+langgraph = ["langgraph>=0.2,<2"]
+all = ["openai>=1.0.0", "anthropic>=0.20.0", "Pillow>=10.0.0", "soundfile>=0.12.0"]
+dev = ["pytest>=8.0.0", "pytest-asyncio>=0.24.0", "httpx>=0.27.0"]
+
+[project.scripts]
+cacheback = "cacheback.cli:main"
+cacheback-proxy = "cacheback.proxy.__main__:main"
+truthgate-audit = "cacheback.audit:main"
+
+[project.urls]
+Homepage = "https://github.com/BGMLAI/gate.cat"
+Repository = "https://github.com/BGMLAI/gate.cat"
+Issues = "https://github.com/BGMLAI/gate.cat/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cacheback"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
