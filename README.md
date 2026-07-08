@@ -158,6 +158,15 @@ disagree with ours, that's a bug report we want. The 14.7k-command half of the
 ~0.6% claim is our own private log (labeled as such in FACTS.md); the public
 corpus half you can re-run yourself.
 
+**Recall** — the claim we care about most (does anything dangerous get through?)
+is measured on two axes in [RECALL.md](RECALL.md). The deterministic one needs no
+datasets and runs in seconds:
+
+```bash
+pip install gate-cat
+python scripts/recall_danger_axis.py   # 43/43 known danger classes through the FULL gate, 0 false-blocks
+```
+
 ## Cache / Cache-Augmented Synthesis (supporting engine)
 
 The verification/veto layer above runs on top of a semantic cache. Used standalone, the cache
