@@ -83,7 +83,7 @@ del _migrate_legacy_env
 # (`pip install gate.cat[cache]`) - see pyproject. A clear ImportError tells the
 # user to install the extra if they reach for a cache name without it.
 
-__version__ = "0.3.2"
+__version__ = "0.4.1"
 
 # name -> (submodule, is_cache_feature). is_cache_feature=True means the symbol
 # lives behind the heavy ML stack, so a missing-dep ImportError is rewritten to
@@ -115,8 +115,13 @@ _LAZY: dict[str, tuple[str, bool]] = {
     "before_action": ("gatecat.veto", False),
     "VetoGate": ("gatecat.veto", False),
     "ActionPolicy": ("gatecat.veto", False),
-    "ActionVetoed": ("gatecat.veto", False),
+    # the ONE veto exception (engine + integrations); lives in the stdlib-only
+    # exceptions module so it resolves even when the engine itself does not.
+    "ActionVetoed": ("gatecat.exceptions", False),
     "VetoDecision": ("gatecat.veto", False),
+    # top-level check_action: `from gatecat import check_action` is the
+    # published hero snippet; delegates to the integrations guard (stdlib-only).
+    "check_action": ("gatecat.integrations.guard", False),
     "http_cache_source": ("gatecat.koryto_sources", False),
     "chroma_source": ("gatecat.koryto_sources", False),
     "multi_source": ("gatecat.koryto_sources", False),
@@ -174,6 +179,7 @@ __all__ = [
     "ActionPolicy",
     "ActionVetoed",
     "VetoDecision",
+    "check_action",
     "PlanVerifier",
     "PlanStep",
     "StepVerdict",

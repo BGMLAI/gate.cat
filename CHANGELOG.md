@@ -2,6 +2,37 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.1] -- launch-blocker fixes: one import, one exception, English reasons (2026-07-08)
+
+### Added
+
+- **Top-level `check_action` export.** `from gatecat import check_action` now
+  works (lazy re-export of `gatecat.integrations.guard.check_action`); the
+  published hero snippet no longer needs the `gatecat.integrations` path.
+- **CI workflow** (`.github/workflows/ci.yml`): pytest on ubuntu-latest,
+  Python 3.11/3.12/3.13, full `[dev]` extra so the security-critical proxy
+  tool-veto tests RUN instead of skipping. CI + PyPI badges in the README.
+
+### Changed
+
+- **One `ActionVetoed` class for the whole package.** The engine
+  (`gatecat.veto`) and the integrations layer (hook/adapters) each raised their
+  own `ActionVetoed`, so `except gatecat.ActionVetoed` silently missed a block
+  raised by `check_action`. The unified class lives in `gatecat.exceptions`
+  (stdlib-only, importable even when the engine is not) and accepts both a
+  `VetoDecision` (engine) and a plain reason string (integrations).
+  `from gatecat.veto import ActionVetoed` and
+  `from gatecat.integrations import ActionVetoed` still work and are now the
+  same object.
+- **Veto reason strings are English.** The engine's runtime veto reasons were
+  Polish ("akcja pasuje do zakazanego wzorca", "wszystkie mury przeszły", ...);
+  every user-facing reason emitted by `ActionPolicy.classify` /
+  `VetoGate.evaluate` is now plain-ASCII English. Wall identifiers
+  (`policy-deny` / `koryto` / `human`) and the `mur` field name are unchanged --
+  they are API, not prose.
+- `gatecat.__version__` now matches the distribution version (was stale at
+  `0.3.2` while pyproject said `0.4.0`).
+
 ## [0.4.0] -- Write/Edit content is data, not action (2026-07-08)
 
 ### Changed

@@ -1,10 +1,9 @@
 # gate.cat
 
-> **Install:** `pip install gate-cat` — then a veto in three lines:
+> **Install:** `pip install gate-cat` — then a veto in two lines:
 > ```python
-> from gatecat.integrations import check_action        # deny-list gate
-> from gatecat.integrations.policies import DOGFOOD_DEFAULTS
-> check_action("agent", "terraform destroy -auto-approve", DOGFOOD_DEFAULTS)  # -> ActionVetoed
+> from gatecat import check_action                     # deny-list gate
+> check_action("agent", "terraform destroy -auto-approve")  # -> raises ActionVetoed
 > ```
 > The distribution is `gate.cat` (PyPI normalizes it, so `pip install gate-cat`);
 > the import module is `gatecat`. 0.2.x used `import cacheback` — see `MIGRATION.md`.
@@ -31,6 +30,7 @@ One mechanism, not two products: the verification engine (`TruthPipeline`) and t
 that consumes it (`before_action` / `VetoGate`) ship together — same package, same brand.
 Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine underneath both.
 
+[![CI](https://github.com/BGMLAI/gate.cat/actions/workflows/ci.yml/badge.svg)](https://github.com/BGMLAI/gate.cat/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/gate.cat)](https://pypi.org/project/gate.cat/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/gate.cat)](https://pypi.org/project/gate.cat/)

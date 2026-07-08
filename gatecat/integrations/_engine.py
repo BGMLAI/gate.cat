@@ -25,17 +25,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-class ActionVetoed(RuntimeError):
-    """Raised by the integrations layer (hook/adapters) to signal a block.
-
-    Deliberately NOT the engine's ``gatecat.veto.ActionVetoed`` — that one
-    wraps a ``VetoDecision`` and its ``__init__`` requires one, whereas this
-    layer raises with a plain ASCII-safe reason string and maps it to an exit
-    code / framework interrupt. The seam consumes the engine via ``evaluate``
-    (which returns a ``VetoDecision``, never raises), so the engine's exception
-    class never needs to cross this boundary. Keeping our own string-based
-    exception is what lets ``_raise_block(reason: str)`` work identically with
-    or without the real engine on the path."""
+# ONE ActionVetoed for the whole package (0.4.1). Historically this layer kept
+# its own string-based class, so a user catching top-level gatecat.ActionVetoed
+# missed blocks raised by check_action. The unified class lives in
+# gatecat.exceptions - a stdlib-only module that imports even when the veto
+# ENGINE (gatecat.veto) is not importable, so the fail-closed EngineUnavailable
+# path below still works. It accepts both a plain ASCII-safe reason string
+# (this layer's _raise_block) and a VetoDecision (the engine).
+from gatecat.exceptions import ActionVetoed
 
 
 class EngineUnavailable(RuntimeError):

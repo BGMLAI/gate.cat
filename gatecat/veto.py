@@ -55,6 +55,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional, Sequence
 
+from gatecat.exceptions import ActionVetoed
 from gatecat.koryto import Koryto, KorytoVerdict
 
 
@@ -75,15 +76,10 @@ class VetoDecision:
         }
 
 
-class ActionVetoed(Exception):
-    """Akcja zablokowana ZANIM się wykonała. Nieodwracalne nie staje się faktem."""
-
-    def __init__(self, decision: VetoDecision):
-        self.decision = decision
-        self.reason = decision.reason
-        self.mur = decision.mur
-        self.verdict = decision.verdict
-        super().__init__(f"[{decision.mur}] {decision.reason}")
+# ActionVetoed żyje w gatecat.exceptions (0.4.1): JEDNA klasa dla silnika i dla
+# warstwy integrations, więc `except gatecat.ActionVetoed` łapie veto z każdej
+# warstwy. Import na górze pliku re-eksportuje ją stąd — `from gatecat.veto
+# import ActionVetoed` działa jak dawniej, konstrukcja z VetoDecision też.
 
 
 @dataclass
@@ -116,35 +112,35 @@ class ActionPolicy:
                 hit = re.search(pat, call_repr, re.I)
             except re.error:
                 return VetoDecision(False, "policy-deny",
-                                    f"niepoprawny wzorzec deny /{pat}/ — fail-closed veto")
+                                    f"invalid deny pattern /{pat}/ - fail-closed veto")
             if hit:
                 return VetoDecision(False, "policy-deny",
-                                    f"akcja pasuje do zakazanego wzorca /{pat}/")
+                                    f"action matches denied pattern /{pat}/")
         if self.max_amount is not None and amount is not None:
             try:
                 amt_f = float(amount)
             except (TypeError, ValueError):
                 return VetoDecision(False, "policy-amount",
-                                    f"kwota {amount!r} nieporównywalna z progiem — fail-closed veto")
+                                    f"amount {amount!r} not comparable to cap - fail-closed veto")
             # NaN/inf omijają porównanie '>' (IEEE 754: nan > x zawsze False) → fail-closed.
             # Bez tego charge(amount=float('nan')) przechodziłby ponad cap. (audyt 2026-06-27 #1)
             if math.isnan(amt_f) or math.isinf(amt_f):
                 return VetoDecision(False, "policy-amount",
-                                    f"kwota {amount!r} nie jest skończoną liczbą — fail-closed veto")
+                                    f"amount {amount!r} is not a finite number - fail-closed veto")
             over = amt_f > float(self.max_amount)
             if over:
                 return VetoDecision(False, "policy-amount",
-                                    f"kwota {amount} > prog {self.max_amount} — wymaga zatwierdzenia")
+                                    f"amount {amount} > cap {self.max_amount} - requires human approval")
         for pat in self.require_human:
             try:
                 hit = re.search(pat, call_repr, re.I)
             except re.error:
                 return VetoDecision(False, "human",
-                                    f"niepoprawny wzorzec require_human /{pat}/ — fail-closed veto")
+                                    f"invalid require_human pattern /{pat}/ - fail-closed veto")
             if hit:
                 return VetoDecision(False, "human",
-                                    f"/{pat}/ wymaga zatwierdzenia człowieka")
-        return VetoDecision(True, "allow", "policy: dozwolone")
+                                    f"/{pat}/ requires human approval")
+        return VetoDecision(True, "allow", "policy: allowed")
 
 
 class VetoGate:
@@ -180,8 +176,8 @@ class VetoGate:
         has_rules = bool(policy and (policy.deny or policy.require_human or policy.max_amount is not None))
         if strict and not (has_rules or exec_check):
             raise ValueError(
-                "VetoGate(strict=True): pusta bramka przepuszczałaby wszystko — "
-                "podaj policy z regułami lub exec_check"
+                "VetoGate(strict=True): an empty gate would allow everything - "
+                "provide a policy with rules or an exec_check"
             )
 
     def evaluate(self, call_repr: str, args: tuple, kwargs: dict,
@@ -198,7 +194,7 @@ class VetoGate:
                 amount = self.amount_of(*args, **kwargs)
             except Exception as e:
                 return VetoDecision(False, "policy-amount",
-                                    f"amount_of rzucił {e!r} — fail-closed veto")
+                                    f"amount_of raised {e!r} - fail-closed veto")
         else:
             bound = dict(kwargs)
             if fn is not None and args:
@@ -224,7 +220,7 @@ class VetoGate:
                 stmts = self.exec_check(*args, **kwargs)
             except Exception as e:
                 return VetoDecision(False, "koryto",
-                                    f"exec_check rzucił {e!r} — fail-closed veto")
+                                    f"exec_check raised {e!r} - fail-closed veto")
             if stmts:
                 expected = kwargs.get("expect")
                 try:
@@ -232,10 +228,10 @@ class VetoGate:
                                             exec_stmts=list(stmts))
                 except Exception as e:
                     return VetoDecision(False, "koryto",
-                                        f"koryto.verify rzucił {e!r} — fail-closed veto", None)
+                                        f"koryto.verify raised {e!r} - fail-closed veto", None)
                 if v.caught:
                     return VetoDecision(False, "koryto",
-                                        f"interpreter→{v.truth!r}, agent twierdził {expected!r}", v)
+                                        f"interpreter says {v.truth!r}, agent claimed {expected!r}", v)
 
         # MUR 3: human-in-the-loop
         if policy_wants_human:
@@ -245,12 +241,12 @@ class VetoGate:
                     approved = bool(self.human_approve(call_repr))
                 except Exception as e:
                     return VetoDecision(False, "human",
-                                        f"human_approve rzucił {e!r} — fail-closed veto")
+                                        f"human_approve raised {e!r} - fail-closed veto")
             if not approved:
                 return VetoDecision(False, "human",
-                                    "wymaga zatwierdzenia człowieka — brak approve → veto")
+                                    "requires human approval - no approval given, veto")
 
-        return VetoDecision(True, "allow", "wszystkie mury przeszły")
+        return VetoDecision(True, "allow", "all walls passed")
 
 
 def before_action(

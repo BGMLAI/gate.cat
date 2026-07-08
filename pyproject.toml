@@ -1,6 +1,6 @@
 [project]
 name = "gate.cat"
-version = "0.4.0"
+version = "0.4.1"
 description = "Block irreversible AI-agent actions before they run — deterministic action-veto (policy + koryto interpreter + human-in-the-loop), built for cheap/local model agents."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 # CORE = the action-veto guardrail: pure stdlib, ZERO third-party deps. A
