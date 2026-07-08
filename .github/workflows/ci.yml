@@ -1,0 +1,31 @@
+# CI for gate.cat: the public test count ("N tests green as of vX") must be
+# verifiable, not asserted. Full [dev] extra on purpose - the proxy tool-veto
+# tests (test_proxy_tool_veto.py) are security-critical and must RUN, not skip.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Test
+        # The gate disarms itself in CI (ephemeral env detection) by design;
+        # GATECAT_VETO_EPHEMERAL=0 forces it ARMED so the veto tests test a
+        # live gate, exactly as documented in the README.
+        env:
+          GATECAT_VETO_EPHEMERAL: "0"
+        run: python -m pytest -q
