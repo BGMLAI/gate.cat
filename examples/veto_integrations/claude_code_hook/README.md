@@ -22,9 +22,12 @@ and is fed back to the model.
    nothing to edit (the standalone `veto_hook.py` in this folder is only a
    vendored fallback for a checkout without the package installed).
 
-3. Test it in a live session — ask Claude to run `rm -rf /tmp/x`:
-   the call is blocked, and the model sees `VETO [RM_RF]: recursive force
-   delete requires a human`.
+3. Test it in a live session — ask Claude to run `rm -rf ~/project`: the call
+   is blocked (exit 2) and the model sees, on stderr,
+   `VETO [DELETE_ANALYZER]: deletes '/home/you/project' under protected root
+   '/home' - requires a human`. (A delete under a throwaway path like `/tmp/x`
+   is deliberately *allowed* — the analyzer only stops deletes that touch a
+   persistent, protected location, so it doesn't nag on scratch dirs.)
 
 Every decision (allow AND block) is appended to
 `~/.gatecat/veto_log.jsonl` — that log is the raw material for
