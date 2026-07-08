@@ -164,6 +164,8 @@ _BENIGN: tuple[Case, ...] = (
     Case("SELECT * FROM users WHERE id = 5", False, "allow", "ordinary read"),
     Case("DELETE FROM orders WHERE id = 42", False, "allow", "bounded DELETE (has WHERE)"),
     Case("aws s3 sync ./build s3://site --delete", False, "allow", "--delete flag, not a verb"),
+    Case("gh release delete-asset v1 old.zip", False, "allow",
+         "delete-asset removes one re-uploadable asset, not the whole release"),
     Case("aws s3 ls s3://backups/delete-after-30-days/", False, "allow",
          "'delete' in a path segment"),
     Case("aws ec2 describe-instances", False, "allow", "read-only describe"),

@@ -163,7 +163,11 @@ GH_DESTRUCTIVE = Policy(
         # permanent GitHub destruction via the gh CLI: repo/release/secret delete,
         # and the raw `gh api -X DELETE`.
         r"\bgh\s+repo\s+delete\b",
-        r"\bgh\s+(release|secret|ssh-key|gpg-key|label)\s+delete\b",
+        # `delete` as its own subcommand (deletes the whole release/secret/...),
+        # NOT `delete-asset` (removes one re-uploadable asset — recoverable, so
+        # out of the irreversible scope). The (?!-) stops `\bdelete\b` from
+        # matching the `delete` inside `delete-asset`.
+        r"\bgh\s+(release|secret|ssh-key|gpg-key|label)\s+delete\b(?!-)",
         # `gh api` DELETE via the short flag (-X DELETE) OR its long-form synonym
         # (--method DELETE) — the CLI accepts both, so matching only -X was a bypass.
         r"\bgh\s+api\b[^\n]*(?:-X\s*|--method\s+)(DELETE|delete)\b",
