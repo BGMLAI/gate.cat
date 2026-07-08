@@ -2,6 +2,18 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **`GIT_FORCE_PUSH` no longer false-blocks `git commit -F file && git push`.**
+  The short force flag `-f` is now matched case-sensitively (`(?-i:-f)`), so `-F`
+  (commit message-from-file, a common benign op) no longer trips the force-push
+  wall. Real `git push -f` / `--force` still block; `--force-with-lease` still
+  allowed. Regression case added to the bypass suite's benign set. (This
+  false-positive vetoed the launch assistant's own git command mid-prep — a real
+  veto story.)
+
 ## [0.4.1] -- launch-blocker fixes: one import, one exception, English reasons (2026-07-08)
 
 ### Added
