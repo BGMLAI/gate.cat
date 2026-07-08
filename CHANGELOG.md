@@ -2,6 +2,42 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.0] -- Write/Edit content is data, not action (2026-07-08)
+
+### Changed
+
+- **The Claude Code hook no longer hard-blocks on Write/Edit FILE CONTENT.**
+  Pre-0.4.0 the hook flattened the written content into the evaluated action,
+  so authoring a comment, docstring, test, or doc that merely MENTIONED a
+  dangerous command (`rm -rf`, `DROP TABLE`, `gh repo delete`, ...) was
+  vetoed -- writing "rm -rf /" into a Python comment executes nothing. It was
+  also inconsistent with the engine's own content-vs-command doctrine on the
+  Bash side, where `echo "rm -rf /" > notes.md` has always been inert data
+  (`tests/integrations/test_content_vs_command.py`). The evaluated action for
+  Write/Edit is now `write <path>`: the target path is still gated, the
+  content is not.
+  - `GATECAT_HOOK_SCAN_FILE_CONTENT=1` in the hook environment restores the
+    old paranoid behavior (opt-in).
+  - **Bash gating is unchanged** -- enforcement lives at RUN time, and every
+    command a file's content may mention still blocks when actually executed
+    (pinned by `tests/integrations/test_write_content_data.py`).
+  - Meta-note: this release's own regression tests had to be authored via a
+    bash heredoc, because the 0.3.x hook kept vetoing the Write calls that
+    mentioned the patterns under test. The bug blocked writing its own fix.
+
+### Added
+
+- **`AUTOEXEC_WRITE` (warn)** -- the one real risk content scanning used to
+  catch incidentally, now covered deliberately and on BOTH pathways (the
+  Write/Edit tool AND bash redirect/tee/cp): a write whose TARGET PATH is
+  executed later without any visible Bash step -- `.git/hooks/`, shell rc
+  files, `/etc/cron*` / `/var/spool/cron`, systemd units,
+  `.claude/settings*.json` (editing that one can disarm this very gate), and
+  `crontab <file>`. Warn, not block: authoring dotfiles and deploy units is
+  legitimate, so the ambiguous class surfaces to the human instead of
+  hard-stopping. This WIDENS coverage vs 0.3.x -- the bash-redirect variant
+  (`echo ... >> ~/.bashrc`) was previously a silent allow.
+
 ## [0.3.2] -- proxy imports without the cache stack (2026-07-08)
 
 ### Fixed

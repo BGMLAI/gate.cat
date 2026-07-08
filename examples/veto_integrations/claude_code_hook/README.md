@@ -36,8 +36,14 @@ through what it couldn't parse).
 
 ## What this hook sees / what it does not
 
-- It sees the **textual tool call** (shell command, file path + content).
-  It blocks only what a policy wall matches; everything else is passed
+- It sees the **textual tool call**: the full shell command for `Bash`,
+  the operation + target path for `Write`/`Edit`. File **content is data,
+  not a command** (0.4.0) — a doc, comment, or test that mentions `rm -rf`
+  is not blocked; the same command actually RUN still is. Set
+  `GATECAT_HOOK_SCAN_FILE_CONTENT=1` to scan written content anyway.
+  Writes targeting auto-executed locations (`.git/hooks/`, shell rc, cron,
+  systemd units, `.claude/settings*.json`) surface an `AUTOEXEC_WRITE`
+  warn. It blocks only what a policy wall matches; everything else is passed
   to Claude Code's normal permission flow **unchecked — unchecked is not
   "verified safe"**.
 - Fail-closed: if the veto engine is missing or errors out, the hook

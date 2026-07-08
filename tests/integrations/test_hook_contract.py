@@ -86,12 +86,49 @@ def test_allows_harmless_command(hook_env):
     assert proc.stderr == ""
 
 
-def test_write_tool_with_destructive_sql_blocked(hook_env):
+def test_write_tool_content_is_data_not_action(hook_env):
+    """Content-vs-command (0.4.0): AUTHORING migrate.sql is not RUNNING it.
+
+    Pre-0.4.0 this exact event was pinned as a block - the FP class that broke
+    writing any comment/doc/test mentioning a dangerous command. The DROP TABLE
+    becomes an action only via a db client, which the Bash gate still blocks
+    (next test). GATECAT_HOOK_SCAN_FILE_CONTENT=1 restores the old behavior.
+    """
     proc = run_hook(
         event("Write", {"file_path": "migrate.sql", "content": "DROP TABLE users;"}), hook_env
     )
+    assert proc.returncode == 0
+    records = read_log(hook_env)
+    assert records[-1]["decision"] == "allow"
+
+
+def test_running_the_written_sql_still_blocks(hook_env):
+    proc = run_hook(
+        event("Bash", {"command": 'psql -c "DROP TABLE users;"'}), hook_env
+    )
     assert proc.returncode == 2
     assert "DB_DESTRUCTIVE" in proc.stderr
+
+
+def test_write_content_scan_opt_in(hook_env):
+    env = dict(hook_env)
+    env["GATECAT_HOOK_SCAN_FILE_CONTENT"] = "1"
+    proc = run_hook(
+        event("Write", {"file_path": "migrate.sql", "content": "DROP TABLE users;"}), env
+    )
+    assert proc.returncode == 2
+    assert "DB_DESTRUCTIVE" in proc.stderr
+
+
+def test_write_to_autoexec_location_warns_not_blocks(hook_env):
+    """A write TARGETING code-that-runs-later (git hook) exits 0 but surfaces
+    the AUTOEXEC_WRITE warn on stderr - never a silent allow."""
+    proc = run_hook(
+        event("Write", {"file_path": ".git/hooks/pre-commit",
+                        "content": "#!/bin/sh\necho hi"}), hook_env
+    )
+    assert proc.returncode == 0
+    assert "AUTOEXEC_WRITE" in proc.stderr
 
 
 def test_fail_closed_without_engine(engine_absent_env):

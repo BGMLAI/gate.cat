@@ -520,6 +520,44 @@ PACKAGE_PURGE = Policy(
     description="Warns on apt/dpkg/yum purge, docker volume prune/rm -f.",
 )
 
+# A write-shaped verb followed (same command segment) by an auto-exec target.
+# Two forms feed this wall: the Claude Code hook flattens Write/Edit to
+# "write <path>" / "edit <path>", and Bash writes go via redirect/tee/cp/mv/
+# install. Read-shaped access (cat/grep/source/ls) deliberately does NOT match.
+_WRITE_SHAPED = (
+    r"(?:(?:^|[\n;&|]\s*)(?:write|edit)\s"      # hook form: "write <path>"
+    r"|>>?\s*"                                   # shell redirect into the file
+    r"|\btee\b[^\n;&|]*\s"                       # tee / tee -a
+    r"|\b(?:cp|mv|install|ln)\b[^\n;&|]*\s)"     # copy/move/link into place
+)
+
+AUTOEXEC_WRITE = Policy(
+    name="AUTOEXEC_WRITE",
+    # warn, not block (content-vs-command, 0.4.0): writing a file is data - the
+    # danger is a TARGET that gets executed later without any Bash step the gate
+    # would see (git commit fires .git/hooks/*, a new shell sources rc files,
+    # cron/systemd fire on schedule, Claude Code runs hooks from settings.json -
+    # editing that last one can silently disarm this very gate). Authoring these
+    # files is often legitimate (dotfiles repos, deploy units), so the ambiguous
+    # class surfaces to the human instead of hard-blocking.
+    level="warn",
+    patterns=(
+        _WRITE_SHAPED + r"[^\n;&|]*\.git[/\\]hooks[/\\]",
+        _WRITE_SHAPED + r"[^\n;&|]*(?:\.bashrc|\.bash_profile|\.bash_login"
+        r"|\.profile|\.zshrc|\.zshenv|\.zprofile|\.zlogin)\b",
+        _WRITE_SHAPED + r"[^\n;&|]*(?:/etc/cron|/var/spool/cron)",
+        _WRITE_SHAPED + r"[^\n;&|]*\bsystemd[/\\](?:system|user)[/\\]",
+        _WRITE_SHAPED + r"[^\n;&|]*\.claude[/\\]settings(?:\.local)?\.json",
+        # installing a crontab FROM A FILE replaces the schedule wholesale
+        # (crontab -l/-e/-r excluded; -r is already SYSTEM_TAMPER)
+        r"\bcrontab\b(?:\s+-u\s+\S+)?\s+(?!-)\S+",
+    ),
+    reason="writing to an auto-executed location (git hook / shell rc / cron / "
+           "systemd / agent hook config) arms code that runs without review",
+    description="Warns on writes into .git/hooks, shell rc files, cron, "
+                "systemd units, .claude/settings*.json, crontab-from-file.",
+)
+
 DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     TERRAFORM_PROD,
     DB_DESTRUCTIVE,
@@ -548,6 +586,9 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     GH_DESTRUCTIVE,
     CONTAINER_DESTROY,
     REGISTRY_PUBLISH,
+    # content-vs-command (0.4.0): Write/Edit content is data; the residual risk
+    # is the TARGET PATH being auto-executed later. Warn on both pathways.
+    AUTOEXEC_WRITE,
 )
 
 # Default payment policy instance (blocks every payment-shaped action).
@@ -580,4 +621,5 @@ ALL_PRESETS: dict[str, Policy] = {
     "GH_DESTRUCTIVE": GH_DESTRUCTIVE,
     "CONTAINER_DESTROY": CONTAINER_DESTROY,
     "REGISTRY_PUBLISH": REGISTRY_PUBLISH,
+    "AUTOEXEC_WRITE": AUTOEXEC_WRITE,
 }

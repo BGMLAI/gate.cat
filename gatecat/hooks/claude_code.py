@@ -31,6 +31,10 @@ deadline 20s (env ``GATECAT_HOOK_DEADLINE_S``), while Claude Code's default
 hook timeout is 60s. A hung engine (e.g. onnxruntime WMI probe on some
 Windows hosts) becomes a loud block, not a silent pass.
 
+Write/Edit: only the operation + target path are evaluated - file content is
+data, not a command (``GATECAT_HOOK_SCAN_FILE_CONTENT=1`` opts back into
+content scanning). See ``action_text`` for the full rationale.
+
 A8 (shadow mode): ``GATECAT_VETO_SHADOW=1`` logs would-be blocks as
 ``shadow_block`` and exits 0 — handled inside ``check_action``. Two cases
 still exit 2 even in shadow mode: malformed stdin (cannot know what it would
@@ -52,6 +56,7 @@ SOURCE = "claude_code_hook"
 BLOCK, ALLOW = 2, 0
 _DEADLINE_ENV = "GATECAT_HOOK_DEADLINE_S"
 _TEST_SLEEP_ENV = "GATECAT_HOOK_TEST_SLEEP_S"  # internal: watchdog contract test only
+_SCAN_CONTENT_ENV = "GATECAT_HOOK_SCAN_FILE_CONTENT"  # opt-in: evaluate Write/Edit content
 
 
 def _ascii(text: str) -> str:
@@ -89,14 +94,28 @@ def action_text(tool_name: str, tool_input: dict) -> str:
     never be truncated before the security-relevant part. A prior [:2000] cap let
     a padded payload smuggle a destructive command past the 2000th char (CSO
     hook-attack finding). The gate has its own O(n)-safe length cap downstream
-    (fail-closed on over-limit), so we pass the FULL text here."""
+    (fail-closed on over-limit), so we pass the FULL text here.
+
+    Write/Edit (content-vs-command, 0.4.0): the ACTION is "write to <path>" -
+    the file CONTENT is data, not a command, and is NOT evaluated by default.
+    Writing "rm -rf /" into a comment, docstring, test, or doc executes
+    nothing; hard-blocking it broke legitimate authorship (the exact
+    false-block class the engine already exempts on the Bash side, where
+    `echo "rm -rf /" > notes.md` is inert data - see
+    tests/integrations/test_content_vs_command.py). Enforcement belongs at RUN
+    time: the Bash gate still sees every command, and AUTOEXEC_WRITE warns
+    when the TARGET PATH is a location executed without a visible Bash step
+    (.git/hooks/, shell rc, cron, systemd, .claude/settings*.json).
+    ``GATECAT_HOOK_SCAN_FILE_CONTENT=1`` restores content scanning for
+    installs that prefer the paranoid trade-off."""
     if tool_name == "Bash":
         return str(tool_input.get("command", ""))
     if tool_name in ("Write", "Edit"):
         parts = [f"{tool_name.lower()} {tool_input.get('file_path', '')}"]
-        for key in ("content", "new_string"):
-            if tool_input.get(key):
-                parts.append(str(tool_input[key]))   # full, not truncated
+        if os.environ.get(_SCAN_CONTENT_ENV, "").strip().lower() in ("1", "true", "yes", "on"):
+            for key in ("content", "new_string"):
+                if tool_input.get(key):
+                    parts.append(str(tool_input[key]))   # full, not truncated
         return "\n".join(parts)
     return json.dumps(tool_input, ensure_ascii=True)   # full MCP/tool payload
 
