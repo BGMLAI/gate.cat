@@ -1,0 +1,30 @@
+# Daily metrics snapshot -> METRICS.log (council C18). One JSONL line per day
+# so the T+30 gate (runbook §5) reads measured history, not memory.
+name: metrics
+
+on:
+  schedule:
+    - cron: "23 5 * * *"  # daily, off-minute on purpose (thundering-herd etiquette)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch stats
+        run: |
+          curl -sf "https://api.github.com/repos/${{ github.repository }}" -o /tmp/repo.json || echo '{}' > /tmp/repo.json
+          curl -sf "https://pypistats.org/api/packages/gate-cat/recent" -o /tmp/pypi.json || echo '{}' > /tmp/pypi.json
+      - name: Append snapshot
+        run: python3 .github/scripts/metrics_snapshot.py /tmp/repo.json /tmp/pypi.json >> METRICS.log
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add METRICS.log
+          git diff --cached --quiet || git commit -m "metrics: daily snapshot"
+          git push
