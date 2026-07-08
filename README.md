@@ -35,6 +35,13 @@ Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine u
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/gate.cat)](https://pypi.org/project/gate.cat/)
 
+An AI agent decides to run a README's install one-liner. The gate stops it before
+a single byte executes — a real terminal, `pip install gate-cat`, no montage:
+
+![gate.cat blocks a curl-pipe-shell an agent tried to run](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/demo_a.gif)
+
+<sub>Blocks the `curl … | sh` pattern specifically; obfuscated/base64 install tricks still evade — see [OBJECTIONS.md](OBJECTIONS.md). Cast: [`docs/demos/demo_a.cast`](docs/demos/demo_a.cast).</sub>
+
 ## Install
 
 ```bash
@@ -71,6 +78,13 @@ deploy(target="terraform apply prod")              # raises ActionVetoed BEFORE 
 
 pipe.compliance_report()                           # audit trail: verdicts + vetoes
 ```
+
+A policy in action: `dev` runs, `destroy prod` is denied, `apply staging` escalates
+to a human — one deterministic gate, three outcomes:
+
+![gate.cat policy: dev runs, prod denied, staging escalated to a human](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/demo_b.gif)
+
+<sub>Source: [`examples/veto_terraform.py`](examples/veto_terraform.py). Cast: [`docs/demos/demo_b.cast`](docs/demos/demo_b.cast).</sub>
 
 **Honest verdicts** — the pipeline never claims more than it measured:
 
