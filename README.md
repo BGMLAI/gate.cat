@@ -151,13 +151,15 @@ What we ask back — this project runs on one currency:
 
 ## Pricing
 
-The gate above is free forever — it is the whole product, not a trial.
-**gate.cat Cloud** (hosted veto history, alerts, a monthly audit report you can
-hand to compliance) is paid: **Solo $9/mo · Team $199/mo · enterprise pilots by
-invoice**. Cloud is an optional reporter *beside* the gate, never in its
-execution path — if it's down or cancelled, the gate keeps blocking exactly as
-before. Details, honest founding-stage caveats and the 30-day refund:
-[PRICING.md](PRICING.md).
+**The local gate is free forever — including local reports. Cloud keeps the
+copy your agent can't touch.** A local log lives inside the agent's blast
+radius (agents have deleted files and then hidden it); the off-machine copy is
+the one it can't rewrite. **Solo $9/mo · Team $199/mo flat (up to 10 devs) ·
+audit-readiness pilots by invoice.** Cloud is an optional reporter *beside*
+the gate, never in its execution path, off by default, and sends hashed veto
+events (raw commands are a separate opt-in — commands can contain secrets).
+Details, the exact what-leaves-your-machine table, honest founding-stage
+caveats and the 30-day refund: [PRICING.md](PRICING.md).
 
 ## Verify the numbers
 

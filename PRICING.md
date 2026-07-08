@@ -1,60 +1,128 @@
 # Pricing
 
-The core is free forever. The gate you install with `pip install gate-cat` — the
-deny-list, the exec analyzer, the Claude Code hook, the framework adapters, the
-CLI dashboard — is Apache-2.0 and complete. It is not a trial and nothing in it
-is rate-limited or held back.
+**The local gate is free forever. Cloud keeps the copy your agent can't touch.**
 
-What costs money is **gate.cat Cloud**: the hosted layer *around* the gate —
-your veto history in one place, alerts, and a monthly audit report you can hand
-to whoever asks "prove no agent could have done that."
+The core you install with `pip install gate-cat` — the deterministic policy
+engine (deny-walls + an independent exec analyzer + human-in-the-loop), the
+Claude Code hook, the framework adapters, the CLI dashboard, **and local
+reports** (`gate.cat` CLI: stats, history, `why <cmd>`) — is Apache-2.0 and
+complete. Not a trial; nothing is rate-limited or held back. The pip package
+phones nowhere; Cloud is opt-in and **off by default**.
 
-> **Architecture promise (this is load-bearing):** Cloud is an optional
-> *reporter* that sits beside the gate, never in its execution path. The gate
-> stays local, deterministic and fail-closed. If Cloud is down, unreachable, or
-> cancelled, your gate keeps blocking exactly as before. A security tool that
-> phones home before acting would be a different — and worse — product.
+Why pay, then? Because a local log lives **inside the agent's blast radius**.
+An agent with shell access can delete or rewrite the file that records what it
+did — real incident reports include an agent that deleted a file and then hid
+it from the user. The paid layer is the **off-machine, append-only copy of
+your veto history** — the one thing the agent can't reach — plus alerts and a
+monthly report generated from it. Same shape as offsite backup: you hope it's
+boring, and you keep the receipts.
+
+> **Architecture promise (load-bearing):** Cloud is an optional *reporter*
+> beside the gate, never in its execution path. If Cloud is down, unreachable,
+> or cancelled, the gate keeps blocking exactly as before. Policy sharing for
+> teams works pull-only: a signed policy file your machines fetch and apply
+> **after local review** — nothing remote ever executes or decides on your box.
+
+## What leaves your machine (exact list)
+
+| Sent to Cloud (only if you enable it) | Never sent |
+|---|---|
+| veto events: timestamp, policy id, verdict, and a **hash of the matched command (default)** — raw command text is a separate, explicit opt-in, because commands can contain secrets | file contents, env vars, keys, tokens |
+| gate version + policy-set version | your code, prompts, model outputs |
+| nothing else — the event schema is in the docs and the reporter is readable Python in the open repo | telemetry/analytics of any kind |
+
+Retention: 12 months, export anytime (JSON), delete-account = hard delete.
+One more honest boundary: the reporter's credentials live outside the agent's
+transcript, but an agent with full shell access could kill the reporter
+process. It cannot *rewrite* history that already left the machine — and a
+silenced reporter shows up as a gap in the timeline, which is itself signal.
 
 ## Tiers
 
-| | **Free** | **Solo — $9/mo** | **Team — $199/mo** | **Enterprise pilot** |
-|---|---|---|---|---|
-| The gate itself (veto, hook, adapters) | ✅ full | ✅ full | ✅ full | ✅ full |
-| Local CLI dashboard (`gate.cat`) | ✅ | ✅ | ✅ | ✅ |
-| Hosted veto history + email alerts | — | ✅ | ✅ | ✅ |
-| Monthly audit report ("what the gate stopped") | — | ✅ yours | ✅ fleet-wide, compliance-ready | ✅ + custom scope |
-| Central policies pushed to a fleet | — | — | ✅ | ✅ |
-| Priority support | — | email | ✅ | dedicated |
-| Deployment on your infra + Gate Report | — | — | — | ✅ |
-| | | [**Subscribe →**](https://buy.stripe.com/6oUaEQ0cZ6uYaly2Vo67S04) | [**Subscribe →**](https://buy.stripe.com/14AdR2gbX1aE1P2anQ67S05) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20enterprise%20pilot) — $7,500/yr, 2–3 slots per quarter |
+| | **Free** | **Solo — $9/mo** *(your agent, on the record)* | **Team — $199/mo flat, up to 10 devs** *(one policy, whole fleet)* | **Audit-readiness pilot** | **White-glove** |
+|---|---|---|---|---|---|
+| The gate: veto engine + **Claude Code hook** (enforcement in the harness) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Framework adapters (crewAI/LangGraph/AutoGen — in-process convention, honestly weaker than the hook) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Local CLI dashboard + local reports | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Off-machine veto history** (the copy the agent has no credentials for) + email alerts | — | ✅ | ✅ | ✅ | ✅ |
+| Monthly report from the off-machine log | — | ✅ yours | ✅ fleet-wide | ✅ signed, + control mapping | ✅ custom scope |
+| Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ *(ships this month)* | ✅ | ✅ |
+| Evidence log self-hosted in **your** infra | — | — | — | ✅ | ✅ |
+| Support | community | email | priority | dedicated | dedicated + custom policies |
+| Price | $0 forever | $9/mo · **$90/yr** (2 months free) | $199/mo · **$1,990/yr** (2 months free) | **$7,500/yr** · 2–3 slots per quarter | **$25,000/yr** |
+| | | [**Subscribe →**](https://buy.stripe.com/6oUaEQ0cZ6uYaly2Vo67S04) | [**Subscribe →**](https://buy.stripe.com/14AdR2gbX1aE1P2anQ67S05) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20audit-readiness%20pilot) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
 
-Prices in USD. Cancel anytime. **30-day full refund, no questions** — if the
-first report doesn't tell you something you wanted to know, you shouldn't pay
-for it.
+Prices in USD. Cancel anytime. **30-day full refund, no questions asked.**
+
+## Which anchor applies to you
+
+- **Solo:** same shelf as the $3–10/mo peace-of-mind tools you already run —
+  password vault, mesh VPN, offsite backup. There is a $5 competitor in this
+  category; compare their published evidence with [FACTS.md](FACTS.md) (0 real
+  recall misses across 1,085,159 real agent commands through the full gate; a
+  bypass suite that prints its own gaps) and pick whichever you trust.
+- **Team:** nearest per-seat alternatives price at $39–100 *per user per
+  month* (market snapshot, 2026-07-08). Flat $199 costs less from the second
+  developer onward and doesn't tax your team's growth up to 10 devs — larger
+  fleets, email us.
+- **Pilot & White-glove:** one runaway `terraform destroy` loop cost a team
+  ~$106k; one agent dropped a production database. The pilot is priced at a
+  fraction of a single incident.
+
+## "Isn't a deny-list trivially bypassable?"
+
+Partly — and we say so louder than our critics do. `python3 -c "import os;
+os.unlink(...)"` is a named gap in our own published bypass map; the gate is a
+wall in front of known-dangerous shapes, not a proof of safety, and an
+unmatched action is *unchecked*, not *safe*. What we actually measure: the
+full gate (not a regex list — six stages including an independent exec
+analyzer) passed **0 real dangers out of 1,085,159 real agent commands**
+(FACTS F1b, reproducible). Use it *with* your sandbox, not instead of one —
+a sandbox can't tell you what the agent *tried*, and it won't stop a
+`terraform destroy` that has real credentials inside the sandbox.
+
+## The audit-readiness pilot, precisely
+
+What a compliance buyer gets (and what we deliberately do not claim):
+
+- **Evidence stays yours:** the veto log is collected append-only in **your**
+  infrastructure (e.g. object storage with write-once retention — we provide
+  the reference setup). We never hold the only copy of your evidence.
+- **Signed monthly report** with explicit control mapping (which agent actions
+  are gated, by which policy, with which verdicts) and a compensating-controls
+  memo. Honest framing: this is **management evidence with reproducible
+  artifacts your auditor can sample** — not a substitute for an independent
+  audit.
+- **Explicit scope:** coverage claims are limited to the enumerated danger
+  classes in [RECALL.md](RECALL.md). Outside those classes = unchecked, and
+  the report says so on page one.
+- **Guarantee rider:** if the full gate passes a command from the covered
+  classes in your logs during the pilot year, the next 12 months are service
+  credit. Covered classes measure 100% recall (F1a) — the risk is known and
+  honestly bounded to exactly what we claim.
+- We are a solo-founder vendor without SOC2 today. That's why the evidence log
+  is self-hosted and every report is reproducible from your own data — the
+  trust model doesn't require believing us.
 
 ## Honest note on "Founding" pricing
 
 You are early, and the price reflects it in both directions:
 
-- **What you get today:** the full local gate (free part), your monthly audit
-  report generated from your gate logs and delivered by email, priority
-  support, and a **price locked forever** at the founding rate.
-- **What ships within this month:** the hosted dashboard (veto history, alerts,
-  self-serve report download). Founding subscribers get it the day it's live,
-  at the price they already pay.
-- **Why charge before the dashboard exists:** because the report is the
-  product; the dashboard is the delivery mechanism. If that ordering bothers
-  you, wait a month — the gate stays free either way.
-
-## Why the anchor is an incident, not a competitor
-
-One runaway `terraform destroy` loop cost a team ~$106k. One agent dropped a
-production database. The question this pricing answers is not "what do similar
-tools cost" but "what does the *absence* of a deterministic stop cost, once."
-$9/month against that number is not a hard decision, and it isn't meant to be.
+- **Today:** the full local gate (free part), your monthly report from the
+  off-machine log delivered by email, priority support, and the founding price
+  **locked for as long as you stay subscribed**.
+- **Ships this month:** the hosted dashboard (history, alerts, self-serve
+  report download) and Team policy sharing. Founding subscribers get both the
+  day they're live, at the price they already pay. **A redacted sample report
+  is available by email before you pay a cent** — and the 30-day refund covers
+  the rest of the doubt.
+- **Why charge before the dashboard exists:** the off-machine log starts
+  accumulating the day you subscribe — that history is the product; the
+  dashboard is just the viewer. If that ordering bothers you, wait a month —
+  the gate stays free either way.
 
 ---
 
 *Every capability claim above is bounded by [FACTS.md](FACTS.md) — the gate is
-certain only about what it blocks. Cloud reports what happened; it does not
+certain only about what it blocks. Cloud records what happened; it does not
 make the gate smarter.*
