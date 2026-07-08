@@ -2,7 +2,7 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
-## [Unreleased]
+## [0.4.2] -- false-positive fix: git commit -F is not a force push (2026-07-08)
 
 ### Fixed
 
