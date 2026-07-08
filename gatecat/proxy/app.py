@@ -21,7 +21,11 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from gatecat.cache import SemanticCache, DEFAULT_CACHE_DIR
+# NOTE: gatecat.cache is imported LAZILY inside the lifespan, not here. It pulls
+# numpy/onnxruntime (the [cache] extra); the ACTION-VETO is pure stdlib. So
+# `pip install gate-cat[proxy]` must import and veto WITHOUT the heavy cache
+# stack — a client who only wants "veto my agent" should not need onnxruntime.
+from gatecat.integrations import check_action, ActionVetoed, DOGFOOD_DEFAULTS
 from gatecat.proxy.config import ProxyConfig
 from gatecat.proxy.models import (
     ChatCompletionRequest,
@@ -53,6 +57,107 @@ def _extract_query(messages: list) -> str:
     return ""
 
 
+# ---- ACTION-VETO on tool calls (proxy layer) --------------------------------
+# A tool-calling agent on ANY OpenAI-compatible provider asks the model what to
+# run; the model answers with `tool_calls`. We check each proposed call against
+# the deny-list BEFORE it reaches the agent, so `rm -rf`, `terraform destroy`,
+# `DROP TABLE`, `gh repo delete`, disk wipes, etc. never get executed. The agent
+# needs zero code — it just points its base_url at the proxy.
+
+def _flatten_tool_call(tc: dict) -> str:
+    """Flatten one OpenAI tool_call into a single string the deny-policies scan.
+
+    Shape: ``{"type":"function","function":{"name":..,"arguments":"<json str>"}}``.
+    The policies are regexes over command-like text, so a dangerous command inside
+    the arguments (e.g. a shell tool's ``command`` field) is caught wherever it
+    sits. Non-string arguments are JSON-flattened (full payload, never truncated).
+    """
+    if not isinstance(tc, dict):
+        return str(tc)
+    fn = tc.get("function") or {}
+    name = fn.get("name", "") or ""
+    args = fn.get("arguments", "")
+    if not isinstance(args, str):
+        try:
+            args = json.dumps(args, ensure_ascii=True)
+        except Exception:
+            args = str(args)
+    return f"{name} {args}".strip()
+
+
+def _veto_tool_calls(resp_data: dict):
+    """Scan every tool_call in an upstream completion against the deny-list.
+
+    Returns ``(blocked, reason, offending)``. Only ever blocks when a real
+    tool_call is present AND it is dangerous, unparseable, or the engine errored
+    on it (fail-closed on a real call). A plain text completion (no tool_calls)
+    is never touched.
+    """
+    if not isinstance(resp_data, dict):
+        return False, "", ""
+    for ch in (resp_data.get("choices") or []):
+        msg = (ch or {}).get("message") or {}
+        for tc in (msg.get("tool_calls") or []):
+            try:
+                action = _flatten_tool_call(tc)
+            except Exception:
+                return True, "gate.cat: unparseable tool call (fail-closed)", ""
+            if not action:
+                continue
+            try:
+                check_action("proxy_tool_call", action, DOGFOOD_DEFAULTS)
+            except ActionVetoed as exc:
+                return True, str(exc), action
+            except Exception as exc:  # engine error on a REAL call -> fail-closed
+                return True, f"gate.cat: veto engine error (fail-closed): {exc}", action
+    return False, "", ""
+
+
+def _build_veto_response(resp_data: dict, reason: str, offending: str) -> dict:
+    """A completion telling the agent the action was vetoed, with NO tool_calls
+    so the agent loop executes nothing. finish_reason='stop' ends the turn."""
+    content = (
+        "gate.cat VETO — this action was blocked before it ran.\n"
+        f"Reason: {reason}\n"
+        f"Blocked tool call: {offending[:400]}\n"
+        "If this is legitimate, a human must run it manually."
+    )
+    return {
+        "id": resp_data.get("id", "gatecat-veto"),
+        "object": "chat.completion",
+        "model": resp_data.get("model", ""),
+        "choices": [{
+            "index": 0,
+            "finish_reason": "stop",
+            "message": {"role": "assistant", "content": content},
+        }],
+        "gatecat": {"vetoed": True, "reason": reason},
+    }
+
+
+async def _sse_from_completion(resp_data: dict):
+    """Re-emit a whole (non-streamed) completion as OpenAI SSE chunks, so a client
+    that asked for stream=True still gets a stream after we gated the tool call."""
+    choice = (resp_data.get("choices") or [{}])[0]
+    msg = choice.get("message") or {}
+    base = {
+        "id": resp_data.get("id", "gatecat"),
+        "object": "chat.completion.chunk",
+        "model": resp_data.get("model", ""),
+    }
+    delta = {"role": "assistant"}
+    if msg.get("content"):
+        delta["content"] = msg["content"]
+    if msg.get("tool_calls"):
+        delta["tool_calls"] = msg["tool_calls"]
+    first = {**base, "choices": [{"index": 0, "delta": delta, "finish_reason": None}]}
+    yield f"data: {json.dumps(first)}\n\n"
+    fin = {**base, "choices": [{"index": 0, "delta": {},
+                                "finish_reason": choice.get("finish_reason") or "stop"}]}
+    yield f"data: {json.dumps(fin)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
 def build_upstream_headers(api_key: str, client_auth_header: str,
                            allow_client_auth: bool) -> dict:
     """Zbuduj nagłówki upstream (audyt 2026-06-27 #3 — testowalna, czysta funkcja).
@@ -77,7 +182,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
     if config is None:
         config = ProxyConfig.from_env()
 
-    cache: Optional[SemanticCache] = None
+    cache = None  # SemanticCache, lazily created in lifespan (needs [cache] extra)
     synthesis_engine = None
     http_client: Optional[httpx.AsyncClient] = None
     gate = None  # TruthGate (gatecat.Gate), init in lifespan if gate_mode != off
@@ -90,15 +195,23 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         nonlocal cache, synthesis_engine, http_client, gate, web_branch, tool_branch, koryto, stagnation
 
-        # Initialize cache
-        cache = SemanticCache(
-            cache_dir=config.cache_dir or DEFAULT_CACHE_DIR,
-            similarity_threshold=config.similarity_threshold,
-            negative_threshold=config.negative_threshold,
-            max_entries=config.cache_max_entries,
-            ttl_seconds=config.cache_ttl,
-            on_negative_hit=config.on_negative_hit,
-        )
+        # Initialize cache — lazy import so a [proxy]-only install (no numpy/onnx)
+        # still runs: the action-veto works cache-less, only the semantic-cache
+        # tier is disabled. Install gate-cat[cache] (or [proxy] with [cache]) for it.
+        try:
+            from gatecat.cache import SemanticCache, DEFAULT_CACHE_DIR
+            cache = SemanticCache(
+                cache_dir=config.cache_dir or DEFAULT_CACHE_DIR,
+                similarity_threshold=config.similarity_threshold,
+                negative_threshold=config.negative_threshold,
+                max_entries=config.cache_max_entries,
+                ttl_seconds=config.cache_ttl,
+                on_negative_hit=config.on_negative_hit,
+            )
+        except ImportError as e:
+            cache = None
+            logger.warning("[proxy] semantic cache disabled (%s) — action-veto still "
+                           "active; install gate-cat[cache] to enable caching.", e)
 
         # Initialize CAS synthesis engine
         if config.synthesis_mode in ("auto", "always"):
@@ -250,7 +363,36 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
         stream = req.stream or False
         query = _extract_query(messages)
 
-        # Passthrough: tool calls or empty queries bypass cache
+        # ACTION-VETO: a tool-calling request gets its proposed tool_calls checked
+        # against the deny-list before they reach the agent. We force a
+        # non-streaming upstream call so the gate always sees the COMPLETE tool
+        # call (no partial-delta races), then re-emit in the client's shape.
+        if req.tools and config.tool_veto != "off":
+            probe_body = {**body, "stream": False}
+            upstream = await _forward_upstream(probe_body, False, request)
+            if not isinstance(upstream, JSONResponse):
+                return upstream
+            try:
+                data = json.loads(upstream.body.decode())
+            except Exception:
+                return upstream  # unparseable upstream -> pass through unchanged
+            blocked, reason, offending = _veto_tool_calls(data)
+            if blocked and config.tool_veto == "block":
+                logger.warning("[proxy] TOOL-VETO blocked: %s", offending[:120])
+                out = _build_veto_response(data, reason, offending)
+            elif blocked:  # flag mode: annotate, do not block
+                logger.info("[proxy] TOOL-VETO flag: %s", offending[:120])
+                data.setdefault("gatecat", {})["tool_veto_flag"] = {
+                    "reason": reason, "call": offending[:400]}
+                out = data
+            else:
+                out = data
+            if stream:
+                return StreamingResponse(_sse_from_completion(out),
+                                         media_type="text/event-stream")
+            return JSONResponse(content=out, status_code=upstream.status_code)
+
+        # Passthrough: tool calls (veto off) or empty queries bypass cache
         if req.tools or not query:
             return await _forward_upstream(body, stream, request)
 

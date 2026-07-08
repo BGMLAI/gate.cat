@@ -2,6 +2,46 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.3.2] -- proxy imports without the cache stack (2026-07-08)
+
+### Fixed
+
+- **`pip install gate-cat[proxy]` could not import the proxy** — it imported
+  `gatecat.cache` (numpy/onnxruntime) at module load, but `[proxy]` doesn't
+  include the cache stack, so `gatecat-proxy` crashed with `ModuleNotFoundError:
+  numpy` (0.3.0/0.3.1). The cache import is now lazy: the proxy runs, and the
+  action-veto works, WITHOUT numpy — only the semantic-cache tier is disabled
+  (install `gate-cat[cache]` for it). Matches the zero-dep-core promise: a client
+  who only wants to veto their agent needs no ML stack.
+
+## [0.3.1] -- proxy action-veto on tool calls (2026-07-08)
+
+Makes the proxy usable as a turnkey guard for ANY OpenAI-compatible provider
+(Ollama, NIM, OpenRouter, vLLM, LM Studio) — the client changes one `base_url`,
+writes no code.
+
+### Added
+
+- **`gatecat-proxy` now vetoes dangerous tool calls.** When the upstream model
+  returns `tool_calls`, each is checked against the 20 DOGFOOD deny policies
+  (recursive-force delete, prod infra teardown, destructive SQL, repo/registry
+  deletion, disk wipe, ...) BEFORE it reaches the agent. A dangerous call is
+  replaced with a refusal (no `tool_calls`), so a tool-calling agent on a local
+  model cannot run `rm -rf`, `terraform destroy`, `DROP TABLE`, etc. Previously
+  tool-call requests bypassed the proxy entirely.
+  - Mode via `GATECAT_PROXY_TOOL_VETO`: `block` (default) / `flag` / `off`.
+  - Works for streaming and non-streaming clients (the gate always sees the
+    complete tool call; the result is re-emitted as SSE if the client streamed).
+  - Fail-closed: an unparseable or engine-errored tool call is blocked.
+- Proxy stack (`fastapi`, `uvicorn`, `pydantic`) added to the `[dev]` extra so
+  the security-critical proxy tests run in CI instead of skipping.
+
+### Notes
+
+- The action-veto is applied to tool calls the model expresses through the API
+  (the common tool-calling pattern). An agent that shells out directly, outside
+  the API, still needs the harness-level hook (`gatecat-hook`).
+
 ## [0.3.0] -- import rename + hook hardening (2026-07-07)
 
 Release-hardening pass. The engine and policies are unchanged from 0.2.1; this

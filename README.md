@@ -231,7 +231,36 @@ Three-tier response:
 
 Validated with 100-question benchmark across 5 domains: **0.892 mean quality ratio** vs direct API responses.
 
-### Proxy Mode (zero code change)
+### Proxy Mode — veto any local agent, zero code (Ollama / NIM / OpenRouter / vLLM)
+
+Ollama, NIM, OpenRouter, vLLM and LM Studio all speak the OpenAI API, so **one
+proxy in front of them protects them all** — your agent changes one `base_url`,
+writes no code. When the model asks to run a tool, the proxy checks the proposed
+call against the 20 deny policies and **blocks the dangerous ones before the
+agent executes them** (`rm -rf`, `terraform destroy`, `DROP TABLE`, disk wipes,
+repo deletion, ...).
+
+```bash
+pip install "gate-cat[proxy]"
+
+# point the proxy at your provider (local Ollama shown; NIM/OpenRouter/vLLM the same)
+export OPENAI_BASE_URL="http://localhost:11434/v1"    # your real provider
+export GATECAT_ALLOW_INSECURE_UPSTREAM=1              # only for a local http provider
+gatecat-proxy                                         # listens on :8080
+```
+
+Then your agent points at the proxy instead of the provider — that's the whole change:
+
+```python
+client = OpenAI(base_url="http://localhost:8080/v1")  # was 11434; now guarded
+```
+
+A dangerous tool call comes back as a refusal, not an execution. Modes:
+`GATECAT_PROXY_TOOL_VETO=block` (default) / `flag` (annotate only) / `off`.
+Caveat: this gates tool calls the model makes **through the API**; an agent that
+shells out directly still needs the harness hook (`gatecat-hook`).
+
+---
 
 Run gate.cat as a standalone proxy server. No SDK integration needed — just change `base_url`:
 
@@ -240,7 +269,7 @@ Run gate.cat as a standalone proxy server. No SDK integration needed — just ch
 docker run -e OPENAI_API_KEY=sk-... -p 8080:8080 gatecat/proxy
 
 # Or pip
-pip install gate.cat[proxy]
+pip install "gate-cat[proxy]"
 gatecat-proxy  # starts on :8080
 ```
 

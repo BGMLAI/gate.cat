@@ -90,6 +90,18 @@ class ProxyConfig:
     gate_threshold: float = 0.30
     gate_semantic: bool = True  # MiniLM do rozrzutu semantycznego (vs lexical)
 
+    # ACTION-VETO na tool-calle — bramka dzialaniowa NA POZIOMIE PROXY.
+    # Gdy upstream (Ollama/NIM/OpenRouter/vLLM/...) zwraca tool_calls, kazdy jest
+    # sprawdzany przeciw 20 politykom DOGFOOD (recursive-force delete, prod infra
+    # teardown, destructive SQL, repo/registry deletion, disk wipe, ...). Grozny
+    # tool-call jest ZABLOKOWANY zanim agent go wykona — klient nie pisze zadnego
+    # kodu, tylko wskazuje base_url na proxy.
+    # block | flag | off  (default: block — to jest sens tego proxy).
+    #   block: grozny tool-call -> zwroc agentowi odmowe zamiast wywolania
+    #   flag:  nie blokuj, tylko dopisz metadane `gatecat.tool_veto_flag`
+    #   off:   przepusc (stare zachowanie)
+    tool_veto: str = "block"
+
     # Gałęzie naprawy (gdy gate niepewny + cache słaby): web → tools → abstain
     web_enabled: bool = False        # 3. gałąź: Brave web-search (wymaga BRAVE_API_KEY)
     brave_api_key: str = ""
@@ -142,6 +154,7 @@ class ProxyConfig:
             gate_n_samples=int(os.environ.get("GATECAT_GATE_N_SAMPLES", "5")),
             gate_threshold=float(os.environ.get("GATECAT_GATE_THRESHOLD", "0.30")),
             gate_semantic=os.environ.get("GATECAT_GATE_SEMANTIC", "1").strip() in ("1", "true", "True"),
+            tool_veto=os.environ.get("GATECAT_PROXY_TOOL_VETO", "block"),
             web_enabled=os.environ.get("GATECAT_WEB_ENABLED", "0").strip() in ("1", "true", "True"),
             brave_api_key=os.environ.get("BRAVE_API_KEY", ""),
             tools_enabled=os.environ.get("GATECAT_TOOLS_ENABLED", "1").strip() in ("1", "true", "True"),
