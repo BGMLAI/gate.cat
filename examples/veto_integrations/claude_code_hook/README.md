@@ -8,14 +8,19 @@ and is fed back to the model.
 
 ## 5-minute quickstart
 
-1. Install the SDK with the veto engine (>= 0.3.0):
+1. Install the package (the veto engine is the zero-dependency core):
 
    ```bash
-   pip install gate.cat
+   pip install gate-cat
    ```
 
-2. Merge `settings.example.json` into your `.claude/settings.json`
-   (fix the absolute path to `veto_hook.py`).
+   This puts the `gatecat-hook` console script on your PATH — no absolute
+   paths, no interpreter to guess.
+
+2. Copy the `PreToolUse` block from `settings.example.json` into your
+   `.claude/settings.json`. It calls `gatecat-hook` by name, so there is
+   nothing to edit (the standalone `veto_hook.py` in this folder is only a
+   vendored fallback for a checkout without the package installed).
 
 3. Test it in a live session — ask Claude to run `rm -rf /tmp/x`:
    the call is blocked, and the model sees `VETO [RM_RF]: recursive force

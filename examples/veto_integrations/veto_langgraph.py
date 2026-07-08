@@ -19,8 +19,14 @@ def deploy(cmd: str) -> str:
 
 
 def main() -> None:
-    from langgraph.graph import END, START, StateGraph
-    from langgraph.types import interrupt
+    try:
+        from langgraph.graph import END, START, StateGraph
+        from langgraph.types import interrupt
+    except ImportError:
+        print("This adapter demo needs LangGraph: pip install 'gate-cat[langgraph]'\n"
+              "(the veto gate itself is zero-dependency and needs none of it — "
+              "see veto_autogen.py for a framework-free run.)")
+        return
 
     [guarded_deploy] = guard_tools([deploy], policies=[TERRAFORM_PROD, CLOUD_DESTROY])
 

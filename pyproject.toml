@@ -1,6 +1,6 @@
 [project]
 name = "gate.cat"
-version = "0.4.3"
+version = "0.4.4"
 description = "Block irreversible AI-agent actions before they run — deterministic, fail-closed action-veto (deny-list + exec-check + human-in-the-loop), built for cheap/local model agents."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -8,9 +8,9 @@ requires-python = ">=3.10"
 authors = [
     {name = "Bogumił Jankiewicz", email = "bogumil@bgml.ai"},
 ]
-keywords = ["llm", "agent", "guardrail", "action-veto", "truth-pipeline", "cache", "semantic", "openai", "anthropic", "ai"]
+keywords = ["llm", "agent", "guardrail", "action-veto", "ai-safety", "agent-guardrail", "claude-code", "fail-closed", "local-llm", "ai"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
@@ -18,6 +18,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 # CORE = the action-veto guardrail: pure stdlib, ZERO third-party deps. A

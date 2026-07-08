@@ -2,6 +2,31 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.4] -- adapter examples degrade cleanly; Beta + Security on PyPI (2026-07-08)
+
+### Fixed
+
+- **Framework adapter examples no longer crash with a raw traceback when the
+  framework isn't installed.** `examples/veto_integrations/veto_crewai.py` and
+  `veto_langgraph.py` ran the framework import inside `main()`, so a user who did
+  `pip install gate-cat` (zero-dependency core) and ran the example to see how it
+  works got a `ModuleNotFoundError` traceback. They now print a one-line "install
+  `gate-cat[crewai]`/`[langgraph]` to run this adapter demo — the gate itself
+  needs none of it" and exit cleanly. (`veto_autogen.py` was already
+  framework-free.)
+- **Claude Code hook example README** dropped the stale `>= 0.3.0` install note
+  and the "fix the absolute path to `veto_hook.py`" step — which contradicted
+  `settings.example.json`, that already calls the `gatecat-hook` console script
+  by name (nothing to edit).
+
+### Changed
+
+- **PyPI metadata**: `Development Status` Alpha → **4 - Beta** (3 releases, 892
+  CI tests, 73% coverage, 1.085M-command recall validation), added
+  `Topic :: Security` and `Topic :: Software Development :: Quality Assurance`
+  classifiers and security-oriented keywords so the package is discoverable as
+  what it is — a guardrail, not an AI-research toy. No code change.
+
 ## [0.4.3] -- gh release delete-asset unblocked; recall harness (2026-07-08)
 
 ### Fixed

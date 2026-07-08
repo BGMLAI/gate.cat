@@ -16,7 +16,13 @@ from gatecat.integrations.policies import PAYMENTS
 
 
 def main() -> None:
-    from crewai.tools import BaseTool
+    try:
+        from crewai.tools import BaseTool
+    except ImportError:
+        print("This adapter demo needs crewAI: pip install 'gate-cat[crewai]'\n"
+              "(the veto gate itself is zero-dependency and needs none of it — "
+              "see veto_autogen.py for a framework-free run.)")
+        return
 
     class ExecutePayment(BaseTool):
         # the tool NAME is part of the evaluated action text - payment-shaped
