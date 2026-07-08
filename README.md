@@ -149,6 +149,16 @@ What we ask back — this project runs on one currency:
   CHANGELOG, and the bypass suite grows from exactly these reports. …and if the
   gate ever blocks something dumb before it happened, a ⭐ helps other people find this.
 
+## Pricing
+
+The gate above is free forever — it is the whole product, not a trial.
+**gate.cat Cloud** (hosted veto history, alerts, a monthly audit report you can
+hand to compliance) is paid: **Solo $9/mo · Team $199/mo · enterprise pilots by
+invoice**. Cloud is an optional reporter *beside* the gate, never in its
+execution path — if it's down or cancelled, the gate keeps blocking exactly as
+before. Details, honest founding-stage caveats and the 30-day refund:
+[PRICING.md](PRICING.md).
+
 ## Verify the numbers
 
 Every public number traces to a row in [FACTS.md](FACTS.md) (claim → source →

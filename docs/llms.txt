@@ -65,6 +65,7 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 
 - [Repository & README](https://github.com/BGMLAI/gate.cat): install, quick start, the Claude Code hook config.
 - [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.3).
+- [Pricing](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md): the gate itself is free forever (Apache-2.0, complete, not a trial); the paid layer is gate.cat Cloud — hosted veto history, alerts and a monthly audit report — Solo $9/month, Team $199/month, enterprise pilots $7,500/year by invoice. Cloud is an optional reporter beside the gate, never in its execution path.
 - [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md): every public number with its source and allowed wording.
 - [COMPARISON.md](https://github.com/BGMLAI/gate.cat/blob/master/COMPARISON.md): honest positioning vs LangGraph `interrupt`, HumanLayer, Lakera, Guardrails AI.
 - [OBJECTIONS.md](https://github.com/BGMLAI/gate.cat/blob/master/OBJECTIONS.md): the two hardest objections answered in full.
