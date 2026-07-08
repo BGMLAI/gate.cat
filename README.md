@@ -163,9 +163,13 @@ is measured on two axes in [RECALL.md](RECALL.md). The deterministic one needs n
 datasets and runs in seconds:
 
 ```bash
-pip install gate-cat            # >= 0.4.3
+git clone https://github.com/BGMLAI/gate.cat && cd gate.cat
+pip install -e .                       # the veto engine (zero-dependency core)
 python scripts/recall_danger_axis.py   # 43/43 known danger classes through the FULL gate, 0 false-blocks
 ```
+
+(The harness lives in `scripts/` — not shipped inside the pip wheel — so verify
+it from a clone, where you can also read the danger catalog it checks against.)
 
 ## Cache / Cache-Augmented Synthesis (supporting engine)
 
