@@ -16,16 +16,17 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev]" pytest-cov
       - name: Test
         # The gate disarms itself in CI (ephemeral env detection) by design;
         # GATECAT_VETO_EPHEMERAL=0 forces it ARMED so the veto tests test a
-        # live gate, exactly as documented in the README.
+        # live gate, exactly as documented in the README. Coverage is printed
+        # so the public number (FACTS.md) is CI-verifiable, not asserted.
         env:
           GATECAT_VETO_EPHEMERAL: "0"
-        run: python -m pytest -q
+        run: python -m pytest -q --cov=gatecat --cov-report=term
