@@ -46,27 +46,6 @@ pip install "gate-cat[all]"         # everything
 ```
 > Quote the extras (`"gate-cat[openai]"`) — zsh treats bare `[...]` as a glob.
 
-## The deal
-
-Sixty seconds of your time, in exchange for:
-
-- a deterministic gate your agent cannot run `terraform destroy`, `rm -rf`,
-  `DROP TABLE` or `gh repo delete` through — 20 default policies for the
-  irreversible-action class, fail-closed, ~0.6% intervention rate measured on
-  real traffic (it won't nag you);
-- a ready-to-paste Claude Code PreToolUse hook — the strongest mode:
-  enforcement in the harness, outside the model's control flow;
-- adapters for crewAI / LangGraph / AutoGen (honestly labeled: in-process
-  convention, weaker than the hook);
-- one-line uninstall if it's not for you. Worst case, you lost a minute.
-
-What we ask back — this project runs on two currencies:
-
-- ⭐ **a star**, if the gate ever blocks something dumb before it happened;
-- 🐛 **a veto story** — [open an issue](https://github.com/BGMLAI/gate.cat/issues)
-  with what got blocked, or what slipped through. Misses are worth more than
-  praise: the bypass suite grows from exactly these reports.
-
 ## Truth Pipeline (koryto → gate → veto)
 
 One entry point that composes the SDK's verification blocks into a truth +
@@ -134,6 +113,28 @@ frontier models the gate weakens (AUC 0.68–0.71).
 deterministic verification layer — the probabilistic "river" (model output) is held
 by a deterministic "riverbed" (exec/calc/lookup). It is a deliberate brand term, not
 an accident of translation.
+
+## The deal
+
+Sixty seconds of your time, in exchange for:
+
+- a deterministic gate your agent cannot run `terraform destroy`, `rm -rf`,
+  `DROP TABLE` or `gh repo delete` through — 20 default policies for the
+  irreversible-action class, fail-closed, ~0.6% intervention rate measured on
+  real traffic (it won't nag you);
+- a ready-to-paste Claude Code PreToolUse hook — the strongest mode:
+  enforcement in the harness, outside the model's control flow;
+- adapters for crewAI / LangGraph / AutoGen (honestly labeled: in-process
+  convention, weaker than the hook);
+- one-line uninstall if it's not for you. Worst case, you lost a minute.
+
+What we ask back — this project runs on one currency:
+
+- 🐛 **a veto story** — [open an issue](https://github.com/BGMLAI/gate.cat/issues)
+  with what got blocked, or what slipped through. Misses are worth more than
+  praise: reported gaps get fixed and credited in the CHANGELOG, and the bypass
+  suite grows from exactly these reports. …and if the gate ever blocks something
+  dumb before it happened, a ⭐ helps other people find this.
 
 ## Cache / Cache-Augmented Synthesis (supporting engine)
 
