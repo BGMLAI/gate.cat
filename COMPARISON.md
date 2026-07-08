@@ -25,11 +25,15 @@ for the floor. Not "instead of" — underneath.
 
 ## vs. prompt-firewalls / detection — Lakera, Guardrails AI, NeMo Guardrails
 
-| | Detection guardrails | gate.cat |
+These are broader I/O-validation frameworks (Guardrails AI and NeMo validate
+inputs *and* outputs; Lakera leans input-detection). The contrast below is on the
+axis that matters for the irreversible-action job, not a full feature comparison.
+
+| | Detection / validation guardrails | gate.cat |
 |---|---|---|
-| Primary job | Detect the malicious *input* (prompt injection, jailbreak, PII) | Stop the destructive *action* at the tool boundary, regardless of how the model got there |
-| Method | ML classifiers / probabilistic | Deterministic deny-list + exec-check, fail-closed |
-| Frontier-model focus | Yes | No — signal is strongest on 7–30B local models (the wedge) |
+| Primary job | Detect or validate the model's *input/output* (prompt injection, jailbreak, PII, schema, toxicity) | Stop the destructive *action* at the tool boundary, regardless of how the model got there |
+| Method | Often ML classifiers / probabilistic (some rule-based validators) | Deterministic deny-list + exec-check, fail-closed |
+| Model coverage | Model-agnostic; tuned/marketed for frontier | Deliberately narrow — the uncertainty signal is strongest on 7–30B local models (the wedge frontier-first vendors don't target) |
 | Fact-checking / hallucination | Some offer it | **No** — lookup channel is empty by default; not what this is for |
 
 **Honest limit:** gate.cat does **not** do prompt-injection detection as its pitch (it's an
