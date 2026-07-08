@@ -53,6 +53,41 @@ pip install "gate-cat[all]"         # everything
 ```
 > Quote the extras (`"gate-cat[openai]"`) — zsh treats bare `[...]` as a glob.
 
+## The hook — the strongest mode
+
+Enforcement in the harness, **outside the model's control flow**: the tool call
+cannot execute until the gate returns. `pip install gate-cat` puts the
+`gatecat-hook` console script on your PATH; register it as a Claude Code
+`PreToolUse` hook by adding this to `.claude/settings.json` (nothing to edit —
+it's called by name, no absolute paths):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "gatecat-hook" }]
+      }
+    ]
+  }
+}
+```
+
+Now ask your agent to run `rm -rf ~/project`: the call is blocked (exit 2) and
+the model sees `VETO [DELETE_ANALYZER]: deletes '/home/you/project' under
+protected root '/home' - requires a human`. A delete under a throwaway path like
+`/tmp/x` is deliberately *allowed* — the gate stops deletes that touch a
+persistent location, and doesn't nag on scratch dirs. Run `gate.cat` any time to
+see what it's watched and stopped. Fail-closed: a missing or erroring engine
+blocks rather than allowing. In a throwaway CI/sandbox it disarms itself and
+logs a no-op (`GATECAT_VETO_EPHEMERAL=0` forces it armed).
+
+Framework adapters (crewAI / LangGraph / AutoGen) exist too, but they are
+in-process convention — a prompt injection can route around them. Only the hook
+is enforcement the agent cannot skip. See
+[`examples/veto_integrations/`](examples/veto_integrations/) for adapter usage.
+
 ## Truth Pipeline (koryto → gate → veto)
 
 One entry point that composes the SDK's verification blocks into a truth +

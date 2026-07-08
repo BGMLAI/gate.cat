@@ -2,6 +2,29 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.5] -- the hook gets a home on the landing page (2026-07-08)
+
+### Added
+
+- **README now has a "The hook — the strongest mode" section** with the
+  ready-to-paste `.claude/settings.json` `PreToolUse` config. The Claude Code
+  hook is the product's #1 pitch (enforcement outside the model's control flow),
+  but the landing README only *mentioned* it — there was nowhere to copy the
+  config from. A reader who wanted the hero feature had to dig into
+  `examples/` (which isn't shipped in the wheel). Now it's front and center,
+  right after Install, with the exact block and a working first-run test.
+
+### Fixed
+
+- **`gate.cat` dashboard empty-state pointed at a path pip users don't have.**
+  The first-run message said "Wire the hook
+  (examples/veto_integrations/claude_code_hook/)", but `examples/` is excluded
+  from the wheel/sdist — so a `pip install` user was sent to a nonexistent
+  directory. It now names the actionable steps (add `gatecat-hook` to
+  `.claude/settings.json`) and links the README's hook section.
+- **README proxy section said "20 deny policies" — it is 21** (`DOGFOOD_DEFAULTS`
+  since `AUTOEXEC_WRITE` in 0.4.0; pinned in FACTS.md F10).
+
 ## [0.4.4] -- adapter examples degrade cleanly; Beta + Security on PyPI (2026-07-08)
 
 ### Fixed

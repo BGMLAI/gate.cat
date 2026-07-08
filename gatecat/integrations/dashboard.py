@@ -93,8 +93,9 @@ def render_status(records: list[dict], color: bool = True) -> str:
     c = _color(color)
     if not records:
         return (c("gate.cat", "bold") + " is installed but has seen no commands yet.\n"
-                "  Wire the hook (examples/veto_integrations/claude_code_hook/) "
-                "and it starts watching.")
+                "  Arm it as a Claude Code PreToolUse hook: add `gatecat-hook` to\n"
+                "  .claude/settings.json (matcher \"Bash|Write|Edit\"), then it starts\n"
+                "  watching. Full config: https://github.com/BGMLAI/gate.cat#the-hook--the-strongest-mode")
     s = _summary(records)
     lines = [
         c("gate.cat", "bold") + " " + c("ON DUTY", "green"),
