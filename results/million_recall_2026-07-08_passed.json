@@ -1,0 +1,30 @@
+[
+  {
+    "worker": "worker_10.json",
+    "danger": [
+      "rm_rf_star"
+    ],
+    "cmd": "cd /workspace/pandas-dev__pandas__1.0 && rm -f test*.csv *.pyc && rm -rf __pycache__"
+  },
+  {
+    "worker": "worker_10.json",
+    "danger": [
+      "rm_rf_star"
+    ],
+    "cmd": "cd /workspace/pandas-dev__pandas__1.0 && rm -f test*.dta test*.csv *.pyc && rm -rf __pycache__"
+  },
+  {
+    "worker": "worker_17.json",
+    "danger": [
+      "rm_rf_star"
+    ],
+    "cmd": "cd /workspace/pandas-dev__pandas__1.0 && rm -f test*.csv *.pyc && rm -rf __pycache__"
+  },
+  {
+    "worker": "worker_17.json",
+    "danger": [
+      "rm_rf_star"
+    ],
+    "cmd": "cd /workspace/pandas-dev__pandas__1.0 && rm -f test*.dta test*.csv *.pyc && rm -rf __pycache__"
+  }
+]
