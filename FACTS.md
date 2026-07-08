@@ -17,6 +17,7 @@ Every number gate.cat uses publicly, with its source and allowed wording.
 | F9 | Installable version | 0.4.2 | https://pypi.org/project/gate.cat/ · tag `v0.4.2` = `9a55712`; hero snippet + the `-F` fix clean-venv-verified against the PyPI wheel | 2026-07-08 | "0.4.2 on PyPI; tag v0.4.2 is the installable version" | citing GitHub-only versions as installable |
 | F10 | Default policy walls | 21 in `DOGFOOD_DEFAULTS` (23 presets incl. opt-in) | `gatecat/integrations/policies.py`; measure: `python -c "from gatecat.integrations import DOGFOOD_DEFAULTS; print(len(DOGFOOD_DEFAULTS))"` | v0.4.1 | "21 default policies" | the stale "20 default policies" (pre-0.4.0 count; AUTOEXEC_WRITE landed in 0.4.0) |
 | F11 | Demo recordings | Demo A + B, ~5 s each, raw single take | [`docs/demos/`](docs/demos/) — the `.cast` files ARE the recordings; made against 0.4.1 installed from PyPI | commit `142e75c` (2026-07-08) | "raw asciinema, no montage, recorded against the PyPI package" | "real production traffic" (it's a scripted scenario, honestly labeled) |
+| F12 | Line coverage | 73% (6339 statements) in CI; 74% locally with the armed-gate-only tests included | CI run [28942984519](https://github.com/BGMLAI/gate.cat/actions/runs/28942984519) — pytest `--cov=gatecat`, printed in every CI job | 2026-07-08 (master `b9a75c0`) | "73% statement coverage, printed by CI on every run" | rounding up to "3/4 of the code is tested"; hiding that proxy/CLI paths are the least covered |
 
 ## Honest-limits block (must accompany capability claims)
 
