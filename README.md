@@ -272,7 +272,7 @@ Validated with 100-question benchmark across 5 domains: **0.892 mean quality rat
 Ollama, NIM, OpenRouter, vLLM and LM Studio all speak the OpenAI API, so **one
 proxy in front of them protects them all** — your agent changes one `base_url`,
 writes no code. When the model asks to run a tool, the proxy checks the proposed
-call against the 20 deny policies and **blocks the dangerous ones before the
+call against the 21 deny policies and **blocks the dangerous ones before the
 agent executes them** (`rm -rf`, `terraform destroy`, `DROP TABLE`, disk wipes,
 repo deletion, ...).
 
