@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import re
 
-from cacheback.integrations import ascii_safe, log_decision
-from cacheback.integrations.policies import (
+from gatecat.integrations import ascii_safe, log_decision
+from gatecat.integrations.policies import (
     ALL_PRESETS,
     DOGFOOD_DEFAULTS,
     PAYMENTS,
@@ -50,7 +50,7 @@ def test_policy_patterns_block_and_dont_false_block():
     """Regression cases from the code review: catch the dangerous forms the
     old patterns missed, and DON'T block the benign forms the broadened
     CLOUD_DESTROY over-matched (false-block rate is the headline metric)."""
-    from cacheback.integrations.policies import (
+    from gatecat.integrations.policies import (
         CLOUD_DESTROY,
         GIT_FORCE_PUSH,
         RM_RF,
@@ -87,18 +87,18 @@ def test_policy_patterns_block_and_dont_false_block():
 def test_shadow_enabled_resolution(monkeypatch):
     """A8: explicit arg wins; env var decides otherwise; default is enforce.
     Unrecognized env values must resolve to enforce (fail-safe direction)."""
-    from cacheback.integrations import shadow_enabled
+    from gatecat.integrations import shadow_enabled
 
-    monkeypatch.delenv("CACHEBACK_VETO_SHADOW", raising=False)
+    monkeypatch.delenv("GATECAT_VETO_SHADOW", raising=False)
     assert shadow_enabled() is False  # default = enforce
     assert shadow_enabled(True) is True  # explicit overrides absent env
     assert shadow_enabled(False) is False
 
     for on in ("1", "true", "TRUE", "yes", "on", "shadow", " On "):
-        monkeypatch.setenv("CACHEBACK_VETO_SHADOW", on)
+        monkeypatch.setenv("GATECAT_VETO_SHADOW", on)
         assert shadow_enabled() is True, on
     for off in ("0", "false", "no", "off", "", "enforce", "garbage"):
-        monkeypatch.setenv("CACHEBACK_VETO_SHADOW", off)
+        monkeypatch.setenv("GATECAT_VETO_SHADOW", off)
         assert shadow_enabled() is False, off
         # explicit arg still overrides a set env var in either direction
         assert shadow_enabled(True) is True, on
@@ -112,7 +112,7 @@ def test_ascii_safe_escapes_polish():
 
 def test_log_decision_writes_schema(tmp_path, monkeypatch):
     log = tmp_path / "veto_log.jsonl"
-    monkeypatch.setenv("CACHEBACK_VETO_LOG", str(log))
+    monkeypatch.setenv("GATECAT_VETO_LOG", str(log))
     log_decision(
         source="crewai",
         decision="block",

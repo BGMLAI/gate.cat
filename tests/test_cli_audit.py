@@ -1,4 +1,4 @@
-"""CLI `cacheback audit` — trust-loop proof-point 'ile zgaduje TWOJ agent'.
+"""CLI `gatecat audit` — trust-loop proof-point 'ile zgaduje TWOJ agent'.
 
 Audit woła endpoint OpenAI-compatible usera, liczy confident-wrong + AUC gate,
 i pokazuje CTA do gate.cat. Test mockuje httpx (zero sieci) i sprawdza, ze:
@@ -13,7 +13,7 @@ import types
 
 import pytest
 
-from cacheback import cli
+from gatecat import cli
 
 
 def _write_jsonl(tmp_path, rows):
@@ -52,7 +52,7 @@ def test_audit_runs_offline_with_mocked_endpoint(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "GATE REPORT" in out
     assert "PRZEPUSZCZONE" in out          # sekcja confident-wrong
-    assert "gate.cat" in out or "cacheback-ai" in out   # CTA trust-loop
+    assert "pip install gate.cat" in out            # CTA trust-loop (actionable install hint)
 
 
 def test_audit_empty_file_is_safe(tmp_path, capsys):
@@ -70,7 +70,7 @@ def test_audit_in_cli_subcommands():
     """audit jest zarejestrowany jako subkomenda (help nie crashuje)."""
     with pytest.raises(SystemExit):
         monkey = sys.argv
-        sys.argv = ["cacheback", "audit", "--help"]
+        sys.argv = ["gatecat", "audit", "--help"]
         try:
             cli.main()
         finally:

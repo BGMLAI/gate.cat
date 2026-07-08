@@ -3,18 +3,18 @@
 from unittest.mock import MagicMock, patch
 import pytest
 
-from cacheback.cache import SemanticCache
-from cacheback.synthesis import (
+from gatecat.cache import SemanticCache
+from gatecat.synthesis import (
     SynthesisEngine,
     SynthesisCandidate,
     SynthesisResult,
     SYNTHESIS_PROMPT,
 )
-from cacheback.openai import (
+from gatecat.openai import (
     _CachedChatCompletions,
     _CachedResponse,
 )
-from cacheback.anthropic import (
+from gatecat.anthropic import (
     _CachedMessages as _AnthropicCachedMessages,
     _CachedMessage as _AnthropicCachedMessage,
 )
@@ -159,7 +159,7 @@ class TestSynthesisEngine:
         assert result.text == ""
         assert result.source == "miss"
 
-    @patch("cacheback.synthesis.SynthesisEngine._get_client")
+    @patch("gatecat.synthesis.SynthesisEngine._get_client")
     def test_synthesize_success(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.chat.completions.create.return_value = MockSynthCompletion()
@@ -176,7 +176,7 @@ class TestSynthesisEngine:
         assert result.latency_ms >= 0
         mock_client.chat.completions.create.assert_called_once()
 
-    @patch("cacheback.synthesis.SynthesisEngine._get_client")
+    @patch("gatecat.synthesis.SynthesisEngine._get_client")
     def test_synthesize_llm_failure_returns_miss(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.chat.completions.create.side_effect = Exception("API error")
@@ -189,7 +189,7 @@ class TestSynthesisEngine:
         assert result.text == ""
         assert result.source == "miss"
 
-    @patch("cacheback.synthesis.SynthesisEngine._get_client")
+    @patch("gatecat.synthesis.SynthesisEngine._get_client")
     def test_synthesize_empty_response(self, mock_get_client):
         mock_completion = MockSynthCompletion(content="")
         mock_client = MagicMock()
@@ -263,8 +263,8 @@ class TestOpenAISynthesisIntegration:
         # Should NOT call upstream
         mock_completions.create.assert_not_called()
         # Should be synthesis result
-        assert result.cacheback_synthesized is True
-        assert result.cacheback_hit is False
+        assert result.gatecat_synthesized is True
+        assert result.gatecat_hit is False
         cache.close()
 
     def test_no_synthesis_when_engine_is_none(self, tmp_cache_dir, mock_embedder):
@@ -287,8 +287,8 @@ class TestOpenAISynthesisIntegration:
 
         # Should call upstream (no synthesis tier)
         mock_completions.create.assert_called_once()
-        assert result.cacheback_hit is False
-        assert result.cacheback_synthesized is False
+        assert result.gatecat_hit is False
+        assert result.gatecat_synthesized is False
         cache.close()
 
     def test_synthesis_miss_falls_through_to_upstream(self, tmp_cache_dir, mock_embedder):
@@ -381,8 +381,8 @@ class TestOpenAISynthesisIntegration:
         mock_synthesis.synthesize.assert_not_called()
         # Should NOT call upstream
         mock_completions.create.assert_not_called()
-        assert result.cacheback_hit is True
-        assert result.cacheback_synthesized is False
+        assert result.gatecat_hit is True
+        assert result.gatecat_synthesized is False
         cache.close()
 
 
@@ -424,8 +424,8 @@ class TestAnthropicSynthesisIntegration:
         )
 
         mock_messages.create.assert_not_called()
-        assert result.cacheback_synthesized is True
-        assert result.cacheback_hit is False
+        assert result.gatecat_synthesized is True
+        assert result.gatecat_hit is False
         cache.close()
 
     def test_no_synthesis_when_engine_is_none(self, tmp_cache_dir, mock_embedder):
@@ -459,8 +459,8 @@ class TestCachedResponseSynthesis:
         resp = _CachedResponse(
             cached_text="Synthesized text", synthesized=True, model="gpt-4o"
         )
-        assert resp.cacheback_synthesized is True
-        assert resp.cacheback_hit is False
+        assert resp.gatecat_synthesized is True
+        assert resp.gatecat_hit is False
         assert resp.id == "cache-synthesis"
         assert resp.choices[0].message.content == "Synthesized text"
 
@@ -468,16 +468,16 @@ class TestCachedResponseSynthesis:
         resp = _CachedResponse(
             cached_text="Verbatim cached", cache_hit=True, model="gpt-4o"
         )
-        assert resp.cacheback_hit is True
-        assert resp.cacheback_synthesized is False
+        assert resp.gatecat_hit is True
+        assert resp.gatecat_synthesized is False
         assert resp.id == "cache-hit"
 
     def test_anthropic_synthesized_message(self):
         msg = _AnthropicCachedMessage(
             text="Synthesized text", model="claude-sonnet-4-20250514", cache_hit=False, synthesized=True
         )
-        assert msg.cacheback_synthesized is True
-        assert msg.cacheback_hit is False
+        assert msg.gatecat_synthesized is True
+        assert msg.gatecat_hit is False
         assert msg.id == "cache-synthesis"
         assert msg.content[0].text == "Synthesized text"
 
@@ -485,8 +485,8 @@ class TestCachedResponseSynthesis:
         msg = _AnthropicCachedMessage(
             text="Cached text", model="claude-sonnet-4-20250514"
         )
-        assert msg.cacheback_hit is True
-        assert msg.cacheback_synthesized is False
+        assert msg.gatecat_hit is True
+        assert msg.gatecat_synthesized is False
         assert msg.id == "cache-hit"
 
 

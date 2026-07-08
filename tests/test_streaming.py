@@ -1,7 +1,7 @@
 """StreamBuffer and streaming helper tests."""
 
 import pytest
-from cacheback._streaming import (
+from gatecat._streaming import (
     StreamBuffer,
     replay_cached_openai_sync,
     replay_cached_anthropic_sync,

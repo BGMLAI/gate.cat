@@ -14,8 +14,8 @@ httpx = pytest.importorskip("httpx")
 
 from httpx import ASGITransport, AsyncClient
 
-from cacheback.proxy.app import create_app
-from cacheback.proxy.config import ProxyConfig
+from gatecat.proxy.app import create_app
+from gatecat.proxy.config import ProxyConfig
 
 
 def _upstream(content: str):
@@ -95,9 +95,9 @@ async def test_koryto_block_corrects_calc_confident_wrong(block_config):
     data = resp.json()
     answer = data["choices"][0]["message"]["content"]
     assert "9" in answer                       # PRAWDA z koryta, nie '1' modelu
-    assert data.get("cacheback_koryto", {}).get("corrected") is True
-    assert data["cacheback_koryto"]["channel"] == "calc"
-    assert data["cacheback_koryto"]["original_answer"] == "1"
+    assert data.get("gatecat_koryto", {}).get("corrected") is True
+    assert data["gatecat_koryto"]["channel"] == "calc"
+    assert data["gatecat_koryto"]["original_answer"] == "1"
     assert resp.headers.get("X-Koryto-Corrected") == "true"
 
 
@@ -109,8 +109,8 @@ async def test_koryto_block_passes_correct_answer(block_config):
     data = resp.json()
     assert data["choices"][0]["message"]["content"] == "9"
     # confirm (nie corrected)
-    assert data.get("cacheback_koryto", {}).get("verdict") == "confirm"
-    assert data.get("cacheback_koryto", {}).get("corrected") is not True
+    assert data.get("gatecat_koryto", {}).get("verdict") == "confirm"
+    assert data.get("gatecat_koryto", {}).get("corrected") is not True
 
 
 # ---- FLAG: oznacza, nie zmienia ----
@@ -123,8 +123,8 @@ async def test_koryto_flag_annotates_without_changing(flag_config):
     data = resp.json()
     # odpowiedź NIE podmieniona (flag tylko oznacza)
     assert data["choices"][0]["message"]["content"] == "1"
-    assert data["cacheback_koryto"]["verdict"] == "refute"
-    assert data["cacheback_koryto"].get("corrected") is not True
+    assert data["gatecat_koryto"]["verdict"] == "refute"
+    assert data["gatecat_koryto"].get("corrected") is not True
     assert resp.headers.get("X-Koryto-Verdict") == "refute"
 
 
@@ -138,7 +138,7 @@ async def test_koryto_unknown_passes_through(block_config):
     data = resp.json()
     assert data["choices"][0]["message"]["content"] == "Jakaś odpowiedź twórcza"
     # brak metadanych koryta (unknown nie dodaje)
-    assert "cacheback_koryto" not in data or data.get("cacheback_koryto") is None
+    assert "gatecat_koryto" not in data or data.get("gatecat_koryto") is None
 
 
 # ---- off (default): koryto nieaktywne ----
@@ -150,7 +150,7 @@ async def test_koryto_off_by_default(tmp_path):
     resp = await _post(app, content_upstream="1", question="Evaluate: 6 / 2 * 3")
     data = resp.json()
     assert data["choices"][0]["message"]["content"] == "1"   # niezmienione
-    assert "cacheback_koryto" not in data
+    assert "gatecat_koryto" not in data
 
 
 # ---- WEB-ROZJEMCA po rozbieżności miękkiego koryta (lookup stale) ----
@@ -178,7 +178,7 @@ async def _post_web(app, content_upstream, question, web_results):
     async with _Lifespan(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            with _patch("cacheback.branches.brave_search", lambda q, **kw: web_results), \
+            with _patch("gatecat.branches.brave_search", lambda q, **kw: web_results), \
                  patch.object(httpx.AsyncClient, "post", _routed_post):
                 resp = await client.post("/v1/chat/completions", json={
                     "model": "gpt-4o",
@@ -200,7 +200,7 @@ async def test_web_arbiter_rescues_model_when_koryto_stale(tmp_path):
     data = resp.json()
     answer = data["choices"][0]["message"]["content"]
     assert answer == "Rabat"                       # model URATOWANY (nie podmieniony na Casablanca)
-    arb = data.get("cacheback_koryto", {}).get("arbiter", {})
+    arb = data.get("gatecat_koryto", {}).get("arbiter", {})
     assert arb.get("verdict") == "model"
 
 
@@ -216,7 +216,7 @@ async def test_web_arbiter_corrects_when_web_confirms_koryto(tmp_path):
     data = resp.json()
     answer = data["choices"][0]["message"]["content"]
     assert "Paryż" in answer                       # skorygowane web+koryto
-    arb = data.get("cacheback_koryto", {}).get("arbiter", {})
+    arb = data.get("gatecat_koryto", {}).get("arbiter", {})
     assert arb.get("verdict") == "koryto"
 
 
@@ -228,7 +228,7 @@ async def test_stagnation_in_koryto_meta(tmp_path):
     app = create_app(config)
     resp = await _post(app, content_upstream="Warszawa", question="Jaka jest stolica Polski?")
     data = resp.json()
-    assert "stagnation" in data.get("cacheback_koryto", {})
+    assert "stagnation" in data.get("gatecat_koryto", {})
 
 
 # ---- EXEC kanał przez proxy (jawne pole koryto_exec + sandbox) ----
@@ -268,9 +268,9 @@ async def test_exec_explicit_corrects_confident_wrong(tmp_path):
     data = resp.json()
     answer = data["choices"][0]["message"]["content"]
     assert "[2, 2, 2]" in answer                  # PRAWDA z interpretera, nie [0,1,2] modelu
-    assert data["cacheback_koryto"]["channel"] == "exec"
-    assert data["cacheback_koryto"].get("exec_source") == "explicit"
-    assert data["cacheback_koryto"].get("corrected") is True
+    assert data["gatecat_koryto"]["channel"] == "exec"
+    assert data["gatecat_koryto"].get("exec_source") == "explicit"
+    assert data["gatecat_koryto"].get("corrected") is True
 
 
 async def test_exec_explicit_confirms_correct(tmp_path):
@@ -286,11 +286,11 @@ async def test_exec_explicit_confirms_correct(tmp_path):
     )
     data = resp.json()
     assert data["choices"][0]["message"]["content"] == "[2, 2, 2]"
-    assert data["cacheback_koryto"]["verdict"] == "confirm"
+    assert data["gatecat_koryto"]["verdict"] == "confirm"
 
 
 async def test_exec_auto_off_by_default(tmp_path):
-    """Bez CACHEBACK_KORYTO_EXEC_UNSAFE: kod w query (fenced) NIE jest auto-wykonany."""
+    """Bez GATECAT_KORYTO_EXEC_UNSAFE: kod w query (fenced) NIE jest auto-wykonany."""
     config = ProxyConfig(openai_api_key="sk-test", cache_dir=str(tmp_path / "c"),
                          koryto_mode="block")
     assert config.koryto_exec_from_query is False

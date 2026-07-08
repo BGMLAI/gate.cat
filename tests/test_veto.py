@@ -10,7 +10,7 @@ Veto musi być pewne tylko co BLOKUJE, nigdy co przepuszcza.
 """
 import pytest
 
-from cacheback.veto import (
+from gatecat.veto import (
     ActionPolicy, ActionVetoed, VetoGate, VetoDecision, before_action,
 )
 

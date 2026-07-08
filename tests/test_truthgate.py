@@ -1,7 +1,7 @@
 """Smoke tests for TruthGate (gate + branches + agent loop)."""
-from cacheback.gate import Gate
-from cacheback.branches import calculate, ToolBranch, WebBranch, best_web_snippet_score
-from cacheback.agent import GatedLoop, StepResult
+from gatecat.gate import Gate
+from gatecat.branches import calculate, ToolBranch, WebBranch, best_web_snippet_score
+from gatecat.agent import GatedLoop, StepResult
 
 
 # ---- Gate ----

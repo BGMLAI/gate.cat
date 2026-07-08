@@ -1,17 +1,25 @@
 # gate.cat
 
-> **Renamed from `cacheback-ai` → `gate.cat` (2026-07-03).** Same engine, same
-> import name (`import cacheback`), same honest line. `pip install gate.cat`.
-> The old `cacheback-ai` package is deprecated; see `MIGRATION.md`.
->
-> **Install:** `pip install gate.cat` — then a veto in three lines:
+> **Install:** `pip install gate-cat` — then a veto in three lines:
 > ```python
-> from cacheback.integrations import check_action        # deny-list gate
-> from cacheback.integrations.policies import DOGFOOD_DEFAULTS
+> from gatecat.integrations import check_action        # deny-list gate
+> from gatecat.integrations.policies import DOGFOOD_DEFAULTS
 > check_action("agent", "terraform destroy -auto-approve", DOGFOOD_DEFAULTS)  # -> ActionVetoed
 > ```
+> The distribution is `gate.cat` (PyPI normalizes it, so `pip install gate-cat`);
+> the import module is `gatecat`. 0.2.x used `import cacheback` — see `MIGRATION.md`.
 > Honest line, up front: the gate is certain only about what it **blocks**. An
 > action it does not match is *unchecked*, not *safe*.
+>
+> **Scope — persistent environments.** gate.cat guards places where a mistake is
+> *irreversible*: a dev laptop with real data, a deploy pipeline, prod, paid
+> infra. In a throwaway CI/sandbox container (a fresh git checkout that gets
+> discarded) nothing is irreversible, so the gate **disarms itself** and logs a
+> `disarmed` no-op rather than crying wolf. It auto-detects CI markers;
+> `GATECAT_VETO_EPHEMERAL=0` forces it armed anyway. Measured on 14.7k real
+> Claude Code commands *and* a public HF corpus of 8.6k SWE-agent commands, it
+> intervenes on **~0.6% of commands on both** — the deny-list found something
+> structural, not tuned to one user.
 
 **Stop your AI agent before it takes an irreversible action.** `TruthPipeline` gives an honest
 verdict on any answer (confirmed / refuted / uncertain / unchecked) using deterministic checks
@@ -30,12 +38,13 @@ Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine u
 ## Install
 
 ```bash
-pip install gate.cat                  # core
-pip install gate.cat[openai]      # + OpenAI wrapper
-pip install gate.cat[anthropic]   # + Anthropic wrapper
-pip install gate.cat[proxy]       # + proxy server (FastAPI)
-pip install gate.cat[all]         # everything
+pip install gate-cat                  # core
+pip install "gate-cat[openai]"      # + OpenAI wrapper
+pip install "gate-cat[anthropic]"   # + Anthropic wrapper
+pip install "gate-cat[proxy]"       # + proxy server (FastAPI)
+pip install "gate-cat[all]"         # everything
 ```
+> Quote the extras (`"gate-cat[openai]"`) — zsh treats bare `[...]` as a glob.
 
 ## Truth Pipeline (koryto → gate → veto)
 
@@ -44,7 +53,7 @@ compliance pipeline for ANY model (a 3B SLM on a phone and a frontier LLM use
 the same `sample_fn` callback).
 
 ```python
-from cacheback import TruthPipeline, ActionPolicy, ActionVetoed
+from gatecat import TruthPipeline, ActionPolicy, ActionVetoed
 
 pipe = TruthPipeline(
     sample_fn=my_llm,                              # callback(prompt) -> str
@@ -117,7 +126,7 @@ cache, synthesis, upstream — cache semantically similar queries and return ins
 ### OpenAI (drop-in, zero code change)
 
 ```python
-from cacheback import CachedOpenAI
+from gatecat import CachedOpenAI
 
 client = CachedOpenAI(api_key="sk-...")
 
@@ -132,13 +141,13 @@ response2 = client.chat.completions.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "capital of France?"}],
 )
-print(response2.cacheback_hit)  # True
+print(response2.gatecat_hit)  # True
 ```
 
 ### Anthropic
 
 ```python
-from cacheback import CachedAnthropic
+from gatecat import CachedAnthropic
 
 client = CachedAnthropic(api_key="sk-ant-...")
 message = client.messages.create(
@@ -146,7 +155,7 @@ message = client.messages.create(
     max_tokens=1024,
     messages=[{"role": "user", "content": "What is Python?"}],
 )
-print(message.cacheback_hit)  # True on cache hit
+print(message.gatecat_hit)  # True on cache hit
 ```
 
 ### Streaming
@@ -168,7 +177,7 @@ for chunk in stream:
 When a query is similar to cached entries but not an exact match, CAS synthesizes a fresh response from cached knowledge using a cheap LLM — instead of calling the expensive upstream API.
 
 ```python
-from cacheback import CachedOpenAI
+from gatecat import CachedOpenAI
 
 client = CachedOpenAI(
     synthesis_mode="auto",  # enable three-tier response
@@ -181,9 +190,9 @@ response = client.chat.completions.create(
     messages=[{"role": "user", "content": "Explain photosynthesis"}],
 )
 
-if response.cacheback_hit:
+if response.gatecat_hit:
     print("Verbatim cache hit (<10ms, $0.00)")
-elif response.cacheback_synthesized:
+elif response.gatecat_synthesized:
     print("Synthesized from cache (~300ms, ~$0.002)")
 else:
     print("Upstream API call (~500ms, ~$0.03)")
@@ -203,15 +212,15 @@ Validated with 100-question benchmark across 5 domains: **0.892 mean quality rat
 
 ### Proxy Mode (zero code change)
 
-Run cacheback as a standalone proxy server. No SDK integration needed — just change `base_url`:
+Run gate.cat as a standalone proxy server. No SDK integration needed — just change `base_url`:
 
 ```bash
 # Docker (recommended)
-docker run -e OPENAI_API_KEY=sk-... -p 8080:8080 cacheback/proxy
+docker run -e OPENAI_API_KEY=sk-... -p 8080:8080 gatecat/proxy
 
 # Or pip
 pip install gate.cat[proxy]
-cacheback-proxy  # starts on :8080
+gatecat-proxy  # starts on :8080
 ```
 
 Then point your existing code at the proxy:
@@ -224,7 +233,7 @@ response = client.chat.completions.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "What is Python?"}],
 )
-# Cache headers: X-Cacheback-Hit, X-Cacheback-Synthesized
+# Cache headers: X-Gatecat-Hit, X-Gatecat-Synthesized
 ```
 
 Works with any OpenAI-compatible client (curl, LangChain, LiteLLM, etc). Configure via environment variables:
@@ -232,15 +241,15 @@ Works with any OpenAI-compatible client (curl, LangChain, LiteLLM, etc). Configu
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | — | API key for upstream provider |
-| `CACHEBACK_SIMILARITY_THRESHOLD` | `0.92` | Cache hit threshold |
-| `CACHEBACK_SYNTHESIS_MODE` | `off` | `off` / `auto` / `always` |
-| `CACHEBACK_TTL` | `86400` | Cache TTL in seconds |
-| `CACHEBACK_PORT` | `8080` | Server port |
+| `GATECAT_SIMILARITY_THRESHOLD` | `0.92` | Cache hit threshold |
+| `GATECAT_SYNTHESIS_MODE` | `off` | `off` / `auto` / `always` |
+| `GATECAT_TTL` | `86400` | Cache TTL in seconds |
+| `GATECAT_PORT` | `8080` | Server port |
 
 ### Async
 
 ```python
-from cacheback import AsyncCachedOpenAI, AsyncCachedAnthropic
+from gatecat import AsyncCachedOpenAI, AsyncCachedAnthropic
 
 async_client = AsyncCachedOpenAI()
 response = await async_client.chat.completions.create(
@@ -254,7 +263,7 @@ response = await async_client.chat.completions.create(
 Use `SemanticCache` directly for any embedding-based caching:
 
 ```python
-from cacheback import SemanticCache
+from gatecat import SemanticCache
 
 cache = SemanticCache(
     similarity_threshold=0.92,
@@ -290,7 +299,7 @@ client.cache.negative.report_false_positive(entry_id=42)
 ```python
 client = CachedOpenAI(
     # Cache settings
-    cache_dir="~/.cacheback",        # where to store cache data
+    cache_dir="~/.gatecat",        # where to store cache data
     similarity_threshold=0.92,        # cosine similarity for cache hit (0-1)
     negative_threshold=0.85,          # threshold for negative cache
     cache_ttl=86400,                  # TTL in seconds (24h default)
@@ -328,11 +337,11 @@ Query --> Embed (MiniLM-L6, 384-dim) --> Search HNSW index
 ## CLI
 
 ```bash
-cacheback stats          # Show cache statistics
-cacheback entries        # List cached entries
-cacheback evict          # Remove expired entries
-cacheback clear          # Clear all entries
-cacheback lookup "query" # Test a cache lookup
+gatecat-cli stats          # Show cache statistics
+gatecat-cli entries        # List cached entries
+gatecat-cli evict          # Remove expired entries
+gatecat-cli clear          # Clear all entries
+gatecat-cli lookup "query" # Test a cache lookup
 ```
 
 ## Custom Embedders
@@ -340,7 +349,7 @@ cacheback lookup "query" # Test a cache lookup
 Register your own embedder for any modality:
 
 ```python
-from cacheback.embedders import BaseEmbedder, register_embedder
+from gatecat.embedders import BaseEmbedder, register_embedder
 import numpy as np
 
 class MyEmbedder(BaseEmbedder):
@@ -359,7 +368,7 @@ Built-in embedders: `minilm` (text), `clip` (image, coming soon), `clap` (voice,
 
 ## Comparison
 
-| Feature | cacheback | GPTCache | LiteLLM | Redis LangCache |
+| Feature | gate.cat | GPTCache | LiteLLM | Redis LangCache |
 |---------|-----------|----------|---------|-----------------|
 | Semantic similarity | Yes | Yes | Exact only | Yes |
 | Cache-Augmented Synthesis | Yes | No | No | No |

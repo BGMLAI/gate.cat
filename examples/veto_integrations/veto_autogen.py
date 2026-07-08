@@ -5,14 +5,14 @@ an example and build an adapter only if someone asks (issue-driven). The
 $106k runaway (autogen#7770) is exactly the class of action a veto gate
 exists for.
 
-Requires: pip install cacheback-ai autogen-agentchat  (engine >= 0.3.0)
+Requires: pip install gate.cat autogen-agentchat  (engine >= 0.3.0)
 
 No AutoGen-specific glue is needed: AutoGen tools are plain callables, so
 the generic ``guard_callable`` is enough.
 """
 
-from cacheback.integrations import ActionVetoed, guard_callable  # framework-agnostic
-from cacheback.integrations.policies import CLOUD_DESTROY, PAYMENTS
+from gatecat.integrations import ActionVetoed, guard_callable  # framework-agnostic
+from gatecat.integrations.policies import CLOUD_DESTROY, PAYMENTS
 
 
 def provision(cmd: str) -> str:

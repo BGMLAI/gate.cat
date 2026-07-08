@@ -5,8 +5,8 @@ fail-closed compliance (guard) + audit trail + stagnacja koryta.
 """
 import pytest
 
-from cacheback import ActionPolicy, ActionVetoed, TruthPipeline
-from cacheback.koryto import FactBase, Koryto, KorytoVerdict
+from gatecat import ActionPolicy, ActionVetoed, TruthPipeline
+from gatecat.koryto import FactBase, Koryto, KorytoVerdict
 
 
 # ----------------------------------------------------------------------
@@ -372,7 +372,7 @@ def test_answer_none_is_uncertain_not_refuted():
 
 def test_atoms_match_no_substring_false_confirm():
     """P1: '19' NIE zawiera atomu '9' (substring-fallback dawał confirmed+hard)."""
-    from cacheback.koryto import atoms_match
+    from gatecat.koryto import atoms_match
     assert not atoms_match("19", "9")
     assert not atoms_match("90", "9")
     assert not atoms_match("comparison", "Paris")
@@ -504,7 +504,7 @@ def test_compliance_report_thread_safe_with_concurrent_evaluate():
 def test_atoms_match_diacritics_normalized():
     """Benchmark 50q 2026-07-02: 'Brasília' (poprawna, z diakrytykiem) dawała
     soft-refute vs atom 'Brasilia' — _norm musi zdejmować diakrytyki."""
-    from cacheback.koryto import atoms_match
+    from gatecat.koryto import atoms_match
     assert atoms_match("Brasília", "Brasilia")
     assert atoms_match("Brasilia", "Brasília")
     assert atoms_match("Kraków is lovely", "Krakow")

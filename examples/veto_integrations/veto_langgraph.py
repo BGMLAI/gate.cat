@@ -1,16 +1,16 @@
 """A3 example: veto gate in front of a LangGraph tool node, routed into
 human-in-the-loop on block (langgraph#7895 class of problems).
 
-Requires: pip install cacheback-ai[langgraph]   (engine >= 0.3.0 + LangGraph)
+Requires: pip install gate.cat[langgraph]   (engine >= 0.3.0 + LangGraph)
 
 ``guard_tools`` wraps each tool so the gate runs before execution.
 ``ActionVetoed`` is caught in the node and turned into a LangGraph
 ``interrupt`` - a human approves or rejects, the graph resumes.
 """
 
-from cacheback.integrations import ActionVetoed
-from cacheback.integrations.langgraph import guard_tools
-from cacheback.integrations.policies import CLOUD_DESTROY, TERRAFORM_PROD
+from gatecat.integrations import ActionVetoed
+from gatecat.integrations.langgraph import guard_tools
+from gatecat.integrations.policies import CLOUD_DESTROY, TERRAFORM_PROD
 
 
 def deploy(cmd: str) -> str:

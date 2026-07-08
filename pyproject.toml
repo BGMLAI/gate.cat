@@ -1,7 +1,7 @@
 [project]
 name = "gate.cat"
-version = "0.2.0"
-description = "Block irreversible AI-agent actions before they run — deterministic action-veto (policy + koryto interpreter + human-in-the-loop), built for cheap/local model agents. Formerly cacheback-ai."
+version = "0.3.0"
+description = "Block irreversible AI-agent actions before they run — deterministic action-veto (policy + koryto interpreter + human-in-the-loop), built for cheap/local model agents."
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
@@ -19,30 +19,64 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = [
+# CORE = the action-veto guardrail: pure stdlib, ZERO third-party deps. A
+# `pip install gate.cat` gives a working veto with no numpy/ONNX/hnswlib - so it
+# installs in seconds and never OOMs/hangs importing an ML stack it doesn't use.
+# The semantic cache (numpy/hnswlib/onnx) is an opt-in extra, see [cache].
+dependencies = []
+
+[project.optional-dependencies]
+# semantic cache + embedders (the only heavy stack; opt-in). `__init__.py`'s
+# lazy loader raises a clear "install gate.cat[cache]" error if a cache symbol
+# is used without these.
+cache = [
     "numpy>=1.24.0",
     "hnswlib>=0.8.0",
     "onnxruntime>=1.17.0",
     "huggingface-hub>=0.20.0",
     "tokenizers>=0.15.0",
 ]
-
-[project.optional-dependencies]
+# optional ML escalation for the INGRESS guard (input_guard): MiniLM ONNX embed
+# + a tiny logistic head lifts prompt-injection recall ~55%->~88%. Opt-in AND
+# gated at runtime by GATECAT_ENABLE_ML_GUARD=1 (higher recall, higher FPR).
+# The regex floor works with zero deps; this only adds the learned layer.
+ml = [
+    "numpy>=1.24.0",
+    "onnxruntime>=1.17.0",
+    "huggingface-hub>=0.20.0",
+    "tokenizers>=0.15.0",
+]
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.20.0"]
 image = ["Pillow>=10.0.0"]
 voice = ["soundfile>=0.12.0"]
 proxy = ["fastapi>=0.110.0", "uvicorn[standard]>=0.27.0", "httpx>=0.27.0", "pydantic>=2.0.0"]
-# framework adapters (cacheback.integrations) — lazy-imported, never pulled by core
+# framework adapters (gatecat.integrations) — lazy-imported, never pulled by core
 crewai = ["crewai>=0.80,<2"]
 langgraph = ["langgraph>=0.2,<2"]
-all = ["openai>=1.0.0", "anthropic>=0.20.0", "Pillow>=10.0.0", "soundfile>=0.12.0"]
-dev = ["pytest>=8.0.0", "pytest-asyncio>=0.24.0", "httpx>=0.27.0"]
+all = [
+    "numpy>=1.24.0", "hnswlib>=0.8.0", "onnxruntime>=1.17.0",
+    "huggingface-hub>=0.20.0", "tokenizers>=0.15.0",
+    "openai>=1.0.0", "anthropic>=0.20.0", "Pillow>=10.0.0", "soundfile>=0.12.0",
+]
+dev = ["pytest>=8.0.0", "pytest-asyncio>=0.24.0", "pytest-timeout>=2.3.0",
+       "httpx>=0.27.0",
+       "numpy>=1.24.0", "hnswlib>=0.8.0", "onnxruntime>=1.17.0",
+       "huggingface-hub>=0.20.0", "tokenizers>=0.15.0"]
 
 [project.scripts]
-cacheback = "cacheback.cli:main"
-cacheback-proxy = "cacheback.proxy.__main__:main"
-truthgate-audit = "cacheback.audit:main"
+# the user-facing guardrail dashboard (zero ML deps): shows that gate.cat is
+# on duty - watched N, stopped M, recent events, `why <cmd>` explains a verdict.
+"gate.cat" = "gatecat.integrations.dashboard:main"
+gatecat = "gatecat.integrations.dashboard:main"
+# F8 (eng review E1): ship the Claude Code veto hook as a console script so
+# `pip install gate.cat` delivers it — no repo checkout, no sys.path hack.
+gatecat-hook = "gatecat.hooks.claude_code:_entry"
+# F3 (D1=A purge): the old `cacheback` / `cacheback-proxy` script names are
+# dropped, not repointed — no `cacheback` command survives the rename.
+gatecat-cli = "gatecat.cli:main"
+gatecat-proxy = "gatecat.proxy.__main__:main"
+truthgate-audit = "gatecat.audit:main"
 
 [project.urls]
 Homepage = "https://github.com/BGMLAI/gate.cat"
@@ -54,8 +88,45 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["cacheback"]
+packages = ["gatecat"]
+# ship the tiny (~2.5KB) trained injection head so the optional ML guard works
+# out of the box once the [ml] extra's runtime deps are installed.
+artifacts = ["gatecat/integrations/models/*.npz"]
+
+# Explicit sdist allowlist. Without this, hatchling's default sdist ships the
+# whole dir - including REJESTR_PRAWD.md, which catalogs the guardrail's OWN
+# known bypasses (a gift to an attacker) plus internal ops notes. A security
+# product must not publish its own weak-points map. Only ship what a user needs.
+[tool.hatch.build.targets.sdist]
+include = [
+  "gatecat/**/*.py",
+  "gatecat/py.typed",
+  # ship the trained injection head in the sdist too, else `pip install
+  # gate.cat[ml]` built from source silently falls back to the regex floor
+  # (the wheel already carries it via [tool.hatch.build.targets.wheel].artifacts).
+  "gatecat/integrations/models/*.npz",
+  "README.md",
+  "LICENSE",
+  "pyproject.toml",
+]
+exclude = [
+  "REJESTR_PRAWD.md",
+  "GOTCHAS.md",
+  "*.jsonl",
+  "benchmarks/**",
+  "tests/**",
+  "scripts/**",
+  "examples/**",
+  "**/*_internal*",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# A hung test must FAIL LOUDLY, never wedge the whole suite (fail-closed for CI).
+# Known hazard: `import onnxruntime` can block in a WMI probe on some Windows /
+# CPython 3.13 hosts — a per-test timeout turns that into a clean failure that
+# names the culprit instead of an indefinite hang. `thread` method works on
+# Windows (signal-based alarm does not).
+timeout = 90
+timeout_method = "thread"

@@ -1,5 +1,5 @@
 """Testy wyłuskiwania bloków kodu (dla koryto-exec z ruchu)."""
-from cacheback.codeblocks import extract_code_blocks, to_exec_statements, CodeBlock
+from gatecat.codeblocks import extract_code_blocks, to_exec_statements, CodeBlock
 
 
 # ---- extract_code_blocks ----

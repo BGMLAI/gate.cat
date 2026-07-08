@@ -7,9 +7,9 @@ NIE-wstrzykiwany. Te testy sa formalnym dowodem ze koryto progu (WEB_SNIPPET_MIN
 dla retrieval_score, WEB_OVERLAP_MIN dla token-overlap) trzyma rzeke szumu w ryzach.
 
 Spojny z reszta tests/: sync, mock search_fn (zero sieci), ASCII-only, realny
-import z cacheback.branches. asyncio_mode=auto w pyproject (tu nie potrzebne).
+import z gatecat.branches. asyncio_mode=auto w pyproject (tu nie potrzebne).
 """
-from cacheback.branches import (
+from gatecat.branches import (
     best_web_snippet_score,
     WebBranch,
     WEB_SNIPPET_MIN,

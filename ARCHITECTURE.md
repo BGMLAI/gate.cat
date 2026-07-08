@@ -1,15 +1,15 @@
-# cacheback — Architecture
+# gatecat — Architecture
 
-> **Pakiet:** `cacheback-ai` v0.2.0 · Apache-2.0 · Python ≥3.10
-> **Root:** `packages/cacheback/cacheback/`
+> **Pakiet:** `gate.cat` v0.2.0 · Apache-2.0 · Python ≥3.10
+> **Root:** `packages/gatecat/gatecat/`
 > **Dla:** deweloperów chcących zrozumieć budowę i rozszerzyć kod.
-> Cytaty `file:line` względem `packages/cacheback/cacheback/` (chyba że podano `src/` = aplikacja iors).
+> Cytaty `file:line` względem `packages/gatecat/gatecat/` (chyba że podano `src/` = aplikacja iors).
 
 ---
 
 ## 1. Przegląd
 
-cacheback to **model-agnostyczny pip-package** łączący dwa rozłączne stosy:
+gatecat to **model-agnostyczny pip-package** łączący dwa rozłączne stosy:
 
 1. **Stos cache** — semantyczny cache Q&A (embedder ONNX → HNSW index → SQLite store) z opcjonalną
    syntezą odpowiedzi z sąsiadów (CAS).
@@ -24,7 +24,7 @@ obecny; wszystko inne to opcjonalne `extras` (`pyproject.toml:30-37`).
 
 Punkty wejścia użytkownika:
 - **In-process wrappery** — `CachedOpenAI` / `CachedAnthropic` (drop-in dla SDK dostawcy).
-- **Proxy** — FastAPI serwer OpenAI-compatible (`python -m cacheback.proxy`), spina oba stosy.
+- **Proxy** — FastAPI serwer OpenAI-compatible (`python -m gatecat.proxy`), spina oba stosy.
 - **Biblioteka** — `SemanticCache`, `Koryto`, `Gate`, `VetoGate`, `GatedLoop` używane bezpośrednio.
 
 ---
@@ -72,7 +72,7 @@ Zależności jednokierunkowe:
 created_at, expires_at, hit_count, last_hit_at, metadata`. Indeksy na `expires_at`, `modality`.
 `embedding` = `np.float32.tobytes()` (`store.py:177`), odczyt `np.frombuffer(...,dtype=float32)` z
 guardem wymiaru (`store.py:251-264`). PRAGMA: `journal_mode=WAL, synchronous=NORMAL,
-busy_timeout=5000` (`store.py:94-96`). Migracje wersjonowane przez `cacheback_meta`
+busy_timeout=5000` (`store.py:94-96`). Migracje wersjonowane przez `gatecat_meta`
 (`SCHEMA_VERSION=1`, lista `MIGRATIONS` pusta). **Fail-safe:** korupcja DB → log + `os.remove` +
 recreate (`store.py:100-120`). `evict_lru` sortuje `last_hit_at ASC, created_at ASC`. Thread-safe
 przez `RLock`, `check_same_thread=False`.
@@ -95,7 +95,7 @@ współdzielony mel/STFT/resample pure-numpy.
 max_entries=100k, ttl=24h` (konstruktor `cache.py:45-48`). Publiczne:
 - `lookup(query) → Optional[str]`: embed → **negative-check first** → positive search k=1 →
   `store.get` → `record_hit`. Krótkie query (<5 zn.) pominięte. **Fail-closed bezpieczeństwo /
-  fail-open dostępność**: `CachebackBlocked` propaguje (negative hit z policy `raise`), każdy inny
+  fail-open dostępność**: `GatecatBlocked` propaguje (negative hit z policy `raise`), każdy inny
   wyjątek → passthrough `None`.
 - `lookup_for_synthesis(query, threshold=0.80, top_k=5) → list[(cache_id, sim)]` — dla CAS.
 - `populate(query, response, model, tokens) → bool`: skip jeśli `len<20` (`MIN_RESPONSE_LENGTH`);
@@ -137,7 +137,7 @@ kolejno: **exec** (interpreter przez `koryto_sandbox`, hard), **calc** (jawne wy
 **lookup** (FactBase, soft → `needs_arbiter`). Werdykt: `confirm|refute|unknown`, pola
 `hard/needs_arbiter/channel/truth`. `atoms_match` = word-boundary + substring fallback.
 **`enable_exec=True` domyślnie** w SDK (`koryto.py:270`); node-exec osobno OFF
-(`CACHEBACK_KORYTO_EXEC_NODE_UNSAFE`). (W iors-wpięciu exec wyłączony — patrz §9.)
+(`GATECAT_KORYTO_EXEC_NODE_UNSAFE`). (W iors-wpięciu exec wyłączony — patrz §9.)
 
 **`koryto_sandbox.py` — szczelne wykonanie.** Mury (fail-closed): (A) `ast_gate` allow-list
 `_ALLOWED_NODES`, `Attribute` zakazany bezwarunkowo, `Call` tylko do `SAFE_BUILTINS`+lokalne,
@@ -184,8 +184,8 @@ rozdział `uncertain_wrong` vs `confident_wrong`. `make_backend` (ollama / opena
 | `proxy/models.py` | pydantic OpenAI-compatible | `ChatCompletion{Request,Response,...}` |
 
 `openai.py`: `__getattr__` deleguje do oryginalnego klienta; podmieniony tylko
-`chat.completions.create`. `_CachedResponse` udaje strukturę OpenAI z `cacheback_hit /
-cacheback_synthesized`. Import `openai` lazy → `ImportError` z instrukcją `[openai]`.
+`chat.completions.create`. `_CachedResponse` udaje strukturę OpenAI z `gatecat_hit /
+gatecat_synthesized`. Import `openai` lazy → `ImportError` z instrukcją `[openai]`.
 `_streaming.StreamBuffer.feed` rozumie OBA formaty (OpenAI `delta.content` / Anthropic
 `content_block_delta`).
 
@@ -199,7 +199,7 @@ cacheback_synthesized`. Import `openai` lazy → `ImportError` z instrukcją `[o
 lookup(query):
   len<5 ──────────────────────────────► None (skip)
   embed(query)
-  negative.check_embedding(vec) ──hit──► policy: skip→None | raise→CachebackBlocked
+  negative.check_embedding(vec) ──hit──► policy: skip→None | raise→GatecatBlocked
   index.search(vec, k=1)
   sim ≥ threshold(0.92) ──tak──► store.get(cache_id) → record_hit → response_text
                         ──nie──► None
@@ -239,12 +239,12 @@ Tryby z `ProxyConfig`:
 
 Wszystkie domyślnie `off`/`off`/`off` → zero zmian zachowania. Gate i koryto inicjalizowane w
 `lifespan`. Streaming `_handle_stream` (HIT replay / synteza replay / miss = `_proxy_stream`
-buffer+cache). Metadane: `cacheback_hit/synthesized/gate/koryto/abstained` + nagłówki
-`X-Cacheback-* / X-Truthgate-* / X-Koryto-*`.
+buffer+cache). Metadane: `gatecat_hit/synthesized/gate/koryto/abstained` + nagłówki
+`X-Gatecat-* / X-Truthgate-* / X-Koryto-*`.
 
 **Bezpieczeństwo proxy:** SSRF-guard `validate_upstream_url` (https-only + blok prywatnych/metadata
 IP, `config.py:33-57`); `build_upstream_headers` domyślnie NIE przekazuje klienckiego `Authorization`
-(wymaga `CACHEBACK_ALLOW_CLIENT_AUTH=1`); generyczne błędy do klienta (detal tylko do logu).
+(wymaga `GATECAT_ALLOW_CLIENT_AUTH=1`); generyczne błędy do klienta (detal tylko do logu).
 Truth-forgery guard: exec z `source="auto"` (kod z query usera) NIE koryguje twardo, `truth`
 wymazany z meta (`app.py:342`).
 
@@ -297,10 +297,10 @@ CREATE TABLE cache_entries (
   metadata     TEXT                  -- JSON
 );
 -- + negative_entries (negative.py): te same kolumny + reason/category/severity/false_positives
--- + cacheback_meta (schema_version)
+-- + gatecat_meta (schema_version)
 ```
 
-PRAGMA: `WAL`, `synchronous=NORMAL`, `busy_timeout=5000`. Migracje przez `cacheback_meta`
+PRAGMA: `WAL`, `synchronous=NORMAL`, `busy_timeout=5000`. Migracje przez `gatecat_meta`
 (`SCHEMA_VERSION=1`).
 
 ### 5b. VectorIndex (`index.py`)
@@ -330,7 +330,7 @@ index jest dim-agnostyczny, więc nowy embedder o innym wymiarze działa bez zmi
 | `VetoDecision` | `veto.py` | allowed, mur, reason, verdict |
 | `CodeBlock` | `codeblocks.py` | lang, code, source |
 | `AuditReport` | `audit.py` | base_accuracy, auc, uncertain_wrong, confident_wrong, recall_on_errors |
-| pydantic `ChatCompletion{Request,Response,...}` | `proxy/models.py` | OpenAI-compatible; + `koryto_exec`, + `cacheback_hit/synthesized` |
+| pydantic `ChatCompletion{Request,Response,...}` | `proxy/models.py` | OpenAI-compatible; + `koryto_exec`, + `gatecat_hit/synthesized` |
 
 > `DeviceEntry` NIE istnieje w tym pakiecie — to byłby orchestrator floty (aplikacja iors), nie SDK.
 
@@ -342,7 +342,7 @@ index jest dim-agnostyczny, więc nowy embedder o innym wymiarze działa bez zmi
 
 ```python
 import numpy as np
-from cacheback.embedders import BaseEmbedder, register_embedder
+from gatecat.embedders import BaseEmbedder, register_embedder
 
 class MyEmbedder(BaseEmbedder):
     dim = 256
@@ -358,7 +358,7 @@ register_embedder("myembed", MyEmbedder)              # albo w _register_builtin
 ### 6b. Nowy tool (gałąź 4)
 
 ```python
-from cacheback.branches import ToolBranch
+from gatecat.branches import ToolBranch
 tb = ToolBranch()
 tb.add("currency", "Konwersja walut", lambda q: convert(q))   # branches.py:208
 # routing przez heurystykę maybe_run — rozszerz jeśli nie-matematyczny
@@ -367,8 +367,8 @@ tb.add("currency", "Konwersja walut", lambda q: convert(q))   # branches.py:208
 ### 6c. Nowy lookup-source (kanał lookup koryta)
 
 ```python
-from cacheback.koryto_sources import multi_source
-from cacheback.koryto import FactBase, Koryto
+from gatecat.koryto_sources import multi_source
+from gatecat.koryto import FactBase, Koryto
 
 def my_source(question: str) -> str | None:
     hit = my_kb.search(question)
@@ -378,7 +378,7 @@ def my_source(question: str) -> str | None:
 
 fb = FactBase(lookup_fn=multi_source([my_source, http_cache_source(url)]))
 koryto = Koryto(fact_base=fb)
-# proxy: CACHEBACK_KORYTO_CACHE_URL / CACHEBACK_KORYTO_CHROMA_URL
+# proxy: GATECAT_KORYTO_CACHE_URL / GATECAT_KORYTO_CHROMA_URL
 ```
 
 ### 6d. Nowy kanał koryta (poza exec/calc/lookup)
@@ -405,29 +405,29 @@ brute-force (działa, wolniej).
 | `all` / `dev` | wszystko / pytest+httpx | — |
 
 Wzorzec: import lazy w środku funkcji/property + `try/except ImportError` → czytelny błąd z
-instrukcją extra. Brak extras NIE psuje importu `cacheback` (`__init__.py` używa `__getattr__`).
+instrukcją extra. Brak extras NIE psuje importu `gatecat` (`__init__.py` używa `__getattr__`).
 
-**Entry-points (`pyproject.toml:39-42`):** `cacheback` (CLI stats/clear/lookup), `cacheback-proxy`
+**Entry-points (`pyproject.toml:39-42`):** `gatecat` (CLI stats/clear/lookup), `gatecat-proxy`
 (serwer), `truthgate-audit` (Gate Report).
 
 ### 7b. Zmienne środowiskowe — proxy (`proxy/config.py`, `from_env()`)
 
 Upstream/serwer: `OPENAI_API_KEY`(""), `OPENAI_BASE_URL`(api.openai.com/v1; SSRF-guard),
-`CACHEBACK_ALLOW_INSECURE_UPSTREAM`(0), `CACHEBACK_ALLOW_CLIENT_AUTH`(0),
-`CACHEBACK_HOST`(0.0.0.0), `CACHEBACK_PORT`(8080), `CACHEBACK_LOG_LEVEL`(info).
-Cache: `CACHEBACK_CACHE_DIR`(""), `CACHEBACK_SIMILARITY_THRESHOLD`(0.92),
-`CACHEBACK_NEGATIVE_THRESHOLD`(0.85), `CACHEBACK_MAX_ENTRIES`(100000), `CACHEBACK_TTL`(86400),
-`CACHEBACK_ON_NEGATIVE_HIT`(skip).
-Synthesis (CAS): `CACHEBACK_SYNTHESIS_MODE`(off; **off|auto|always**),
-`CACHEBACK_SYNTHESIS_MODEL`(google/gemini-2.0-flash-lite-001), `..._BASE_URL`(""), `..._API_KEY`(""),
-`CACHEBACK_SYNTHESIS_THRESHOLD`(0.80), `CACHEBACK_SYNTHESIS_TOP_K`(5).
-TruthGate (off|flag|block): `CACHEBACK_GATE_MODE`(off), `..._N_SAMPLES`(5), `..._THRESHOLD`(0.30),
+`GATECAT_ALLOW_INSECURE_UPSTREAM`(0), `GATECAT_ALLOW_CLIENT_AUTH`(0),
+`GATECAT_HOST`(0.0.0.0), `GATECAT_PORT`(8080), `GATECAT_LOG_LEVEL`(info).
+Cache: `GATECAT_CACHE_DIR`(""), `GATECAT_SIMILARITY_THRESHOLD`(0.92),
+`GATECAT_NEGATIVE_THRESHOLD`(0.85), `GATECAT_MAX_ENTRIES`(100000), `GATECAT_TTL`(86400),
+`GATECAT_ON_NEGATIVE_HIT`(skip).
+Synthesis (CAS): `GATECAT_SYNTHESIS_MODE`(off; **off|auto|always**),
+`GATECAT_SYNTHESIS_MODEL`(google/gemini-2.0-flash-lite-001), `..._BASE_URL`(""), `..._API_KEY`(""),
+`GATECAT_SYNTHESIS_THRESHOLD`(0.80), `GATECAT_SYNTHESIS_TOP_K`(5).
+TruthGate (off|flag|block): `GATECAT_GATE_MODE`(off), `..._N_SAMPLES`(5), `..._THRESHOLD`(0.30),
 `..._SEMANTIC`(1).
-Gałęzie: `CACHEBACK_WEB_ENABLED`(0), `BRAVE_API_KEY`(""), `CACHEBACK_TOOLS_ENABLED`(1).
-KORYTO (off|flag|block): `CACHEBACK_KORYTO_MODE`(off), `..._FACT_BASE`(""), `..._CACHE_URL`(""),
+Gałęzie: `GATECAT_WEB_ENABLED`(0), `BRAVE_API_KEY`(""), `GATECAT_TOOLS_ENABLED`(1).
+KORYTO (off|flag|block): `GATECAT_KORYTO_MODE`(off), `..._FACT_BASE`(""), `..._CACHE_URL`(""),
 `..._CACHE_KEY`(""), `..._CHROMA_URL`(""), `..._CHROMA_COLLECTION`(""), `..._LOOKUP_MIN_SIM`(0.82).
-Stagnacja: `CACHEBACK_STAGNATION_WINDOW`(**5**), `..._SOFT_STREAK`(3).
-Exec sandbox: `CACHEBACK_KORYTO_EXEC_UNSAFE`(0; auto-wyłuskanie kodu z ruchu OFF),
+Stagnacja: `GATECAT_STAGNATION_WINDOW`(**5**), `..._SOFT_STREAK`(3).
+Exec sandbox: `GATECAT_KORYTO_EXEC_UNSAFE`(0; auto-wyłuskanie kodu z ruchu OFF),
 `..._EXEC_TIMEOUT`(5.0), `..._EXEC_MEM_MB`(512).
 
 ---
@@ -442,8 +442,8 @@ realnych API/modeli.
 ```bash
 pip install -e ".[dev]"
 pytest tests/                 # Windows: --basetemp=F:/tmp gdy C: pełny
-cacheback stats               # CLI
-cacheback-proxy               # = python -m cacheback.proxy (0.0.0.0:8080)
+gatecat stats               # CLI
+gatecat-proxy               # = python -m gatecat.proxy (0.0.0.0:8080)
 ```
 
 **20 plików, 372 testy** (`pytest --collect-only`; 369 pass + 3 skip). Rozszerzono o warstwę
@@ -469,30 +469,30 @@ action-veto i dowody jakości (2026-06-27): `test_veto_bypass_e2e.py` (22 advers
 trusted-publish (OIDC).
 
 **Deployment (proxy):** `Dockerfile` python:3.12-slim, `pip install ".[proxy]"`,
-`CACHEBACK_CACHE_DIR=/data/cacheback`, EXPOSE 8080, HEALTHCHECK `/health`,
-`CMD python -m cacheback.proxy`. `docker-compose.yml` — port 8080, wolumen `cacheback-data`,
+`GATECAT_CACHE_DIR=/data/gatecat`, EXPOSE 8080, HEALTHCHECK `/health`,
+`CMD python -m gatecat.proxy`. `docker-compose.yml` — port 8080, wolumen `gatecat-data`,
 `restart: unless-stopped`.
 
 ---
 
-## 9. Rozróżnienie: SDK cacheback vs aplikacja iors/bgml
+## 9. Rozróżnienie: SDK gatecat vs aplikacja iors/bgml
 
 **To są dwie różne rzeczy. Nie mieszaj.**
 
-- **SDK `cacheback`** (ten pakiet, `pip install cacheback-ai`): silnik veto/koryto/cache,
+- **SDK `gatecat`** (ten pakiet, `pip install gate.cat`): silnik veto/koryto/cache,
   model-agnostyczny, **BEZ agent-frameworka i pętli ReAct**. Proxy robi **passthrough** gdy w żądaniu
   są `tools` (`proxy/app.py:254` → `if req.tools or not query: return _forward_upstream(...)`) —
   czyli proxy NIE wykonuje tool-callingu, działa tylko jako warstwa veto wokół TWOICH narzędzi.
   Jedyne wbudowane „narzędzie" to `calculate` (AST) w `branches.py`.
 
-- **Aplikacja iors** (`src/`, serwis FastAPI na VPS `204.168.129.200`): **importuje cacheback lazy**
+- **Aplikacja iors** (`src/`, serwis FastAPI na VPS `204.168.129.200`): **importuje gatecat lazy**
   jako veto-engine i osobno ma **własny, pełny ReAct stack** w `src/tools/`
   (`agent_entry.py → router.py → grammars.py(GBNF) → react_agent.py`, `strategy=tool_calling_react`,
   aktywowany przez `settings.bgml_react_tool_agent_enabled`). **ReAct należy do iors, nie do SDK.**
 
-Jak iors wpina cacheback (dwa niezależne punkty):
+Jak iors wpina gatecat (dwa niezależne punkty):
 
-| Aspekt | SDK `cacheback` (pip) | Aplikacja iors (VPS, `src/`) |
+| Aspekt | SDK `gatecat` (pip) | Aplikacja iors (VPS, `src/`) |
 |---|---|---|
 | Tool-calling / ReAct | ❌ pass-through na `req.tools`; tylko `calculate` | ✅ pełny ReAct+GBNF (`src/tools/`) |
 | Veto w czacie | proxy Tier 3.5 (`koryto.verify` w kaskadzie) | `_veto_finalize` w fleet/orch synthesis (`src/api/iors_chat.py:2951`), **fail-OPEN** |
@@ -501,7 +501,7 @@ Jak iors wpina cacheback (dwa niezależne punkty):
 | `synthesis_mode` | `off/auto/always` | n/d |
 | Stagnation window | default **5** | default **20** (`iors_veto_stagnation_window`) |
 | Exec channel | `enable_exec=True` | `iors_veto_koryto_exec=False` |
-| Tryb veto | `CACHEBACK_KORYTO_MODE` / `_GATE_MODE` | `IORS_VETO_MODE` (env > settings; off\|flag\|block) |
+| Tryb veto | `GATECAT_KORYTO_MODE` / `_GATE_MODE` | `IORS_VETO_MODE` (env > settings; off\|flag\|block) |
 | Orchestrator timeout | n/d | stała `IORS_ORCHESTRATOR_TIMEOUT_S=60.0` (`src/api/iors_chat.py:77`) ⚠️ komentarz w kodzie mówi „120s" — **rozbieżność do rozstrzygnięcia** (60s < p95~90s = możliwy przedwczesny cancel) |
 
 **Kluczowa różnica fail-mode:** w iors **czat = veto fail-OPEN** (nie zatrzymuje żywego serwisu;
@@ -510,6 +510,6 @@ Jak iors wpina cacheback (dwa niezależne punkty):
 ze skutkiem ubocznym zanim się wykona; błąd bramki → veto). Oba czerpią mode z
 `IORS_VETO_MODE`/`iors_veto_mode`, ale to niezależne punkty wpięcia.
 
-iors importuje moduły punktowo (`importlib.import_module("cacheback.koryto")`, nie `from cacheback
+iors importuje moduły punktowo (`importlib.import_module("gatecat.koryto")`, nie `from gatecat
 import *` — top-level `__init__` ciągnąłby embedder na hot-path). `mode=="off"` → zero importu
-cacheback. ImportError/crash → trwale off (fail-OPEN, bez retry-storm).
+gatecat. ImportError/crash → trwale off (fail-OPEN, bez retry-storm).

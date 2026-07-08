@@ -1,7 +1,7 @@
 """A2 example: veto gate on a crewAI payment tool (duplicate-payment class,
 crewAI#5802).
 
-Requires: pip install cacheback-ai[crewai]   (engine >= 0.3.0 + crewAI)
+Requires: pip install gate.cat[crewai]   (engine >= 0.3.0 + crewAI)
 
 The crew below has one tool that can move money. Wrapped in the veto gate
 with ``PAYMENTS(max_amount=100)``, any payment-shaped call is blocked and
@@ -10,9 +10,9 @@ twice. The gate is only certain about what it BLOCKS; calls it does not
 match are unchecked, not "verified safe".
 """
 
-from cacheback.integrations import ActionVetoed
-from cacheback.integrations.crewai import wrap_tool
-from cacheback.integrations.policies import PAYMENTS
+from gatecat.integrations import ActionVetoed
+from gatecat.integrations.crewai import wrap_tool
+from gatecat.integrations.policies import PAYMENTS
 
 
 def main() -> None:

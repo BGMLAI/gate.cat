@@ -1,4 +1,5 @@
 {
+  "_comment": "Register the gate.cat veto as a Claude Code PreToolUse hook. After `pip install gate.cat` the `gatecat-hook` console script is on PATH — no absolute paths, no python interpreter to guess. Copy the PreToolUse block into your .claude/settings.json.",
   "hooks": {
     "PreToolUse": [
       {
@@ -6,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python /abs/path/to/packages/cacheback-integrations/examples/claude_code_hook/veto_hook.py"
+            "command": "gatecat-hook"
           }
         ]
       }

@@ -1,7 +1,7 @@
 """Test BidirectionalGate — pełna pętla dostawca+strażnik na wspólnym silniku (council TOP-3)."""
-from cacheback.bidirectional import BidirectionalGate, Provider, Guardian
-from cacheback.veto import ActionPolicy
-from cacheback.provider import Verified, Hint
+from gatecat.bidirectional import BidirectionalGate, Provider, Guardian
+from gatecat.veto import ActionPolicy
+from gatecat.provider import Verified, Hint
 
 
 def test_provider_gives_hard_truth_with_proof():
@@ -54,8 +54,8 @@ def test_full_loop_provide_then_veto():
 
 
 def test_bidirectional_exports():
-    """Eksport z cacheback."""
-    import cacheback
-    assert hasattr(cacheback, "BidirectionalGate")
-    assert hasattr(cacheback, "Provider")
-    assert hasattr(cacheback, "Guardian")
+    """Eksport z gatecat."""
+    import gatecat
+    assert hasattr(gatecat, "BidirectionalGate")
+    assert hasattr(gatecat, "Provider")
+    assert hasattr(gatecat, "Guardian")

@@ -1,76 +1,57 @@
-# cacheback-ai → gate.cat: one product, one name
+# Migration guide
 
-The veto engine ships under **`gate.cat`**. `cacheback-ai` was the earlier name
-for the same project and is being retired. This file is the canonical migration
-note so nobody hits two PyPI packages in the first minute of due diligence and
-assumes the project is abandoned or forked.
+## 0.2.x → 0.3.0 (import rename)
 
-Rule (VETO_PIPELINE_PLAN.md, rada#2): **one name, one package, `pip install` →
-working veto in three lines.** Two live names without an explicit deprecation is
-chaos — this note removes it.
+0.3.0 renames the import module from `cacheback` to `gatecat`. The distribution
+name is unchanged (`gate.cat` on PyPI, installed as `pip install gate-cat`); only
+the top-level Python module changed. There is **no compatibility shim** for the
+module — the old top-level name `cacheback` collided with an unrelated PyPI
+package of the same name, which is a silent-shadowing risk in a security tool.
 
----
+### What to change
 
-## For the founder — what to do at the gate.cat 0.1.0 release
+| 0.2.x | 0.3.0 |
+|---|---|
+| `from cacheback.integrations import check_action` | `from gatecat.integrations import check_action` |
+| `from cacheback import TruthPipeline` | `from gatecat import TruthPipeline` |
+| `response.cacheback_hit` / `.cacheback_synthesized` | `response.gatecat_hit` / `.gatecat_synthesized` |
+| `except CachebackError` / `CachebackBlocked` | `except GatecatError` / `GatecatBlocked` |
+| console: `cacheback ...` / `cacheback-proxy` | `gatecat-cli ...` / `gatecat-proxy` |
+| env: `CACHEBACK_*` (54 vars) | `GATECAT_*` |
+| log dir `~/.cacheback/` | `~/.gatecat/` |
 
-1. **Publish `gate.cat` 0.1.0** with the real veto engine (see `PUBLISH.md`).
-2. **Cut one final `cacheback-ai` release** (e.g. `0.2.1`) whose *only* change is
-   the deprecation banner below, pasted at the TOP of its `README.md` /
-   PyPI long-description, and this line in its `pyproject.toml`:
+### Env vars: one-release safety net
 
-   ```toml
-   [project]
-   # keep installs working; the package still imports, but points users onward
-   description = "DEPRECATED - renamed to gate.cat. pip install gate.cat"
-   ```
+Every `CACHEBACK_*` env var was renamed to `GATECAT_*`. To avoid silently
+dropping an existing config, `import gatecat` copies any still-set `CACHEBACK_*`
+var to its `GATECAT_*` name at import (new name wins if both are set) and emits a
+single `DeprecationWarning` naming what to rename. **This shim is removed in
+0.4** — rename your env vars now.
 
-   (Optionally add a `DeprecationWarning` at import time in `cacheback/__init__.py`
-   — see snippet at the bottom.)
-3. Do **not** delete `cacheback-ai` from PyPI. Deleting breaks anyone who already
-   `pip install`ed it and is irreversible. Deprecate, don't destroy.
+### Claude Code hook
 
----
+The veto hook now ships inside the package. Register it by console script, not
+by file path:
 
-## Deprecation banner — paste into `cacheback-ai`'s README / PyPI description
-
-> ## ⚠️ `cacheback-ai` has been renamed to **`gate.cat`**
->
-> This package is deprecated. The action-veto engine — block irreversible agent
-> actions (`terraform destroy`, `rm -rf`, force-push, payments) before they run —
-> now ships as **[`gate.cat`](https://pypi.org/project/gate-cat/)**.
->
-> ```bash
-> pip uninstall cacheback-ai
-> pip install gate.cat
-> ```
->
-> Same engine, same honest line (the gate is certain only about what it
-> **blocks**; unchecked ≠ safe). `cacheback-ai` stays installable so existing
-> pins don't break, but receives no further updates. New work → `gate.cat`.
-
----
-
-## Import-time nudge (optional, in `cacheback-ai`'s `cacheback/__init__.py`)
-
-```python
-import warnings
-
-warnings.warn(
-    "cacheback-ai is deprecated and renamed to gate.cat. "
-    "Install it with: pip install gate.cat",
-    DeprecationWarning,
-    stacklevel=2,
-)
+```json
+{"hooks": {"PreToolUse": [{"matcher": "Bash|Write|Edit",
+    "hooks": [{"type": "command", "command": "gatecat-hook"}]}]}}
 ```
 
-Keep it a `DeprecationWarning` (silent by default, visible under `-W` / pytest)
-so it informs without breaking anyone's console.
+If you had the old `.claude/settings.json` pointing at
+`examples/.../veto_hook.py`, that path still works from a repo checkout (it now
+fails closed if the package is missing), but the console script is the supported
+path after `pip install gate-cat`.
 
----
+### What does NOT change
 
-## What does NOT change
+The engine, the policies, the API surface (`VetoGate`, `before_action`,
+`TruthPipeline`, `check_action`, `DOGFOOD_DEFAULTS`), and the honest line are
+identical — this is a rename, not a rewrite. `koryto` and the project's naming
+stay (canon).
 
-- The engine, the API (`VetoGate`, `before_action`, `ActionVetoed`), the
-  policies, the honest line — all identical. This is a rename, not a rewrite.
-- `koryto` and the τ-theory naming stay (canon; README carries a one-line gloss
-  for English readers, not a translation).
+## Older: `cacheback-ai` → `gate.cat`
+
+The package was first published as `cacheback-ai`, then renamed to `gate.cat`.
+The old `cacheback-ai` distribution on PyPI is deprecated and yanked at the
+0.3.0 release; install `gate-cat`.

@@ -63,12 +63,12 @@ matter on an irreversible action, and which an LLM judge doesn't give you:
 - **Fail-closed** — engine down, weird input, unreadable decision → block, never
   a silent allow.
 - **Auditable** — every decision (allow *and* block) is one JSON line in
-  `~/.cacheback/veto_log.jsonl`. You can prove after the fact what the gate saw.
+  `~/.gatecat/veto_log.jsonl`. You can prove after the fact what the gate saw.
 - **Can't be talked out of it** — a deny pattern doesn't get persuaded by a
   cleverly worded prompt the way an LLM judge can.
 
 And we publish the gate's limits instead of hiding them: the
-[bypass suite](../cacheback-integrations/cacheback_integrations/bypass_suite.py)
+[bypass suite](gatecat/integrations/bypass_suite.py)
 runs in CI and prints its own map — 100% catch on the dangers it *claims*, a
 disclosed false-block, and five named gaps (base64-encoded payloads, deletes via
 a language runtime, `curl | sh`, …). The honest line is mechanical: the gate is

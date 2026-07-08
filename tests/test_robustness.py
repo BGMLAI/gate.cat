@@ -16,9 +16,9 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from cacheback.cache import SemanticCache
-from cacheback.store import CacheStore, SCHEMA_VERSION
-from cacheback.index import VectorIndex
+from gatecat.cache import SemanticCache
+from gatecat.store import CacheStore, SCHEMA_VERSION
+from gatecat.index import VectorIndex
 
 
 # --- Corrupt DB recovery ---
@@ -94,7 +94,7 @@ class TestOpenAINullContent:
             similarity_threshold=0.5,
         )
 
-        from cacheback.openai import _CachedChatCompletions
+        from gatecat.openai import _CachedChatCompletions
 
         mock_completions = MagicMock()
         # Simulate response with content=None (e.g., tool_calls response)
@@ -121,7 +121,7 @@ class TestOpenAINullContent:
             similarity_threshold=0.5,
         )
 
-        from cacheback.openai import _CachedChatCompletions
+        from gatecat.openai import _CachedChatCompletions
 
         mock_completions = MagicMock()
         mock_response = MagicMock()
@@ -186,14 +186,14 @@ class TestSchemaMigration:
             );
         """)
         conn.executescript("""
-            CREATE TABLE IF NOT EXISTS cacheback_meta (
+            CREATE TABLE IF NOT EXISTS gatecat_meta (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
         """)
         # Set version to 0
         conn.execute(
-            "INSERT INTO cacheback_meta (key, value) VALUES ('schema_version', '0')"
+            "INSERT INTO gatecat_meta (key, value) VALUES ('schema_version', '0')"
         )
         conn.commit()
         conn.close()

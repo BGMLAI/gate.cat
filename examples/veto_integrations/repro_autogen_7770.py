@@ -33,16 +33,16 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # --- demo shim: stand in a fake engine ONLY if the real one is absent --------
-# The real gate.cat engine ships `cacheback.veto`; when it's installed this
+# The real gate.cat engine ships `gatecat.veto`; when it's installed this
 # block is skipped and the exact same code runs against the real VetoGate.
 try:
-    import cacheback.veto  # noqa: F401  (real engine present)
+    import gatecat.veto  # noqa: F401  (real engine present)
 except ImportError:
     import types
     import re as _re
 
-    _fake = types.ModuleType("cacheback")
-    _veto = types.ModuleType("cacheback.veto")
+    _fake = types.ModuleType("gatecat")
+    _veto = types.ModuleType("gatecat.veto")
 
     class ActionVetoed(RuntimeError):
         pass
@@ -65,13 +65,13 @@ except ImportError:
     _veto.ActionVetoed = ActionVetoed
     _veto.VetoGate = VetoGate
     _fake.veto = _veto
-    sys.modules["cacheback"] = _fake
-    sys.modules["cacheback.veto"] = _veto
+    sys.modules["gatecat"] = _fake
+    sys.modules["gatecat.veto"] = _veto
     print("[demo] real engine absent - using fake policy-wall gate "
           "(same matching the engine uses). Install gate.cat for the real path.\n")
 
-from cacheback.integrations import ActionVetoed, check_action  # noqa: E402
-from cacheback.integrations.policies import TERRAFORM_PROD  # noqa: E402
+from gatecat.integrations import ActionVetoed, check_action  # noqa: E402
+from gatecat.integrations.policies import TERRAFORM_PROD  # noqa: E402
 
 SOURCE = "autogen"
 POLICIES = [TERRAFORM_PROD]

@@ -6,8 +6,8 @@ Kluczowe rozróżnienie (architektura usera):
   - MIĘKKIE odrzucenia (lookup, needs_arbiter): baza bywa stale → seria sygnalizuje
     że to KORYTO mogło zgnić → eskaluj do web-rozjemcy.
 """
-from cacheback.stagnation import StagnationMonitor, StagnationState
-from cacheback.koryto import Koryto, KorytoVerdict
+from gatecat.stagnation import StagnationMonitor, StagnationState
+from gatecat.koryto import Koryto, KorytoVerdict
 
 
 def _hard_refute():

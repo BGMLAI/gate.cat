@@ -1,4 +1,4 @@
-"""Tests for cacheback-proxy — OpenAI-compatible caching proxy."""
+"""Tests for gatecat-proxy — OpenAI-compatible caching proxy."""
 
 import json
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -11,14 +11,13 @@ httpx = pytest.importorskip("httpx")
 
 from httpx import ASGITransport, AsyncClient
 
-from cacheback.proxy.app import create_app
-from cacheback.proxy.config import ProxyConfig
-from cacheback.proxy.models import (
+from gatecat.proxy.app import create_app
+from gatecat.proxy.config import ProxyConfig
+from gatecat.proxy.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
     ChatCompletionChunk,
 )
-from conftest import MockEmbedder
 
 
 @pytest.fixture
@@ -95,9 +94,9 @@ class TestModels:
     def test_response_model(self):
         resp = ChatCompletionResponse(
             model="gpt-4o",
-            cacheback_hit=True,
+            gatecat_hit=True,
         )
-        assert resp.cacheback_hit is True
+        assert resp.gatecat_hit is True
         assert resp.object == "chat.completion"
         assert resp.id.startswith("chatcmpl-")
 
@@ -114,9 +113,9 @@ class TestConfig:
 
     def test_from_env(self, monkeypatch):
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-        monkeypatch.setenv("CACHEBACK_PORT", "9090")
-        monkeypatch.setenv("CACHEBACK_SIMILARITY_THRESHOLD", "0.95")
-        monkeypatch.setenv("CACHEBACK_SYNTHESIS_MODE", "auto")
+        monkeypatch.setenv("GATECAT_PORT", "9090")
+        monkeypatch.setenv("GATECAT_SIMILARITY_THRESHOLD", "0.95")
+        monkeypatch.setenv("GATECAT_SYNTHESIS_MODE", "auto")
         config = ProxyConfig.from_env()
         assert config.openai_api_key == "sk-test"
         assert config.port == 9090
@@ -214,7 +213,7 @@ class TestStreaming:
 
     async def test_stream_replay_format(self):
         """Verify _replay_stream produces valid SSE."""
-        from cacheback.proxy.app import create_app
+        from gatecat.proxy.app import create_app
 
         config = ProxyConfig(
             openai_api_key="sk-test",
@@ -233,7 +232,7 @@ class TestStreaming:
 # --- Response headers ---
 
 class TestResponseHeaders:
-    """Test X-Cacheback-* response headers."""
+    """Test X-Gatecat-* response headers."""
 
     async def test_health_returns_synthesis_mode(self, client):
         resp = await client.get("/health")
@@ -247,32 +246,32 @@ class TestSSRFGuard:
     """#2: openai_base_url SSRF guard — odrzuca prywatne/metadata cele i non-https."""
 
     def test_openai_url_passes(self):
-        from cacheback.proxy.config import validate_upstream_url
+        from gatecat.proxy.config import validate_upstream_url
         assert validate_upstream_url("https://api.openai.com/v1") == "https://api.openai.com/v1"
 
     def test_http_rejected(self):
-        from cacheback.proxy.config import validate_upstream_url, UpstreamURLError
+        from gatecat.proxy.config import validate_upstream_url, UpstreamURLError
         with pytest.raises(UpstreamURLError):
             validate_upstream_url("http://api.openai.com/v1")
 
     def test_cloud_metadata_ip_rejected(self):
-        from cacheback.proxy.config import validate_upstream_url, UpstreamURLError
+        from gatecat.proxy.config import validate_upstream_url, UpstreamURLError
         with pytest.raises(UpstreamURLError):
             validate_upstream_url("https://169.254.169.254/latest/meta-data/")
 
     def test_localhost_rejected(self):
-        from cacheback.proxy.config import validate_upstream_url, UpstreamURLError
+        from gatecat.proxy.config import validate_upstream_url, UpstreamURLError
         with pytest.raises(UpstreamURLError):
             validate_upstream_url("https://127.0.0.1:8000/v1")
 
     def test_private_ip_rejected(self):
-        from cacheback.proxy.config import validate_upstream_url, UpstreamURLError
+        from gatecat.proxy.config import validate_upstream_url, UpstreamURLError
         with pytest.raises(UpstreamURLError):
             validate_upstream_url("https://10.0.0.5/v1")
 
     def test_insecure_optin_allows_local(self, monkeypatch):
-        from cacheback.proxy.config import validate_upstream_url
-        monkeypatch.setenv("CACHEBACK_ALLOW_INSECURE_UPSTREAM", "1")
+        from gatecat.proxy.config import validate_upstream_url
+        monkeypatch.setenv("GATECAT_ALLOW_INSECURE_UPSTREAM", "1")
         # świadome rozluźnienie: lokalny LLM po http
         assert validate_upstream_url("http://localhost:11434/v1") == "http://localhost:11434/v1"
 
@@ -285,24 +284,24 @@ class TestClientAuthPassthrough:
 
     def test_attacker_key_blocked_by_default(self):
         """Bez skonfigurowanego klucza i bez opt-in: klucz atakującego NIE trafia upstream."""
-        from cacheback.proxy.app import build_upstream_headers
+        from gatecat.proxy.app import build_upstream_headers
         h = build_upstream_headers("", "Bearer sk-attacker-key", allow_client_auth=False)
         assert "Authorization" not in h   # brak wstrzyknięcia, brak pustego Bearer
 
     def test_configured_key_used_not_client(self):
         """Gdy klucz skonfigurowany: serwerowy klucz użyty, kliencki Authorization ignorowany."""
-        from cacheback.proxy.app import build_upstream_headers
+        from gatecat.proxy.app import build_upstream_headers
         h = build_upstream_headers("sk-server-key", "Bearer sk-attacker-key", allow_client_auth=True)
         assert h["Authorization"] == "Bearer sk-server-key"
 
     def test_client_auth_passthrough_only_with_optin(self):
         """Multi-tenant opt-in: gdy allow_client_auth=True i brak serwerowego klucza, kliencki przechodzi."""
-        from cacheback.proxy.app import build_upstream_headers
+        from gatecat.proxy.app import build_upstream_headers
         h = build_upstream_headers("", "Bearer sk-client-own", allow_client_auth=True)
         assert h["Authorization"] == "Bearer sk-client-own"
 
     def test_no_key_no_optin_no_auth_header(self):
         """Brak klucza + brak opt-in + brak nagłówka klienta: żaden Authorization (nie pusty Bearer)."""
-        from cacheback.proxy.app import build_upstream_headers
+        from gatecat.proxy.app import build_upstream_headers
         h = build_upstream_headers("", "", allow_client_auth=False)
         assert "Authorization" not in h

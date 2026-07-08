@@ -1,4 +1,4 @@
-"""Test fixtures for cacheback."""
+"""Test fixtures for gatecat."""
 
 
 import pytest
@@ -8,7 +8,7 @@ import numpy as np
 @pytest.fixture
 def tmp_cache_dir(tmp_path):
     """Temporary cache directory for tests."""
-    return str(tmp_path / "cacheback_test")
+    return str(tmp_path / "gatecat_test")
 
 
 class MockEmbedder:

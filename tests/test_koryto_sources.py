@@ -7,7 +7,7 @@ ale gdy żywa weryfikuje realny przepływ (mock = bezwartościowy, poprzednia le
 import httpx
 import pytest
 
-from cacheback.koryto_sources import (
+from gatecat.koryto_sources import (
     is_mcq, http_cache_source, chroma_source, multi_source,
     _quality_ok, DEFAULT_MIN_SIM, minilm_factbase_source, minilm_factbase_from_jsonl,
 )
@@ -99,7 +99,7 @@ def _minilm_available() -> bool:
     try:
         import os
         os.environ.setdefault("HF_HUB_OFFLINE", "1")
-        from cacheback.embedders import get_embedder
+        from gatecat.embedders import get_embedder
         embedder = get_embedder("minilm", cache_dir=MINILM_CACHE)
         vec = embedder.encode("availability probe")
         return len(vec) > 0

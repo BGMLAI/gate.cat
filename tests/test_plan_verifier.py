@@ -5,7 +5,7 @@ i dowodzi, ze v2 go ZAMYKA. To jest produkt eats-own-dogfood: verifier nie moze 
 oszukany przez agenta dostarczajacego trywialny dowod.
 """
 
-from cacheback.plan_verifier import PlanStep, PlanVerifier, PlanReport, _binary_allowed
+from gatecat.plan_verifier import PlanStep, PlanVerifier, PlanReport, _binary_allowed
 
 
 def _v(**kw):
@@ -65,7 +65,7 @@ def test_progress_counts_only_proven_hard():
     """progress_pct liczy TYLKO proven AND hard. url-stale NIE podbija twardego postepu."""
     steps = [
         PlanStep(id="a", desc="d", evidence_kind="file", path="pyproject.toml",
-                 must_contain="cacheback"),                         # proven-hard
+                 must_contain="gatecat"),                         # proven-hard
         PlanStep(id="b", desc="d", evidence_kind="url", url="https://e/",
                  must_contain="x"),                                 # stale (soft)
         PlanStep(id="c", desc="d", evidence_kind="none"),           # unproven
@@ -107,7 +107,7 @@ def test_denied_binary_shell():
 def test_file_proven_with_token():
     """Realny plik pakietu z wymaganym tokenem -> proven-hard."""
     v = _v().verify_step(PlanStep(id="x", desc="d", evidence_kind="file",
-                                  path="pyproject.toml", must_contain="cacheback"))
+                                  path="pyproject.toml", must_contain="gatecat"))
     assert v.status == "proven" and v.hard
 
 

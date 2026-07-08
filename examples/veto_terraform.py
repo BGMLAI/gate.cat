@@ -9,7 +9,7 @@ function executes; a vetoed call raises `ActionVetoed` (or, with
 Run: python examples/veto_terraform.py
 """
 
-from cacheback import ActionPolicy, ActionVetoed, before_action
+from gatecat import ActionPolicy, ActionVetoed, before_action
 
 
 # deny: hard block, no override. require_human: needs an approve callback.

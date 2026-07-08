@@ -7,7 +7,7 @@ If a preset regex changes, one of these assertions flips - forcing the gap map
 
 from __future__ import annotations
 
-from cacheback.integrations import bypass_suite as bs
+from gatecat.integrations import bypass_suite as bs
 
 
 def test_every_case_behaves_as_its_expect_label_says():
@@ -63,7 +63,10 @@ def test_catch_rate_is_total_over_claimed_dangers():
     m = bs.metrics(bs.run())
     assert m["caught"] == m["claimed_dangers"]
     assert m["catch_rate"] == 1.0
-    assert m["known_gaps"] >= 5  # gaps are disclosed, not zero-claimed
+    # gaps are disclosed, not zero-claimed. The 2026-07-05 coverage expansion
+    # closed 3 former gaps (base64|sh, curl|sh, runtime rmtree) - the remaining
+    # gaps stay published. This count shrinks honestly as coverage grows.
+    assert m["known_gaps"] >= 2
 
 
 def test_report_is_ascii_and_lists_gaps():
@@ -72,6 +75,6 @@ def test_report_is_ascii_and_lists_gaps():
     report = bs.format_report()
     report.encode("ascii")  # D1: survives Windows consoles / CI logs
     assert "KNOWN GAPS" in report
-    assert "base64" in report  # a named bypass technique is visibly disclosed
+    assert "runtime" in report or "-destroy" in report  # a named remaining gap is disclosed
     assert "KNOWN FALSE-BLOCKS" in report  # false positives disclosed too
     assert "BLOCKS" in report and "NOT verified safe" in report  # honest line

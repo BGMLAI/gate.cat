@@ -5,7 +5,7 @@ agent odrzuca proof gdzie value!=replay, fail-closed na niewykonalnym.
 """
 import dataclasses
 
-from cacheback.provider import (
+from gatecat.provider import (
     provide_truth, provide_hint, verify_proof, Verified, Hint, ProofRef,
 )
 
@@ -55,7 +55,7 @@ def test_agent_rejects_proof_when_value_mismatches_replay():
     v = provide_truth("calc", "17*23")  # prawdziwy: 391
     fake = dataclasses.replace(v, value="999999")  # kłamstwo o wartości
     # agent ufa TYLKO gdy proof się odtwarza I value == odtworzony wynik
-    from cacheback.koryto import koryto_calc
+    from gatecat.koryto import koryto_calc
     replay_result = koryto_calc(v.proof_ref.statements[0])  # 391
     agent_trusts = verify_proof(fake) and (fake.value == replay_result)
     assert agent_trusts is False  # value=999999 != 391 → odrzuć
@@ -70,7 +70,7 @@ def test_unsupported_op_returns_none():
 
 def test_provider_imports_only_stdlib_and_koryto():
     """niezależność: provider używa tylko stdlib + koryto (zero API/model w runtime)."""
-    import cacheback.provider as p
+    import gatecat.provider as p
     import inspect
     src = inspect.getsource(p)
     for forbidden in ("import openai", "import anthropic", "import httpx", "api_key", "requests"):

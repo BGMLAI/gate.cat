@@ -1,6 +1,6 @@
 """Negative cache tests."""
 
-from cacheback.negative import NegativeCacheAPI
+from gatecat.negative import NegativeCacheAPI
 
 
 class TestNegativeCacheAPI:
@@ -130,7 +130,7 @@ class TestNegativeCacheAPI:
 
 def test_safe_json_helper():
     """Unit: _safe_json odporne na każdy zły wejściowy JSON."""
-    from cacheback.negative import _safe_json
+    from gatecat.negative import _safe_json
     assert _safe_json('{"a": 1}') == {"a": 1}
     assert _safe_json("INVALID{{{") == {}
     assert _safe_json("") == {}

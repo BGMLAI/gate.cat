@@ -1,6 +1,207 @@
 # Changelog
 
-All notable changes to `cacheback-ai` will be documented in this file.
+All notable changes to `gate.cat` will be documented in this file.
+
+## [0.3.0] -- import rename + hook hardening (2026-07-07)
+
+Release-hardening pass. The engine and policies are unchanged from 0.2.1; this
+release makes the shipped package match the "deterministic fail-closed" promise
+and removes the legacy `cacheback` identity.
+
+### Breaking
+
+- **Import module renamed `cacheback` -> `gatecat`.** Update imports:
+  `from gatecat.integrations import check_action`. No compatibility shim — the
+  old top-level `cacheback` collided with an unrelated PyPI package (silent
+  shadowing risk in a security tool). See `MIGRATION.md`.
+- **Env vars renamed `CACHEBACK_*` -> `GATECAT_*`** (54 vars). A one-release
+  compat shim maps any still-set `CACHEBACK_*` to its `GATECAT_*` name at import
+  with a `DeprecationWarning` (new name wins); removed in 0.4. Log dir
+  `~/.cacheback/` -> `~/.gatecat/`.
+- **Response attributes** `response.cacheback_hit/_synthesized` ->
+  `gatecat_hit/_synthesized`. **Exceptions** `CachebackError/Blocked` ->
+  `GatecatError/Blocked`. **Console scripts** `cacheback`/`cacheback-proxy`
+  dropped; use `gatecat-cli` / `gatecat-proxy`.
+
+### Fixed (ship-blockers)
+
+- **Claude Code hook failed OPEN.** The example hook imported the engine at
+  module top-level outside `try/except`, so an unavailable engine exited 1 —
+  which Claude Code treats as "proceed". Verified live: `wipefs -af /dev/sda`
+  passed. Now the hook is **inside the package** (`gatecat/hooks/claude_code.py`,
+  console script `gatecat-hook`), the import is guarded, and any failure,
+  malformed input, engine error, or watchdog deadline exits **2 (block)**. 8 new
+  contract tests lock the exit-code behavior.
+- **Flagship hook was not pip-installable** (lived under `examples/`, excluded
+  from the sdist). Now shipped in the wheel and sdist.
+- **Release pipeline could not gate.** CI ran on `main` while the repo default is
+  `master` (zero tests ran); publish on a tag ran no tests. Now CI runs on
+  `master`, and publish depends on the full 3-OS x 3-Python suite plus a
+  tag-equals-version guard and a wheel-contents check before the immutable
+  upload.
+
+### Added
+
+- Hook watchdog: a hung engine self-blocks (exit 2) before the harness timeout
+  can turn the hang into a silent proceed. Deadline via `GATECAT_HOOK_DEADLINE_S`
+  (default 20s).
+
+## [0.2.1] -- 7-stage hybrid guardrail + INGRESS (2026-07-06)
+
+Wydanie skupione na jednym mechanizmie: deterministyczne **action-veto** rozszerzone
+do pelnej bramy 7 warstw (6 EGRESS + 1 INGRESS). Rdzen pozostaje **zero-dependency**
+(czysty stdlib) -- `pip install gate.cat` daje dzialajace veto bez numpy/ONNX.
+
+### EGRESS -- ochrona przed destrukcyjna AKCJA agenta (`ActionPipeline`, 6 warstw)
+
+- **6-warstwowa kaskada**: allow-list -> koryto [deny-walls + delete-analyzer] ->
+  gate (disagreement) -> stagnacja -> arbiter -> czlowiek. Fail-closed: kazdy
+  blad/niepewnosc -> BLOCK; `unchecked != safe`. (`cacheback/action_pipeline.py`)
+- **Target-anchored delete-analyzer** -- klasyfikuje CEL kasowania, nie ksztalt komendy.
+  (`cacheback/integrations/action_analysis.py`)
+- **20 polityk DOGFOOD_DEFAULTS** -- RM_RF, SECRET_DELETE/READ, HISTORY_WIPE,
+  DATASTORE_FLUSH, CLOUD/TERRAFORM/DB destroy, GIT/GH_DESTRUCTIVE, kubectl+helm,
+  SYSTEM_TAMPER (warn), PACKAGE_PURGE (warn) i in. (`cacheback/integrations/policies.py`)
+- **Windows-delete gap zamkniety** -- Remove-Item/del/rd + tokenizacja posix=False.
+- **Dowody z zywego ruchu**: 100% recall na 1M komend (`corpus_million.py`); FBR
+  (false-block rate) dogfood **92.1%** na 14.7k realnych komend; 30/30 recall na
+  85k komend / 3 agenty; 0 crashow.
+
+### INGRESS -- ochrona przed prompt-injection w tym, co agent CZYTA (warstwa 7)
+
+- **`input_guard.scan(text)`** -> `clean | suspicious | injection`. Wykrywa override,
+  fake-role, exfil-instruct, embedded-exec, persona-reset. Damper na tutoriale
+  (dokument cytujacy injection bez payloadu -> suspicious, nie injection).
+  (`cacheback/integrations/input_guard.py`)
+- **Invisible-Unicode smuggling** -- skan po codepointach: Tags block U+E0000-E007F,
+  zero-width, bidi, variation selectors (ZWJ/VS16 wewnatrz emoji zwolnione).
+- **Recall zmierzony na realnych korpusach HF** (Lakera/gandalf, deepset, jackhhao):
+  **36% -> 62% (regex-floor) -> 88% (regex+ML)** na HELD-OUT, FPR regex 0.8%.
+
+### ML escalation (opt-in, `pip install gate.cat[ml]` + `CACHEBACK_ENABLE_ML_GUARD=1`)
+
+- **MiniLM (ONNX) + LogReg head (~2.5KB `.npz`)** -- runtime **bez sklearn**
+  (dot-embed + sigmoid). Eskaluje TYLKO clean->injection, nigdy nie downgraduje
+  regex-hit. Off-default -> benign-contract nietkniety. (`cacheback/integrations/ml_guard.py`)
+- Recall regex+ML **88.3%** / FPR 5.2% (prog = maks recall). Model shipuje w wheelu.
+
+### Hybryda / feed (fundament auto-aktualizacji bazy regul)
+
+- **Podpisane add-only Ed25519 rule-bundle** -- **pure-python** verify po stronie
+  klienta (zero-dep), klucz PINNED w pakiecie, klucz prywatny OFFLINE. Add-only,
+  anti-rollback, fail-last-good, zero-knowledge. (`cacheback/integrations/rules.py`,
+  `scripts/sign_rules.py`)
+
+### Compliance / UX
+
+- **Split audit-log** (EU AI Act Art.12): hash-chained non-personal skeleton
+  + redactable PII sidecar; `Decision.stages` = per-stage trace. (`_audit.py`)
+- **Dashboard `gate.cat`** (zero ML): `status` / `stats` / `log N` / `why <cmd>`
+  -- user widzi ze bramka pracuje. (`cacheback/integrations/dashboard.py`)
+
+### Bezpieczenstwo wydania
+
+- **sdist allowlist** -- NIE publikuje `REJESTR_PRAWD.md`/`GOTCHAS.md` (mapa wlasnych
+  known-bypasses = prezent dla atakujacego); ship tylko tego, czego uzytkownik
+  potrzebuje.
+
+### Security-hardening (council review 2026-07-06 — 6 fail-open bypasses zamkniete)
+
+Multimodel code council (5 soczewek, adwersaryjna weryfikacja) znalazl 15
+potwierdzonych problemow; 6 under-block/fail-open bylo blokerami wydania dla
+guardraila fail-closed. Wszystkie naprawione z przypietymi regression testami:
+
+- **ReDoS w heredoc-strip** (crit) — 50KB nieterminowany `<<EOF` powodowal
+  catastrophic backtracking ~30-100s -> hook zabity -> fail-OPEN na `rm -rf ~`.
+  Cap 16KB (oversized+delete-intent -> BLOCK) + try/except.
+- **Sibling-heredoc downgrade** (crit) — benign heredoc w sasiednim segmencie
+  degradowal resolwowalny `rm -rf ~` do WARN(=allow). Analiza segmentow najpierw;
+  hard-block wygrywa; line-opacity WARN tylko gdy zaden segment nie resolvowal.
+- **Unbounded DELETE FROM** (high) — przechodzil gdy "WHERE" bylo w komentarzu
+  `--` lub kolejnym statemencie. WHERE wiazane do tego statementu.
+- **gh api --method DELETE** (high) — omijal GH_DESTRUCTIVE (tylko -X). Long-form.
+- **kubectl delete -n prod deploy x** (high) — flaga przed kind = silent ALLOW.
+  Flag-tolerant lookahead.
+- **curl|python, base64 -d|perl** (high) — omijaly ENCODED_EXEC (tylko sh/bash/
+  zsh). Wspolna stala `_INTERP` (python/perl/ruby/node/php/pwsh).
+- **INGRESS damper** (high) — atakowalny `_DISCUSSES_INJECTION` ("For example,"
+  przed payloadem) zapadal cala warstwe 7 i pomijal ML. Damper wymaga teraz
+  prawdziwego framingu (granica zdania LUB cytat), nigdy nie degraduje HARD-hitu
+  ponizej suspicious, nigdy nie wylacza ML.
+- **sdist .npz** — model trenowany wchodzil tylko do wheela; `pip install
+  gate.cat[ml]` ze zrodla cicho spadal do regex-floor. Dodano do sdist include.
+- **ml_guard fail-fast** — weryfikuje ze model jest w cache lokalnie (bez
+  blokujacego download w scan()); + `pytest-timeout` (timeout=90) by wiszacy
+  test (np. `import onnxruntime` w WMI probe na Win/py3.13) failowal glosno.
+
+### Security-hardening — runda 6 (INGRESS "wolna reka" 2026-07-07)
+
+Frontier free-hand council (11 modeli, BEZ recepty na atak — "mysl inwariantem
+klasy, nie narzedziem"). Kazdy zgloszony payload empirycznie przepuszczony przez
+zywy probe. 2 potwierdzone przecieki na warstwie 7 (INGRESS), oba zamkniete:
+
+- **Zakodowany SOFT-injection** (high) — `_encoded_injection` rescanowal po
+  dekodowaniu URL/base64 tylko wzorce `_HARD`, wiec zakodowany persona-reset
+  (`%79%6f%75...` = "you are now DAN") dekodowal sie, ale nigdy nie trafial na
+  `_SOFT`. Kanal zakodowany byl slabszy niz jawny tekst. Fix: rescan tez `_SOFT`
+  -> HARD=injection, SOFT=suspicious. (`input_guard._encoded_injection`)
+- **Mixed-script evasion** (high) — grecka/cyrylicka litera podstawiona za ASCII
+  wewnatrz angielskiego slowa (`sgnore` przez greckie sigma dla `i`) omijala regex
+  czasownika override, a model i tak czyta "ignore". Fix: backstop po SUROWYM
+  tekscie — slowo w wiekszosci ASCII-Latin z wcisnieta litera Greek/Cyrillic ->
+  suspicious. Bramki (dlugosc >=4, wiekszosc Latin) trzymaja czysto zwykly rosyjski/
+  grecki tekst i jednostki (`um`, `dT`, `kohm`). (`input_guard._residual_mixed_script`)
+
+### Security-hardening — runda 7 (EGRESS "wolna reka" 2026-07-07)
+
+Council z WYSPECJALIZOWANYMI rolami (SRE/cloud/DBA/supply-chain/storage/obfuscation),
+wolna reka, DWIE fale z informacja zwrotna (fala 2 dostaje "co zablokowano" i szuka
+czego pipeline jeszcze przepuszcza). Cel: powstrzymac szkodliwa AKCJE przed
+wykonaniem. 22 komendy dostaly `allow`; po analizie **15 realnych dziur naprawionych**,
+7 to nie-bledy (udokumentowane). Wszystkie naprawy z przypietymi testami:
+
+- **Scrubber over-strip** (crit, systemowa przyczyna) — `_strip_inert_literals`
+  BEZWARUNKOWO wymazywal tresc `echo/printf "..."`. Ale `echo "DROP TABLE" | mysql`
+  to KOD podany rura do klienta, nie tekst; wymazanie ukrywalo payload, a nic dalej
+  nie lapalo rury do `mysql`/`redis-cli`/`at`. Ogolny bypass ("schowaj cokolwiek w
+  echo i podaj do interpretera"). Fix: NIE wymazuj tresci gdy echo/printf jest
+  podane rura do executor-a (sh/bash/db-client/at/eval/interpreter); `echo "..." >
+  plik` (do pliku) nadal traktowane jako dane. (`guard._strip_inert_literals`,
+  `_PIPE_TO_EXECUTOR`)
+- **Tautologiczny DELETE** (high) — `DELETE FROM x WHERE 1=1` (albo `col=col`)
+  przechodzil test "ma WHERE", a kasuje wszystko. Fix: wykrycie samorownego
+  predykatu. (`DB_DESTRUCTIVE`)
+- **Interpreter delete ruby/node** (warn) — `ruby -e 'FileUtils.rm_rf(...)'`,
+  `node ...rmdirSync(...)` byly nieobjete (tylko unlink/rm). Fix: rozszerzone
+  wzorce ruby/node/php. (`RUNTIME_DELETE`)
+- **Niszczenie plikow krytycznych** (high) — `sed -i '1,$d' /etc/fstab`, `rsync
+  --delete .../ /etc/`, `tee /etc/hostname` przechodzily (rsync dest-list objal
+  tylko /home//srv//var/). Fix: sed/perl -i na pliku krytycznym, rsync --delete do
+  /etc//boot//usr//opt, tee do pliku krytycznego. (`OVERWRITE_DESTROY`)
+- **Symlink-indirection** (high) — `ln -sf /etc/shadow /tmp/x && shred /tmp/x`
+  niszczy CEL przez link. Fix: symlink-do-krytycznego + czasownik piszacy PRZEZ
+  link (shred/truncate/dd/tee). `rm` na symlinku usuwa SAM LINK (nie cel) — celowo
+  wykluczony. (`OVERWRITE_DESTROY`)
+- **Masowe kasowanie referencji git** (high) — `... | git update-ref --stdin` z
+  `delete` wycina wszystkie branche naraz. Fix: `update-ref --stdin` + token
+  `delete`. (`GIT_DESTRUCTIVE`)
+- **7 nie-bledow** (udokumentowane, slusznie `allow`): `rm` na symlinku usuwa link
+  nie cel (2x); nazwy skryptow/workflow `npm run clean:force`/`gh workflow run
+  destroy.yml` — statycznie nie do udowodnienia (blokada po nazwie = lawina FP);
+  `git push` bez `--force` remote odrzuca (non-ff); `find -exec rm -f` pojedynczych
+  plikow (nie `-rf`) — czyszczenie celowo nie twardo-blokowane.
+
+### Testy
+
+- Pelny suite **732 pass + 14 skip** (2 moduly pominiete — wymagaja opcjonalnych
+  `httpx`/`Pillow`, bez zwiazku z guardrailem). 0 regresji przez 6+ rund hardeningu.
+- **Korpus bypass_suite: catch 65/65 = 1.000** (bylo 58; +7 block-class z rundy 7),
+  false-block-rate **2.6%** (1 celowo ujawniony przypadek).
+- **INGRESS floor** trzyma benign czysto: rosyjski/grecki tekst, jednostki,
+  base64/URL benign. Nowe regression piny: runda 6 `test_input_guard::F16` (8),
+  runda 7 `bypass_suite` G1-G5 + `test_content_vs_command` scrubber-exception.
+- (`test_ml_guard` wymaga dzialajacego `import onnxruntime` — na niektorych Win/
+  py3.13 hostach zawiesza sie w probie WMI; timeout config zamienia to w glosny fail.)
 
 ## [Unreleased] -- Action-veto + dowody jakosci (2026-06-27)
 

@@ -1,6 +1,6 @@
 """Core semantic cache tests."""
 
-from cacheback.cache import SemanticCache
+from gatecat.cache import SemanticCache
 
 
 class TestSemanticCache:

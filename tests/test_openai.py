@@ -1,8 +1,8 @@
 """OpenAI wrapper tests — uses mocked OpenAI client (no real API calls)."""
 
 from unittest.mock import MagicMock
-from cacheback.cache import SemanticCache
-from cacheback.openai import (
+from gatecat.cache import SemanticCache
+from gatecat.openai import (
     _CachedChatCompletions,
     _CachedResponse,
     _extract_query,
@@ -68,7 +68,7 @@ class TestExtractQuery:
 class TestCachedResponse:
     def test_cache_hit_response(self):
         resp = _CachedResponse(cached_text="Cached answer", cache_hit=True, model="gpt-4o")
-        assert resp.cacheback_hit is True
+        assert resp.gatecat_hit is True
         assert resp._cache_hit is True
         assert resp.id == "cache-hit"
         assert resp.model == "gpt-4o"
@@ -78,7 +78,7 @@ class TestCachedResponse:
     def test_cache_miss_response(self):
         original = MockCompletion()
         resp = _CachedResponse(original_response=original)
-        assert resp.cacheback_hit is False
+        assert resp.gatecat_hit is False
         assert resp.id == "chatcmpl-test123"
         assert resp.choices[0].message.content == "Paris is the capital of France."
 
@@ -104,7 +104,7 @@ class TestCachedChatCompletions:
         # Should have called upstream
         mock_completions.create.assert_called_once()
         # Response should have cache metadata
-        assert result.cacheback_hit is False
+        assert result.gatecat_hit is False
         # Cache should be populated
         assert cache.stats["populations"] == 1
         cache.close()
@@ -127,7 +127,7 @@ class TestCachedChatCompletions:
 
         # Should NOT have called upstream
         mock_completions.create.assert_not_called()
-        assert result.cacheback_hit is True
+        assert result.gatecat_hit is True
         assert "Paris" in result.choices[0].message.content
         cache.close()
 
@@ -169,7 +169,7 @@ class TestCachedChatCompletions:
 
     def test_streaming_cache_miss(self, tmp_cache_dir, mock_embedder):
         """Streaming miss should yield upstream chunks and cache the result."""
-        from cacheback._streaming import _OpenAIStreamChunk, _OpenAIChunkChoice, _OpenAIChunkDelta
+        from gatecat._streaming import _OpenAIStreamChunk, _OpenAIChunkChoice, _OpenAIChunkDelta
 
         cache = SemanticCache(
             cache_dir=tmp_cache_dir,

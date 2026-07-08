@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-from cacheback.koryto_sandbox import ast_gate, run_sandboxed, SAFE_BUILTINS
+from gatecat.koryto_sandbox import ast_gate, run_sandboxed, SAFE_BUILTINS
 
 
 # ---- ast_gate: ATAKI muszą być DROP ----

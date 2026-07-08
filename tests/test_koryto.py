@@ -11,7 +11,7 @@ import os
 
 import pytest
 
-from cacheback.koryto import (
+from gatecat.koryto import (
     Koryto, FactBase, KorytoVerdict,
     koryto_exec_python, koryto_calc, atoms_match, koryto_exec_node,
 )
@@ -20,16 +20,16 @@ from cacheback.koryto import (
 # ---- node-exec gating (audyt 2026-06-27 #10: RCE bez sandboxa) ----
 
 def test_node_exec_disabled_by_default(monkeypatch):
-    """Bez CACHEBACK_KORYTO_EXEC_NODE_UNSAFE node-exec MUSI zwrócić None (nie wykonać).
+    """Bez GATECAT_KORYTO_EXEC_NODE_UNSAFE node-exec MUSI zwrócić None (nie wykonać).
     JS nie jest sandboxowany jak Python → domyślnie OFF (fail-closed)."""
-    monkeypatch.delenv("CACHEBACK_KORYTO_EXEC_NODE_UNSAFE", raising=False)
+    monkeypatch.delenv("GATECAT_KORYTO_EXEC_NODE_UNSAFE", raising=False)
     # nawet trywialny kod nie wykonuje się bez opt-in
     assert koryto_exec_node("console.log(2+2)") is None
 
 
 def test_node_exec_verify_path_disabled_by_default(monkeypatch):
     """Koryto.verify(exec_js=...) też nie wykonuje JS bez opt-in → verdict unknown/przepuść."""
-    monkeypatch.delenv("CACHEBACK_KORYTO_EXEC_NODE_UNSAFE", raising=False)
+    monkeypatch.delenv("GATECAT_KORYTO_EXEC_NODE_UNSAFE", raising=False)
     k = Koryto()
     v = k.verify("co zwraca?", "4", exec_js="console.log(2+2)")
     # bez node-exec żaden twardy werdykt z JS — spada na calc/lookup/unknown

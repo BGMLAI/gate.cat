@@ -1,7 +1,7 @@
 """Real-framework smoke tests (plan acceptance (e), framework side).
 
 Run only when the real frameworks are installed (``pip install
-cacheback-ai[crewai,langgraph]`` or the dev venv); CI without frameworks
+gate.cat[crewai,langgraph]`` or the dev venv); CI without frameworks
 skips them and relies on the mocked contract tests. The engine is still the
 fake seam implementation - the real-ENGINE smoke stays a local step.
 
@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-from cacheback.integrations import ActionVetoed
-from cacheback.integrations.policies import DOGFOOD_DEFAULTS, PAYMENTS
+from gatecat.integrations import ActionVetoed
+from gatecat.integrations.policies import DOGFOOD_DEFAULTS, PAYMENTS
 
 HAS_CREWAI = importlib.util.find_spec("crewai") is not None
 HAS_LANGGRAPH = (
@@ -31,8 +31,8 @@ HAS_LANGGRAPH = (
     and importlib.util.find_spec("langchain_core") is not None
 )
 
-PKG_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = PKG_ROOT / "examples"
+PKG_ROOT = Path(__file__).resolve().parents[2]
+EXAMPLES = PKG_ROOT / "examples" / "veto_integrations"
 
 needs_crewai = pytest.mark.skipif(not HAS_CREWAI, reason="crewai not installed")
 needs_langgraph = pytest.mark.skipif(not HAS_LANGGRAPH, reason="langgraph not installed")
@@ -45,7 +45,7 @@ needs_langgraph = pytest.mark.skipif(not HAS_LANGGRAPH, reason="langgraph not in
 def test_real_crewai_wrap_tool_blocks_and_allows(engine_on_path):
     from crewai.tools import BaseTool
 
-    from cacheback.integrations.crewai import wrap_tool
+    from gatecat.integrations.crewai import wrap_tool
 
     executed = []
 
@@ -73,7 +73,7 @@ def test_real_crewai_public_run_entrypoint(engine_on_path):
     """crewAI executes tools via .run() (validation layer) - must also gate."""
     from crewai.tools import BaseTool
 
-    from cacheback.integrations.crewai import wrap_tool
+    from gatecat.integrations.crewai import wrap_tool
 
     class Shell(BaseTool):
         name: str = "shell"
@@ -95,7 +95,7 @@ def test_real_crewai_public_run_entrypoint(engine_on_path):
 def test_real_structuredtool_guarded_via_invoke(engine_on_path):
     from langchain_core.tools import tool
 
-    from cacheback.integrations.langgraph import guard_tools
+    from gatecat.integrations.langgraph import guard_tools
 
     @tool
     def deploy(cmd: str) -> str:
@@ -122,7 +122,7 @@ def test_real_toolnode_in_graph_veto_raises_fail_closed(engine_on_path):
     from langgraph.graph import END, START, MessagesState, StateGraph
     from langgraph.prebuilt import ToolNode
 
-    from cacheback.integrations.langgraph import guard_tools
+    from gatecat.integrations.langgraph import guard_tools
 
     @tool
     def deploy(cmd: str) -> str:
@@ -155,7 +155,7 @@ def test_real_toolnode_in_graph_veto_raises_fail_closed(engine_on_path):
 def _run_example(script: Path, fake_engine: Path, tmp_path: Path) -> subprocess.CompletedProcess:
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join([str(fake_engine), str(PKG_ROOT)])
-    env["CACHEBACK_VETO_LOG"] = str(tmp_path / "veto_log.jsonl")
+    env["GATECAT_VETO_LOG"] = str(tmp_path / "veto_log.jsonl")
     return subprocess.run(
         [sys.executable, str(script)], env=env, capture_output=True, text=True, timeout=120
     )

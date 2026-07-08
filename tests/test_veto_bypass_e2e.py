@@ -13,8 +13,8 @@ import re
 
 import pytest
 
-from cacheback.koryto import Koryto
-from cacheback.veto import ActionPolicy, ActionVetoed, VetoGate, before_action
+from gatecat.koryto import Koryto
+from gatecat.veto import ActionPolicy, ActionVetoed, VetoGate, before_action
 
 # Same operator policy used by the false-positive audit.
 DENY = [

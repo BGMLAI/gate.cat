@@ -1,8 +1,8 @@
 """Anthropic wrapper tests — uses mocked Anthropic client (no real API calls)."""
 
 from unittest.mock import MagicMock
-from cacheback.cache import SemanticCache
-from cacheback.anthropic import (
+from gatecat.cache import SemanticCache
+from gatecat.anthropic import (
     _CachedMessages,
     _CachedMessage,
     _extract_query,
@@ -72,7 +72,7 @@ class TestExtractQuery:
 class TestCachedMessage:
     def test_cache_hit_message(self):
         msg = _CachedMessage(text="Cached response", model="claude-sonnet")
-        assert msg.cacheback_hit is True
+        assert msg.gatecat_hit is True
         assert msg._cache_hit is True
         assert msg.id == "cache-hit"
         assert msg.model == "claude-sonnet"
@@ -124,7 +124,7 @@ class TestCachedMessages:
 
         mock_messages.create.assert_not_called()
         assert isinstance(result, _CachedMessage)
-        assert result.cacheback_hit is True
+        assert result.gatecat_hit is True
         assert "Paris" in result.content[0].text
         cache.close()
 
@@ -168,7 +168,7 @@ class TestCachedMessages:
 
     def test_streaming_cache_miss(self, tmp_cache_dir, mock_embedder):
         """Streaming miss should yield upstream events and cache the result."""
-        from cacheback._streaming import _AnthropicContentBlock, _AnthropicMessageStop
+        from gatecat._streaming import _AnthropicContentBlock, _AnthropicMessageStop
 
         cache = SemanticCache(
             cache_dir=tmp_cache_dir,

@@ -1,7 +1,7 @@
 # Claude Code veto hook (A1)
 
 A `PreToolUse` hook that runs every `Bash` / `Write` / `Edit` tool call through
-the cacheback **veto gate** before it executes. Dangerous actions
+the gatecat **veto gate** before it executes. Dangerous actions
 (`terraform ... prod`, `DROP TABLE`, `rm -rf`, `git push --force`,
 cloud deletes) are blocked with **exit code 2**; the reason lands on stderr
 and is fed back to the model.
@@ -11,7 +11,7 @@ and is fed back to the model.
 1. Install the SDK with the veto engine (>= 0.3.0):
 
    ```bash
-   pip install cacheback-ai
+   pip install gate.cat
    ```
 
 2. Merge `settings.example.json` into your `.claude/settings.json`
@@ -22,12 +22,12 @@ and is fed back to the model.
    delete requires a human`.
 
 Every decision (allow AND block) is appended to
-`~/.cacheback/veto_log.jsonl` — that log is the raw material for
+`~/.gatecat/veto_log.jsonl` — that log is the raw material for
 false-block-rate adjudication (B2 in VETO_PIPELINE_PLAN.md).
 
 ## Shadow mode (A8, opt-in)
 
-Set `CACHEBACK_VETO_SHADOW=1` in the hook's environment to watch the gate
+Set `GATECAT_VETO_SHADOW=1` in the hook's environment to watch the gate
 without it stopping anything: every would-be block is logged as
 `shadow_block` and the hook exits 0. Run it this way for a day, read the log,
 see what it *would* have caught — then drop the env var to enforce. Default is
@@ -43,7 +43,7 @@ through what it couldn't parse).
 - Fail-closed: if the veto engine is missing or errors out, the hook
   blocks (exit 2) rather than silently allowing.
 - Fallback if the hook API ever changes shape: use the inline wrapper
-  (`from cacheback.veto import VetoGate` directly in your agent code) —
+  (`from gatecat.veto import VetoGate` directly in your agent code) —
   not an MCP server.
 
 ## Contract pinned by tests

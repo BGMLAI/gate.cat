@@ -13,7 +13,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-HOOK = Path(__file__).resolve().parents[1] / "examples" / "claude_code_hook" / "veto_hook.py"
+HOOK = (Path(__file__).resolve().parents[2] / "examples" / "veto_integrations"
+        / "claude_code_hook" / "veto_hook.py")
 
 
 def run_hook(stdin: str, env: dict[str, str]) -> subprocess.CompletedProcess:
@@ -34,20 +35,31 @@ def event(tool_name: str, tool_input: dict) -> str:
 
 
 def read_log(env: dict[str, str]) -> list[dict]:
-    path = Path(env["CACHEBACK_VETO_LOG"])
+    path = Path(env["GATECAT_VETO_LOG"])
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text().splitlines()]
 
 
 def test_blocks_rm_rf(hook_env):
-    proc = run_hook(event("Bash", {"command": "rm -rf /tmp/whatever"}), hook_env)
+    # A recursive delete under a protected root (home) must block. (`rm -rf
+    # /tmp/x` is deliberately NOT blocked - temp is regenerable; that was the
+    # 92% false-block bug the target-anchored analyzer fixes.)
+    proc = run_hook(event("Bash", {"command": "rm -rf ~/laptop-backup"}), hook_env)
     assert proc.returncode == 2
-    assert "VETO [RM_RF]" in proc.stderr
+    assert "protected root" in proc.stderr
     records = read_log(hook_env)
     assert records[-1]["decision"] == "block"
-    assert records[-1]["policy"] == "RM_RF"
+    assert records[-1]["policy"] == "DELETE_ANALYZER"
     assert records[-1]["source"] == "claude_code_hook"
+
+
+def test_allows_rm_rf_of_temp(hook_env):
+    """The headline false-block fix: rm -rf of a temp/build dir must ALLOW."""
+    proc = run_hook(event("Bash", {"command": "rm -rf /tmp/whatever"}), hook_env)
+    assert proc.returncode == 0
+    records = read_log(hook_env)
+    assert records[-1]["decision"] == "allow"
 
 
 def test_blocks_terraform_prod_and_force_push(hook_env):
@@ -82,11 +94,15 @@ def test_write_tool_with_destructive_sql_blocked(hook_env):
     assert "DB_DESTRUCTIVE" in proc.stderr
 
 
-def test_fail_closed_without_engine(hook_env, tmp_path):
-    """Engine missing from PYTHONPATH => block, never allow."""
-    env = dict(hook_env)
-    env["PYTHONPATH"] = str(Path(HOOK).resolve().parents[2])  # package only, no fake engine
-    proc = run_hook(event("Bash", {"command": "ls"}), env)
+def test_fail_closed_without_engine(engine_absent_env):
+    """Veto engine unimportable => block, never allow.
+
+    ``engine_absent_env`` makes ``gatecat.veto`` raise on import while keeping
+    ``gatecat.integrations`` available, so this exercises fail-closed
+    deterministically even when the real gatecat is installed editable in the
+    dev environment (a bare PYTHONPATH swap would not remove an editable install).
+    """
+    proc = run_hook(event("Bash", {"command": "ls"}), engine_absent_env)
     assert proc.returncode == 2
     assert "fail-closed" in proc.stderr
 
@@ -99,13 +115,15 @@ def test_fail_closed_on_malformed_stdin(hook_env):
 
 def test_stderr_is_ascii_even_with_polish_reason(hook_env, fake_engine):
     """D1: a reason with Polish diacritics must reach stderr ASCII-escaped."""
-    veto = fake_engine / "cacheback" / "veto.py"
+    veto = fake_engine / "gatecat" / "veto.py"
     veto.write_text(
         veto.read_text().replace(
             'pol["reason"]', '"zniszczy\\u0142oby \\u015brodowisko produkcyjne"'
         )
     )
-    proc = run_hook(event("Bash", {"command": "rm -rf /"}), hook_env)
+    # Use a NON-delete action so it goes through the engine (whose reason we
+    # injected), not the delete analyzer. D1 must hold on the engine path.
+    proc = run_hook(event("Bash", {"command": "terraform destroy -auto-approve"}), hook_env)
     assert proc.returncode == 2
     proc.stderr.encode("ascii")  # raises if any non-ASCII slipped through
     assert "zniszczy" in proc.stderr
