@@ -113,9 +113,10 @@ You are early, and the price reflects it in both directions:
   **locked for as long as you stay subscribed**.
 - **Ships this month:** the hosted dashboard (history, alerts, self-serve
   report download) and Team policy sharing. Founding subscribers get both the
-  day they're live, at the price they already pay. **A redacted sample report
-  is available by email before you pay a cent** — and the 30-day refund covers
-  the rest of the doubt.
+  day they're live, at the price they already pay. **A redacted sample report —
+  generated from our own real dogfood log, red-team caveats included — is
+  [right here](docs/SAMPLE_REPORT.md)**, and the 30-day refund covers the rest
+  of the doubt.
 - **Why charge before the dashboard exists:** the off-machine log starts
   accumulating the day you subscribe — that history is the product; the
   dashboard is just the viewer. If that ordering bothers you, wait a month —
