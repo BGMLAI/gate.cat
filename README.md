@@ -149,18 +149,6 @@ What we ask back — this project runs on one currency:
   CHANGELOG, and the bypass suite grows from exactly these reports. …and if the
   gate ever blocks something dumb before it happened, a ⭐ helps other people find this.
 
-## Pricing
-
-**The local gate is free forever — including local reports. Cloud keeps the
-copy your agent can't touch.** A local log lives inside the agent's blast
-radius (agents have deleted files and then hidden it); the off-machine copy is
-the one it can't rewrite. **Solo $9/mo · Team $199/mo flat (up to 10 devs) ·
-audit-readiness pilots by invoice.** Cloud is an optional reporter *beside*
-the gate, never in its execution path, off by default, and sends hashed veto
-events (raw commands are a separate opt-in — commands can contain secrets).
-Details, the exact what-leaves-your-machine table, honest founding-stage
-caveats and the 30-day refund: [PRICING.md](PRICING.md).
-
 ## Verify the numbers
 
 Every public number traces to a row in [FACTS.md](FACTS.md) (claim → source →

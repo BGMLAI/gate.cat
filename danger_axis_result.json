@@ -1,0 +1,9 @@
+{
+  "danger_classes": 43,
+  "block": 30,
+  "warn": 13,
+  "misses": [],
+  "recall_pct": 100.0,
+  "benign": 13,
+  "false_blocks": []
+}
