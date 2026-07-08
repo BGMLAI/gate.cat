@@ -1,0 +1,53 @@
+name: "Veto story (a catch OR a miss)"
+description: "Tell us what gate.cat stopped — or what slipped through. Misses are worth more than praise."
+title: "[veto-story] "
+labels: ["veto-story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for dogfooding gate.cat. Two kinds of report help most:
+        - **a catch** — the gate blocked something you're glad it blocked, or
+        - **a miss** — a dangerous action that slipped through (these are the most valuable; confirmed misses get fixed and credited in the CHANGELOG).
+
+        Please redact anything sensitive (paths, hostnames, secrets) before pasting.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Catch or miss?
+      options:
+        - "Catch — it blocked something it should have"
+        - "Miss — a dangerous action ran that should have been blocked"
+        - "False block — it blocked something harmless"
+    validations:
+      required: true
+  - type: textarea
+    id: action
+    attributes:
+      label: The action
+      description: The command / tool call involved (redacted).
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+      description: What the gate did (or didn't), and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: gate.cat version
+      description: "Output of: python -c \"import gatecat; print(gatecat.__version__)\""
+      placeholder: "0.4.1"
+    validations:
+      required: true
+  - type: input
+    id: integration
+    attributes:
+      label: How it's wired
+      placeholder: "Claude Code hook / CrewAI / LangGraph / check_action() directly / proxy"
+    validations:
+      required: false

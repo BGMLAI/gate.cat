@@ -144,11 +144,10 @@ Sixty seconds of your time, in exchange for:
 
 What we ask back — this project runs on one currency:
 
-- 🐛 **a veto story** — [open an issue](https://github.com/BGMLAI/gate.cat/issues)
-  with what got blocked, or what slipped through. Misses are worth more than
-  praise: reported gaps get fixed and credited in the CHANGELOG, and the bypass
-  suite grows from exactly these reports. …and if the gate ever blocks something
-  dumb before it happened, a ⭐ helps other people find this.
+- 🐛 **a veto story** — [tell us what got caught, or what slipped through](https://github.com/BGMLAI/gate.cat/issues/new?template=veto-story.yml).
+  Misses are worth more than praise: reported gaps get fixed and credited in the
+  CHANGELOG, and the bypass suite grows from exactly these reports. …and if the
+  gate ever blocks something dumb before it happened, a ⭐ helps other people find this.
 
 ## Cache / Cache-Augmented Synthesis (supporting engine)
 
