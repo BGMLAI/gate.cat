@@ -401,8 +401,10 @@ def PAYMENTS(max_amount: float = 0.0, currency: str = "USD") -> Policy:
 GIT_FORCE_PUSH = Policy(
     name="GIT_FORCE_PUSH",
     # `push` may follow global opts (`git -C /repo push --force`); require a
-    # force flag that is not --force-with-lease
-    patterns=(r"\bgit\b(?=.*\bpush\b).*(--force(?!-with-lease)|(?<!\w)-f(?!\w))",),
+    # force flag that is not --force-with-lease. The short `-f` is matched
+    # case-sensitively via (?-i:-f) so `git commit -F file && git push`
+    # (message-from-file, a benign, common op) does NOT false-block.
+    patterns=(r"\bgit\b(?=.*\bpush\b).*(--force(?!-with-lease)|(?<!\w)(?-i:-f)(?!\w))",),
     reason="git push --force (without --force-with-lease) requires a human",
     description="Blocks history-destroying force pushes.",
 )

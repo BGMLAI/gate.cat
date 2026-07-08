@@ -159,6 +159,7 @@ _CAUGHT: tuple[Case, ...] = (
 _BENIGN: tuple[Case, ...] = (
     Case("rm -rv /tmp/cache", False, "allow", "recursive-verbose, NOT force"),
     Case("git push --force-with-lease origin feat", False, "allow", "lease-guarded push"),
+    Case("git commit -F /tmp/msg && git push", False, "allow", "-F (msg-from-file) is not -f force"),
     Case("terraform plan", False, "allow", "read-only plan"),
     Case("SELECT * FROM users WHERE id = 5", False, "allow", "ordinary read"),
     Case("DELETE FROM orders WHERE id = 42", False, "allow", "bounded DELETE (has WHERE)"),
