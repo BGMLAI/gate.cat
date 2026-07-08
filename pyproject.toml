@@ -1,6 +1,6 @@
 [project]
 name = "gate.cat"
-version = "0.4.2"
+version = "0.4.3"
 description = "Block irreversible AI-agent actions before they run — deterministic, fail-closed action-veto (deny-list + exec-check + human-in-the-loop), built for cheap/local model agents."
 readme = "README.md"
 license = {text = "Apache-2.0"}

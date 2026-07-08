@@ -29,7 +29,11 @@ if os.path.exists(_env_hf):
         line = line.strip()
         if line.startswith(("HF_TOKEN=", "HUGGING_FACE_HUB_TOKEN=")):
             os.environ["HF_TOKEN"] = line.split("=", 1)[1].strip().strip('"').strip("'")
-from datasets import load_dataset
+# NOTE: `datasets` (HuggingFace) is imported lazily inside run() only. Importing
+# this module for its catalog (DANGER_RX / danger_hits) — as recall_danger_axis.py
+# and corpus_million.py do — must NOT require the HF `datasets` package, which is
+# not a gate.cat dependency. A bare `pip install gate-cat` can then run the
+# deterministic danger-axis check with no extra installs.
 
 # --- INDEPENDENT danger catalog -------------------------------------------
 # Defined HERE, on purpose, NOT imported from the gate's policies. If the gate
@@ -230,6 +234,7 @@ def evaluate_cmd(cmd, cwd="/workspace/repo", home="/root"):
 
 
 def run(repo, split="train", config=None, limit_records=6000):
+    from datasets import load_dataset  # lazy: only the streaming path needs HF datasets
     print(f"\n=== {repo} ===", flush=True)
     try:
         ds = load_dataset(repo, config, split=split, streaming=True,

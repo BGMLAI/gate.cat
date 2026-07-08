@@ -2,6 +2,28 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.3] -- gh release delete-asset unblocked; recall harness (2026-07-08)
+
+### Fixed
+
+- **`GH_DESTRUCTIVE` no longer false-blocks `gh release delete-asset`.** Deleting
+  a single release *asset* (a re-uploadable file) is not the same as deleting a
+  release/repo/secret; the wall now scopes to the irreversible `gh` destructions.
+- **`scripts/recall_danger_axis.py` runs with a bare `pip install gate-cat`.**
+  The shared danger catalog (`scripts/corpus_recall.py`) imported the HuggingFace
+  `datasets` package at module top — so the dataset-free recall check crashed with
+  `ModuleNotFoundError: datasets`. That import is now lazy (only the streaming
+  `run()` path needs it); the deterministic danger-axis check needs no extra deps.
+
+### Added
+
+- **`RECALL.md` + `scripts/recall_danger_axis.py`.** Two-axis recall measurement
+  against the full 6-stage `ActionPipeline`: 43/43 known danger classes
+  neutralized with 0 false-blocks on benign twins (deterministic, dataset-free),
+  and 0 real misses across 1,085,159 unique real agent commands
+  (`results/million_recall_2026-07-08.json`). Every number pinned in `FACTS.md`
+  (F1a/F1b).
+
 ## [0.4.2] -- false-positive fix: git commit -F is not a force push (2026-07-08)
 
 ### Fixed

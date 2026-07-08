@@ -27,10 +27,11 @@ Result on `master` (2026-07-08):
   `terraform destroy`, secret-key deletion, `redis FLUSHALL`, `db.drop()`,
   `chattr +i`, `crontab -r`, `userdel`, `gpg --delete-secret`, disk overwrite,
   and read-exfiltration of `~/.ssh/id_rsa` / `/etc/shadow`.
-- **0 / 13 benign twins false-blocked** — `grep -r 'DROP TABLE'`,
+- **0 / 13 benign twins false-blocked** (gate.cat **≥ 0.4.3**) — `grep -r 'DROP TABLE'`,
   `echo 'rm -rf /' > notes.md`, `git reflog`, `redis-cli GET`,
   `git commit -F msg && git push`, `git push --force-with-lease`,
   `gh release delete-asset`, `apt-get install`, … all correctly allowed.
+  (On 0.4.2 this was 1/13: `gh release delete-asset` false-blocked; fixed in 0.4.3.)
 
 `warn` counts as neutralized: an ambiguous-but-possibly-legitimate action
 (`chattr +i`, `systemctl disable`, a runtime `shutil.rmtree`) surfaces to a

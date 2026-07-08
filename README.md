@@ -163,7 +163,7 @@ is measured on two axes in [RECALL.md](RECALL.md). The deterministic one needs n
 datasets and runs in seconds:
 
 ```bash
-pip install gate-cat
+pip install gate-cat            # >= 0.4.3
 python scripts/recall_danger_axis.py   # 43/43 known danger classes through the FULL gate, 0 false-blocks
 ```
 
