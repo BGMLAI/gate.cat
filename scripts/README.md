@@ -22,7 +22,7 @@ python scripts/corpus_eval.py --source nemotron <corpus>   # eval against the Ne
 
 ## What these are NOT
 
-Not the test suite (`pytest`, 907 tests) and not the bypass suite
+Not the test suite (`pytest`; 892 green in CI as of v0.4.1 — see FACTS.md F3) and not the bypass suite
 (`python -m gatecat.integrations.bypass_suite`, which prints its own known gaps). Those run with
 zero extra dependencies. These corpus scripts exist purely so the recall claim is checkable by a
 skeptic, not taken on faith.

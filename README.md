@@ -133,7 +133,7 @@ an accident of translation.
 Sixty seconds of your time, in exchange for:
 
 - a deterministic gate your agent cannot run `terraform destroy`, `rm -rf`,
-  `DROP TABLE` or `gh repo delete` through — 20 default policies for the
+  `DROP TABLE` or `gh repo delete` through — 21 default policies for the
   irreversible-action class, fail-closed, ~0.6% intervention rate measured on
   real traffic (it won't nag you);
 - a ready-to-paste Claude Code PreToolUse hook — the strongest mode:
@@ -148,6 +148,15 @@ What we ask back — this project runs on one currency:
   Misses are worth more than praise: reported gaps get fixed and credited in the
   CHANGELOG, and the bypass suite grows from exactly these reports. …and if the
   gate ever blocks something dumb before it happened, a ⭐ helps other people find this.
+
+## Verify the numbers
+
+Every public number traces to a row in [FACTS.md](FACTS.md) (claim → source →
+allowed wording), and the corpus harnesses behind the headline measurements are
+in [`scripts/`](scripts/README.md) — reproduce them, and if your numbers
+disagree with ours, that's a bug report we want. The 14.7k-command half of the
+~0.6% claim is our own private log (labeled as such in FACTS.md); the public
+corpus half you can re-run yourself.
 
 ## Cache / Cache-Augmented Synthesis (supporting engine)
 
