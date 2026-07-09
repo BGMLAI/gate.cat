@@ -2,6 +2,30 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.6] -- cache-path entry points honor the zero-dep-core contract (2026-07-08)
+
+### Fixed
+
+- **`gatecat-cli` no longer crashes with a raw `ModuleNotFoundError: numpy`** on a
+  plain `pip install gate-cat`. The CLI manages the semantic cache (behind the
+  optional `[cache]` extra), but imported it eagerly at module top level, so
+  running `gatecat-cli` at all raised a bare traceback instead of the clear
+  "install the extra" message the rest of the package already gives. Now guarded:
+  cache commands print `install gate-cat[cache]` and exit 1, and — bonus —
+  **`gatecat-cli audit` now works without the cache stack** (it runs against the
+  user's endpoint and never needed the cache; the eager import used to block it).
+- **`from gatecat import CachedOpenAI` / `CachedAnthropic`** without the deps now
+  name the *right* extra. The lazy loader's error rewrite is content-aware: a
+  missing numpy/hnswlib/onnxruntime → `[cache]`, a missing `openai` → `[openai]`,
+  a missing `anthropic` → `[anthropic]` — instead of a raw `No module named`
+  traceback (or a misleading `[cache]` when the SDK itself is what's absent).
+- Regression coverage: `tests/test_cache_path_degradation.py` (6 cases) pins the
+  message-vs-missing-dep mapping and that `audit` stays reachable cache-free.
+
+The veto path (`gate.cat` dashboard, `gatecat-hook`, `check_action`, adapters)
+was already clean and is unchanged; this only makes the cache-side entry points
+degrade as gracefully as the core already promised.
+
 ## [0.4.5] -- the hook gets a home on the landing page (2026-07-08)
 
 ### Added

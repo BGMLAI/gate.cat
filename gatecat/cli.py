@@ -9,12 +9,27 @@ Usage:
     gatecat audit data.jsonl   # "ile zgaduje TWOJ agent" — gate-audit na endpoincie
 """
 
+# Annotations are lazy strings (PEP 563) so `cmd_stats(cache: SemanticCache, ...)`
+# does not evaluate SemanticCache at import time — lets the cache import below be
+# guarded without breaking every function signature in this module.
+from __future__ import annotations
+
 import argparse
 import json
 import os
+import sys
 import time
 
-from gatecat.cache import SemanticCache, DEFAULT_CACHE_DIR
+# The whole CLI (except `audit`, which runs against the user's endpoint) manages
+# the semantic cache, which lives behind the optional [cache] extra. Guard the
+# import so `gatecat-cli` prints a clear "install the extra" line instead of a
+# raw `ModuleNotFoundError: numpy` traceback — the zero-dep-core contract the
+# rest of the package already honors (see gatecat/__init__.py).
+try:
+    from gatecat.cache import SemanticCache, DEFAULT_CACHE_DIR
+except ImportError:
+    SemanticCache = None  # type: ignore[assignment, misc]
+    DEFAULT_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".gatecat")
 
 
 def cmd_stats(cache: SemanticCache, args):
@@ -190,6 +205,18 @@ def main():
     if args.command == "audit":
         cmd_audit(args)
         return
+
+    # every other command manages the cache; without the [cache] extra, say so
+    # cleanly instead of crashing on the numpy import above.
+    if SemanticCache is None:
+        print(
+            "gatecat-cli's cache commands need the semantic-cache extra: "
+            "`pip install gate-cat[cache]` (adds numpy/hnswlib/onnxruntime).\n"
+            "The action-veto guardrail, its `gate.cat` dashboard, and "
+            "`gatecat-cli audit` need none of it.",
+            file=sys.stderr,
+        )
+        return 1
 
     cache = SemanticCache(
         cache_dir=args.cache_dir,

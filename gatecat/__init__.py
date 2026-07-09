@@ -83,7 +83,7 @@ del _migrate_legacy_env
 # (`pip install gate.cat[cache]`) - see pyproject. A clear ImportError tells the
 # user to install the extra if they reach for a cache name without it.
 
-__version__ = "0.4.5"
+__version__ = "0.4.6"
 
 # name -> (submodule, is_cache_feature). is_cache_feature=True means the symbol
 # lives behind the heavy ML stack, so a missing-dep ImportError is rewritten to
@@ -215,13 +215,28 @@ def __getattr__(name):
     try:
         module = importlib.import_module(module_name)
     except ImportError as exc:
-        if is_cache_feature:
-            # a heavy-stack name reached without the optional deps installed:
-            # tell the user exactly how to enable it, not "No module named numpy"
+        # Rewrite a raw `No module named 'X'` into the exact extra to install.
+        # is_cache_feature symbols always need [cache]; the SDK wrappers
+        # (CachedOpenAI/Anthropic) need [cache] AND their SDK, so key off WHICH
+        # dep is actually missing rather than the symbol — otherwise a user with
+        # numpy but no openai would be told "[cache]" when they need "[openai]".
+        missing = str(exc)
+        cache_deps = ("numpy", "hnswlib", "onnxruntime", "tokenizers", "huggingface")
+        if is_cache_feature or any(d in missing for d in cache_deps):
             raise ImportError(
                 f"'{name}' needs the semantic-cache extra. Install it with "
                 f"`pip install gate.cat[cache]` (adds numpy/hnswlib/onnxruntime). "
                 f"The action-veto guardrail itself needs none of these."
+            ) from exc
+        if "openai" in missing:
+            raise ImportError(
+                f"'{name}' needs the OpenAI extra: `pip install gate.cat[openai]` "
+                f"(and gate.cat[cache] for the caching it wraps)."
+            ) from exc
+        if "anthropic" in missing:
+            raise ImportError(
+                f"'{name}' needs the Anthropic extra: `pip install gate.cat[anthropic]` "
+                f"(and gate.cat[cache] for the caching it wraps)."
             ) from exc
         raise
     return getattr(module, name)
