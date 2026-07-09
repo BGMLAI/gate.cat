@@ -558,9 +558,18 @@ GIT_FORCE_PUSH = Policy(
 
 RM_RF = Policy(
     name="RM_RF",
-    # combined flags in any order incl. extra letters (-rf, -rfv, -Rfi, -fr) and
-    # split flags (-r -f); the old trailing \\b let `-rfv` slip through
-    patterns=(r"\brm\b(?=.*(-\w*r\w*f|-\w*f\w*r|-r\b.*-f\b|-f\b.*-r\b))",),
+    # Flags are matched as TOKENS: '-' preceded by start/whitespace/quote (the
+    # quote keeps `rm "-rf" /` caught). The old any-substring lookahead
+    # false-blocked '-fr'/'-rf' INSIDE filenames - `rm /tmp/pypirc-fresh`
+    # vetoed live on 2026-07-09. [^\n|;&]* keeps the match inside one command
+    # segment, so `rm x && tar -rf a.tar y` is not blamed on rm.
+    patterns=(
+        # one combined flag token: -rf, -fr, -rfv, -vrf, -Rfi, ...
+        r"\brm\b[^\n|;&]*(?<![^\s'\"])-[a-z]*(?:r[a-z]*f|f[a-z]*r)[a-z]*",
+        # split flag tokens, either order: -r ... -f / -f ... -r (incl. -rv -f)
+        r"\brm\b[^\n|;&]*(?<![^\s'\"])-[a-z]*r[a-z]*[^\n|;&]*(?<![^\s'\"])-[a-z]*f",
+        r"\brm\b[^\n|;&]*(?<![^\s'\"])-[a-z]*f[a-z]*[^\n|;&]*(?<![^\s'\"])-[a-z]*r",
+    ),
     reason="recursive force delete requires a human",
     description="Blocks rm -rf and flag-order variants.",
 )

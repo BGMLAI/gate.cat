@@ -155,17 +155,34 @@ def _gate_for(policies: tuple) -> tuple[Any, str]:
 def _which_policy(action: str, policies: Sequence[Any]) -> str | None:
     """Map a real-engine block back to the integrations preset that owns the
     matching pattern, so the audit log records ``RM_RF`` not the engine's
-    generic ``policy-deny``. Best-effort: first Policy whose pattern hits."""
+    generic ``policy-deny``.
+
+    BLOCK OUTRANKS WARN, regardless of list order: ``check_action`` downgrades
+    the decision to a warn when the attributed policy is level="warn", so if a
+    warn-level policy sits EARLIER in the list than a block-level policy that
+    also matches, first-match attribution would silently downgrade a hard
+    danger to a warning. That is exactly what happened with operator packs:
+    the core generic net ``HTTP_API_DELETE_GENERIC`` (warn) pre-empted a
+    pack's ``HTTP_API_SAAS_DESTROY`` (block) on the same ``curl -X DELETE``,
+    because ``GATECAT_EXTRA_POLICIES`` appends packs after the built-ins.
+    Two passes — block-level policies first, then warn-level — keep the
+    within-level order stable and make the result order-independent
+    (fail-closed: a hard match is never degraded by attribution order)."""
     import re
 
-    for p in policies:
-        for pat in p.patterns:
-            try:
-                if re.search(pat, action, re.IGNORECASE):
-                    return p.name
-            except re.error:
-                return p.name  # a bad pattern is what fail-closed-blocked us
-    return None
+    def _first_hit(pool: Sequence[Any]) -> str | None:
+        for p in pool:
+            for pat in p.patterns:
+                try:
+                    if re.search(pat, action, re.IGNORECASE):
+                        return p.name
+                except re.error:
+                    return p.name  # a bad pattern is what fail-closed-blocked us
+        return None
+
+    blockers = [p for p in policies if getattr(p, "level", "block") != "warn"]
+    warners = [p for p in policies if getattr(p, "level", "block") == "warn"]
+    return _first_hit(blockers) or _first_hit(warners)
 
 
 def _normalize_real(raw: Any, action: str, policies: Sequence[Any]) -> Decision:
