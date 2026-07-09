@@ -176,6 +176,14 @@ _CAUGHT: tuple[Case, ...] = (
 # (false-block rate is the headline adoption-killer metric)
 _BENIGN: tuple[Case, ...] = (
     Case("rm -rv /tmp/cache", False, "allow", "recursive-verbose, NOT force"),
+    # 2026-07-09 live false-positive class: flag-looking substrings INSIDE a
+    # filename are not flags. Flags now match as tokens only.
+    Case("rm /tmp/pypirc-fresh", False, "allow",
+         "'-fre' inside a filename is not an -fr flag (vetoed live 2026-07-09)"),
+    Case("rm notes-fr.md", False, "allow", "'-fr' inside a filename is not a flag"),
+    Case("rm foo-rf.txt", False, "allow", "'-rf' inside a filename is not a flag"),
+    Case("rm old.log && tar -rf backup.tar new.log", False, "allow",
+         "-rf belongs to tar in the NEXT command segment, not to rm"),
     Case("git push --force-with-lease origin feat", False, "allow", "lease-guarded push"),
     Case("git commit -F /tmp/msg && git push", False, "allow", "-F (msg-from-file) is not -f force"),
     Case("terraform plan", False, "allow", "read-only plan"),

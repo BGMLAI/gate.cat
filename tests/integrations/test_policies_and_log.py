@@ -84,6 +84,42 @@ def test_policy_patterns_block_and_dont_false_block():
         assert not _matches(policy, text), f"{policy.name} false-blocked: {text}"
 
 
+def test_rm_rf_matches_flag_tokens_not_filename_substrings():
+    """Live false-positive 2026-07-09: `rm /tmp/pypirc-fresh` was vetoed because
+    the old lookahead matched '-fre' INSIDE the filename as if it were an -fr
+    flag. Flags must be matched as tokens (leading '-' after start/whitespace/
+    quote), while every dangerous flag spelling stays caught."""
+    from gatecat.integrations.policies import RM_RF
+
+    must_allow = [
+        "rm /tmp/pypirc-fresh",     # the live veto: '-fre' inside a filename
+        "rm notes-fr.md",           # '-fr' inside a filename
+        "rm foo-rf.txt",            # '-rf' inside a filename
+        "rm -r /tmp/pypirc-fresh",  # real -r must not pair with filename '-fre'
+        "rm -f notes-fr.md",        # real -f must not pair with filename '-fr'
+        "rm -f stale.lock",         # force alone is not recursive
+        "rm -r build/",             # recursive alone is not force
+        "rm old.log && tar -rf backup.tar new.log",  # -rf belongs to tar
+        "rm -r tmp; grep -f patterns.txt data",      # -f belongs to grep
+    ]
+    must_block = [
+        "rm -rf /srv",
+        "rm -fr /srv",
+        "rm -r -f /srv",
+        "rm -f -r /srv",
+        "rm -Rf /srv",
+        "rm -vrf /srv",     # combined with a leading extra letter
+        "rm -rfv /var",
+        "rm -Rfi /",
+        "rm -rv -f /srv",   # split with an extra letter
+        'rm "-rf" /srv',    # quoting does not stop rm from seeing -rf
+    ]
+    for text in must_block:
+        assert _matches(RM_RF, text), f"RM_RF should block: {text}"
+    for text in must_allow:
+        assert not _matches(RM_RF, text), f"RM_RF false-blocked: {text}"
+
+
 def test_shadow_enabled_resolution(monkeypatch):
     """A8: explicit arg wins; env var decides otherwise; default is enforce.
     Unrecognized env values must resolve to enforce (fail-safe direction)."""
