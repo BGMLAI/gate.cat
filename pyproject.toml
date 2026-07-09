@@ -1,7 +1,7 @@
 [project]
 name = "gate.cat"
-version = "0.4.6"
-description = "Block irreversible AI-agent actions before they run — deterministic, fail-closed action-veto (deny-list + exec-check + human-in-the-loop), built for cheap/local model agents."
+version = "0.4.7"
+description = "Block irreversible AI-agent actions before they run — deterministic, fail-closed action-veto (deny-list + exec-check + human-in-the-loop) for any tool-using agent, from a Claude Code hook to local LLMs."
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"

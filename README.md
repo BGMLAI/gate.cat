@@ -20,11 +20,15 @@
 > intervenes on **~0.6% of commands on both** — the deny-list found something
 > structural, not tuned to one user.
 
-**Stop your AI agent before it takes an irreversible action.** `TruthPipeline` gives an honest
-verdict on any answer (confirmed / refuted / uncertain / unchecked) using deterministic checks
-(exec/calc/lookup) plus a sample-spread uncertainty signal — `veto.py` consumes that verdict to
-block, pause, or ask a human before a tool call executes. Built for the cheap/local model stack
-(7-30B via Ollama/vLLM) that frontier-first guardrails don't target.
+**Stop your AI agent before it takes an irreversible action.** The action-veto is
+**deterministic and model-agnostic** — a deny-list + exec-check + human-in-the-loop that
+inspects the *tool call* at the boundary, so it protects any agent the same way: a Claude Code
+hook (frontier), a crewAI/LangGraph app, or a local 7-30B model on Ollama/vLLM. `TruthPipeline`
+adds an honest verdict (confirmed / refuted / uncertain / unchecked) using deterministic checks
+(exec/calc/lookup) plus a sample-spread uncertainty signal; `veto.py` consumes that verdict to
+block, pause, or ask a human before a tool call executes. (That uncertainty *signal* — a
+secondary feature — is where the 7-30B local-model strength lives; see "Why small/cheap models"
+below. The veto itself needs no such assumption.)
 
 One mechanism, not two products: the verification engine (`TruthPipeline`) and the action-gate
 that consumes it (`before_action` / `VetoGate`) ship together — same package, same brand.
@@ -153,10 +157,12 @@ veto · `check_action(repr)` evaluates an action without running it.
 (stale base, answer confirmed), `None`/exception = no ruling → `uncertain`.
 Every stage that spoke is recorded in `report.stages` for debugging.
 
-**Why small/cheap models**: agents increasingly run on cheap/local models (7-30B via Ollama/vLLM)
-for cost and data-residency. That's where the gate's uncertainty signal is strongest
-(AUC 0.77–0.90, measured N=4800) and where frontier-first guardrail vendors don't aim — on
-frontier models the gate weakens (AUC 0.68–0.71).
+**Why small/cheap models** (this is about the uncertainty *signal*, not the veto — the veto is
+model-agnostic): agents increasingly run on cheap/local models (7-30B via Ollama/vLLM) for cost
+and data-residency. That's where the gate's *uncertainty signal* is strongest (AUC 0.77–0.90,
+measured N=4800) and where frontier-first guardrail vendors don't aim — on frontier models the
+*signal* weakens (AUC 0.68–0.71). The action-veto's deny-list + exec-check does not depend on
+model size at all; it protects a Claude Code (frontier) agent exactly as it protects a local one.
 
 *Naming note*: `koryto` (Polish: riverbed) is the project's canonical term for the
 deterministic verification layer — the probabilistic "river" (model output) is held

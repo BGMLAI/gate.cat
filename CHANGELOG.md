@@ -2,6 +2,21 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.7] -- positioning fix: the veto is model-agnostic (2026-07-08)
+
+### Changed
+
+- **Dropped the inaccurate "built for cheap/local model agents" framing** from the
+  package description, GitHub About, README, and llms.txt. The action-veto is
+  **deterministic and model-agnostic** — it inspects the tool call at the
+  boundary, so it protects any agent the same way, and the flagship integration
+  is a Claude Code hook (a *frontier* model). Claiming it's "for cheap/local
+  models" both contradicted that flagship use case and needlessly told
+  frontier-agent users it wasn't for them. The 7-30B local-model strength is real
+  but belongs specifically to the *uncertainty signal* (a secondary feature,
+  AUC 0.77-0.90; FACTS F6/F7) — now scoped there, not applied to the whole
+  product. No code change.
+
 ## [0.4.6] -- cache-path entry points honor the zero-dep-core contract (2026-07-08)
 
 ### Fixed

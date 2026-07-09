@@ -6,8 +6,9 @@
 > gate-cat`) and, most importantly, as a **Claude Code PreToolUse hook** that runs
 > in the harness, outside the model's control flow: the tool call cannot execute
 > until the gate returns. Same command → same verdict, no temperature, nothing to
-> persuade. Apache-2.0, zero-dependency core. Built for cheap/local model agents
-> (7–30B via Ollama/vLLM).
+> persuade. Apache-2.0, zero-dependency core. Model-agnostic: it protects any
+> tool-using agent the same way — a Claude Code (frontier) hook, a crewAI/LangGraph
+> app, or a local 7–30B model on Ollama/vLLM.
 
 ## The problem it solves
 
