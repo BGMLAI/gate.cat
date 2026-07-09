@@ -16,6 +16,11 @@ from gatecat.integrations._audit import (
 )
 from gatecat.integrations._engine import ActionVetoed, Decision, EngineUnavailable, evaluate
 from gatecat.integrations._log import ascii_safe, log_decision
+from gatecat.integrations.extra_policies import (
+    ExtraPolicyError,
+    load_extra_policies,
+    policies_with_extras,
+)
 from gatecat.integrations.guard import (
     check_action,
     ephemeral_context,
@@ -52,6 +57,10 @@ __all__ = [
     # logging / D1
     "ascii_safe",
     "log_decision",
+    # GATECAT_EXTRA_POLICIES loader (fold operator packs into the hook/proxy)
+    "ExtraPolicyError",
+    "load_extra_policies",
+    "policies_with_extras",
     # compliance split-log (skeleton hash-chain + redactable PII sidecar)
     "AuditRecord",
     "HumanOversight",

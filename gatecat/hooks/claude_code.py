@@ -35,6 +35,15 @@ Write/Edit: only the operation + target path are evaluated - file content is
 data, not a command (``GATECAT_HOOK_SCAN_FILE_CONTENT=1`` opts back into
 content scanning). See ``action_text`` for the full rationale.
 
+Extra policy packs: ``GATECAT_EXTRA_POLICIES`` (comma-separated importable
+modules, e.g. ``gatecat_packs.fintech,mycompany.policies``) are imported at
+startup and folded into ``DOGFOOD_DEFAULTS`` before evaluation — this is the
+only way a community/private pack reaches the hook, the strongest enforcement
+point. A pack that cannot be imported, or that holds a non-Policy object,
+BLOCKS (exit 2, ``EXTRA_POLICIES``) — a config fault, not an action decision,
+so it blocks even in shadow mode (a security tool must never run WITHOUT a
+policy the operator believes is enforced).
+
 A8 (shadow mode): ``GATECAT_VETO_SHADOW=1`` logs would-be blocks as
 ``shadow_block`` and exits 0 — handled inside ``check_action``. Two cases
 still exit 2 even in shadow mode: malformed stdin (cannot know what it would
@@ -130,11 +139,12 @@ def main() -> int:
     # `wipefs -af /dev/sda` passed. Never move this import back to the top.
     try:
         from gatecat.integrations import (
-            DOGFOOD_DEFAULTS,
             ActionVetoed,
+            ExtraPolicyError,
             ascii_safe,
             check_action,
             log_decision,
+            policies_with_extras,
         )
     except BaseException as exc:  # noqa: BLE001 — ANY import failure blocks
         sys.stderr.write(_ascii(
@@ -146,6 +156,22 @@ def main() -> int:
     if os.environ.get(_TEST_SLEEP_ENV):  # watchdog contract test only
         import time
         time.sleep(float(os.environ[_TEST_SLEEP_ENV]))
+
+    # GATECAT_EXTRA_POLICIES (fail-closed): fold operator-configured packs
+    # (e.g. gatecat_packs.fintech) into DOGFOOD_DEFAULTS BEFORE evaluating.
+    # Without this the hook — the strongest enforcement point — could only run
+    # the built-ins, so a pack the operator installed was silently absent here.
+    # A broken/mis-named/non-Policy pack BLOCKS (exit 2) like ENGINE_UNAVAILABLE:
+    # it is a config fault, not an action decision, so it blocks even in shadow
+    # mode — a security tool must never run WITHOUT a policy the user believes
+    # is enforced.
+    try:
+        policies = policies_with_extras()  # DOGFOOD_DEFAULTS + GATECAT_EXTRA_POLICIES
+    except ExtraPolicyError as exc:
+        reason = f"gate.cat VETO [EXTRA_POLICIES]: {exc}"
+        log_decision(source=SOURCE, decision="block", reason=reason, context="<startup>")
+        print(ascii_safe(reason), file=sys.stderr)
+        return BLOCK
 
     try:
         event = json.load(sys.stdin)
@@ -168,7 +194,7 @@ def main() -> int:
     #   warn  -> exit 0, but surface the "unchecked" notice on stderr + log it
     #   allow -> exit 0, silent
     try:
-        decision = check_action(SOURCE, action, DOGFOOD_DEFAULTS, cwd=cwd, env=env)
+        decision = check_action(SOURCE, action, policies, cwd=cwd, env=env)
     except ActionVetoed as exc:
         print(str(exc), file=sys.stderr)  # already ASCII-safe
         return BLOCK

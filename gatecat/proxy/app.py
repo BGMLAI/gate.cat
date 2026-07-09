@@ -13,6 +13,7 @@ Or via Docker:
 import json
 import logging
 import os
+import sys
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -25,7 +26,12 @@ from fastapi.responses import JSONResponse, StreamingResponse
 # numpy/onnxruntime (the [cache] extra); the ACTION-VETO is pure stdlib. So
 # `pip install gate-cat[proxy]` must import and veto WITHOUT the heavy cache
 # stack — a client who only wants "veto my agent" should not need onnxruntime.
-from gatecat.integrations import check_action, ActionVetoed, DOGFOOD_DEFAULTS
+from gatecat.integrations import (
+    check_action,
+    ActionVetoed,
+    ExtraPolicyError,
+    policies_with_extras,
+)
 from gatecat.proxy.config import ProxyConfig
 from gatecat.proxy.models import (
     ChatCompletionRequest,
@@ -39,6 +45,36 @@ from gatecat.proxy.models import (
 )
 
 logger = logging.getLogger("gatecat.proxy")
+
+
+def _resolve_veto_policies():
+    """Resolve the effective veto policy list ONCE at import: DOGFOOD_DEFAULTS
+    plus any operator-configured GATECAT_EXTRA_POLICIES packs.
+
+    Fail-closed (security tool): if the env var names a pack that cannot be
+    imported or contains a non-Policy object, we do NOT silently fall back to
+    the defaults — the operator believes those policies are enforced. We log
+    loudly (stderr + logger) and re-raise so the proxy REFUSES TO START rather
+    than serve traffic with a gap the user thinks is covered. The import fails,
+    so `uvicorn gatecat.proxy.app:app` aborts with the reason on stderr.
+    """
+    try:
+        return policies_with_extras()
+    except ExtraPolicyError as exc:
+        msg = (
+            f"gate.cat FATAL [EXTRA_POLICIES]: {exc} — refusing to start the "
+            "proxy with a policy pack the operator configured but that could "
+            "not be loaded (fail-closed)."
+        )
+        print(msg, file=sys.stderr, flush=True)
+        logger.critical(msg)
+        raise
+
+
+# Effective deny-list for the proxy layer: built-ins + GATECAT_EXTRA_POLICIES.
+# Resolved once at import (env is fixed for the server's lifetime); a broken
+# extra-policy config aborts startup rather than degrading silently.
+_VETO_POLICIES = _resolve_veto_policies()
 
 
 def _extract_query(messages: list) -> str:
@@ -105,7 +141,7 @@ def _veto_tool_calls(resp_data: dict):
             if not action:
                 continue
             try:
-                check_action("proxy_tool_call", action, DOGFOOD_DEFAULTS)
+                check_action("proxy_tool_call", action, _VETO_POLICIES)
             except ActionVetoed as exc:
                 return True, str(exc), action
             except Exception as exc:  # engine error on a REAL call -> fail-closed
