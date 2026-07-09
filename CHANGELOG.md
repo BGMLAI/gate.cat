@@ -2,10 +2,27 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
-## [Unreleased]
+## [0.4.8] -- policy packs plug into the hook; 28 core defaults (2026-07-09)
 
 ### Added
 
+- **`GATECAT_EXTRA_POLICIES` loader -- operator policy packs now reach the
+  hook and the proxy** (`gatecat/integrations/extra_policies.py`). The Claude
+  Code hook and the proxy hard-coded `DOGFOOD_DEFAULTS`, so a pack the operator
+  installed (e.g. `gatecat_packs.fintech`) only worked through the SDK -- never
+  in the strongest enforcement point (the PreToolUse block that runs BEFORE the
+  command executes). Set a comma-separated module list
+  (`GATECAT_EXTRA_POLICIES=gatecat_packs.fintech,mycompany.policies`); each
+  module's `POLICIES` list and every `*_PACK` attribute are folded in after the
+  built-ins. FAIL-CLOSED contract: an unimportable module, a non-Policy object,
+  or a named-but-empty module raises `ExtraPolicyError` -- the hook exits 2
+  (`EXTRA_POLICIES`, even in shadow mode: a config fault is not an action
+  decision) and the proxy refuses to start, rather than silently running
+  without a policy the operator believes is enforced. 19 tests
+  (`tests/integrations/test_extra_policies.py`), including subprocess
+  end-to-end: pack blocks its danger, allows the benign twin, the same danger
+  passes with NO pack configured (proving the pack is what blocks it), broken
+  pack fails closed.
 - **Coverage-audit promotion (2026-07-09): 5 new core default policies**
   (`DOGFOOD_DEFAULTS` **23 -> 28**, presets 25 -> 30). The 2026-07-09 coverage
   audit found three *universal + catastrophic* classes PASSING the default gate
