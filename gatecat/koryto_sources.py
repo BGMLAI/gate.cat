@@ -1,47 +1,47 @@
-"""koryto_sources — realne źródła faktów dla kanału lookup koryta.
+"""koryto_sources — real fact sources for the koryto lookup channel.
 
-ROZKAZ (REJESTR 2026-06-27): koryto-lookup MA korzystać ze WSZYSTKICH baz dobrej
-jakości, nie z jednej walidacyjnej. Ten moduł buduje `lookup_fn` (callback który
-FactBase przyjmuje, koryto.py:193) pytający REALNE bazy z BRAMKĄ JAKOŚCI.
+DIRECTIVE (REGISTER 2026-06-27): koryto-lookup MUST use ALL good-quality
+databases, not a single validation one. This module builds `lookup_fn` (the callback
+that FactBase accepts, koryto.py:193) that queries REAL databases with a QUALITY GATE.
 
-ŹRÓDŁA (zinwentaryzowane na żywo 2026-06-27):
-  - 4M Q&A cache na VPS (główne; recall 0.78-0.89 odróżnialne = dobra jakość, proza).
-  - ChromaDB GTX1070 `coding_cache_v1` (2074; ⚠️ zawiera MCQ → TYLKO po filtrze MCQ).
-  - F-coding-cache D:/ (10 wpisów = pusty szkielet → POMINIĘTE).
+SOURCES (inventoried live 2026-06-27):
+  - 4M Q&A cache on the VPS (primary; recall 0.78-0.89 discriminable = good quality, prose).
+  - ChromaDB GTX1070 `coding_cache_v1` (2074; ⚠️ contains MCQ → ONLY after the MCQ filter).
+  - F-coding-cache D:/ (10 entries = empty skeleton → SKIPPED).
 
-BRAMKA JAKOŚCI (bez niej baza-szum truje lookup — gotcha: web-szum psuje 2-3× mocniej):
-  1. similarity ≥ próg (domyślnie 0.82 — trafny retrieval, nie luźny),
-  2. filtr MCQ (odrzuć dokumenty wielokrotnego wyboru — skażają pomiar),
-  3. odrzuć puste / za krótkie atomy.
+QUALITY GATE (without it a noisy database poisons lookup — gotcha: web noise hurts 2-3× more):
+  1. similarity ≥ threshold (default 0.82 — accurate retrieval, not loose),
+  2. MCQ filter (reject multiple-choice documents — they contaminate the measurement),
+  3. reject empty / too-short atoms.
 
-FAIL-SAFE: niedostępne źródło → None (NIE crash). Lookup po prostu nie zna atomu.
-Kanał lookup jest „miękki" (needs_arbiter) — web-rozjemca i tak rozsądza spór.
+FAIL-SAFE: unavailable source → None (NOT a crash). Lookup simply does not know the atom.
+The lookup channel is "soft" (needs_arbiter) — the web arbiter settles the dispute anyway.
 """
 from __future__ import annotations
 
 import re
 from typing import Callable, Optional, Sequence
 
-# domyślne progi jakości
-DEFAULT_MIN_SIM = 0.82          # trafny retrieval (recall trafnych 0.78-0.89; luźne 0.25-0.45)
-DEFAULT_MIN_ATOM_LEN = 3        # krótszy atom = bezużyteczny
+# default quality thresholds
+DEFAULT_MIN_SIM = 0.82          # accurate retrieval (recall for hits 0.78-0.89; loose 0.25-0.45)
+DEFAULT_MIN_ATOM_LEN = 3        # shorter atom = useless
 DEFAULT_TIMEOUT = 8.0
 
-# wzorce MCQ — dokument który tak wygląda skaża lookup (kolidujące opcje A/B/C)
+# MCQ patterns — a document that looks like this contaminates lookup (conflicting options A/B/C)
 _MCQ_RE = re.compile(r"(?:^|\n)\s*(?:Options?:|[A-J][\.\)]\s)", re.IGNORECASE)
 
 
 def is_mcq(text: str) -> bool:
-    """Czy dokument to pytanie wielokrotnego wyboru (MMLU-style). Takie skażają lookup."""
+    """Whether the document is a multiple-choice question (MMLU-style). Such documents contaminate lookup."""
     if not text:
         return False
-    # >=3 markery 'A. B. C.' lub jawne 'Options:' = MCQ
+    # >=3 markers 'A. B. C.' or an explicit 'Options:' = MCQ
     markers = len(re.findall(r"(?:^|\n)\s*[A-J][\.\)]\s", text))
     return bool(_MCQ_RE.search(text)) and markers >= 3
 
 
 def _quality_ok(atom: Optional[str], sim: float, min_sim: float, min_len: int) -> bool:
-    """Bramka jakości: sim, długość, nie-MCQ."""
+    """Quality gate: sim, length, non-MCQ."""
     if atom is None:
         return False
     a = str(atom).strip()
@@ -55,7 +55,7 @@ def _quality_ok(atom: Optional[str], sim: float, min_sim: float, min_len: int) -
 
 
 # ---------------------------------------------------------------------------
-# Źródło 1: HTTP semantic cache (4M VPS lub dowolny gatecat-proxy /lookup)
+# Source 1: HTTP semantic cache (4M VPS or any gatecat-proxy /lookup)
 # ---------------------------------------------------------------------------
 
 def http_cache_source(
@@ -65,11 +65,11 @@ def http_cache_source(
     min_sim: float = DEFAULT_MIN_SIM,
     timeout: float = DEFAULT_TIMEOUT,
 ) -> Callable[[str], Optional[str]]:
-    """Zbuduj lookup_fn pytający semantic cache po HTTP.
+    """Build a lookup_fn that queries a semantic cache over HTTP.
 
-    Oczekuje endpointu zwracającego cached odpowiedź + similarity. Próbuje:
+    Expects an endpoint returning a cached answer + similarity. Tries:
       POST {base_url}/lookup {"query": q}  → {"answer"/"response", "similarity"}
-    Fail-safe: każdy błąd/timeout/miss → None.
+    Fail-safe: any error/timeout/miss → None.
     """
     import httpx
 
@@ -93,7 +93,7 @@ def http_cache_source(
 
 
 # ---------------------------------------------------------------------------
-# Źródło 2: ChromaDB (GTX1070 coding_cache_v1 lub lokalny) — po filtrze MCQ
+# Source 2: ChromaDB (GTX1070 coding_cache_v1 or local) — after the MCQ filter
 # ---------------------------------------------------------------------------
 
 def chroma_source(
@@ -105,9 +105,9 @@ def chroma_source(
     min_sim: float = DEFAULT_MIN_SIM,
     timeout: float = DEFAULT_TIMEOUT,
 ) -> Callable[[str], Optional[str]]:
-    """Zbuduj lookup_fn pytający ChromaDB v2 (cosine). Zwraca top-1 dokument
-    TYLKO gdy: distance→sim ≥ próg I dokument NIE jest MCQ (filtr skażenia).
-    Fail-safe: błąd/niedostępne → None.
+    """Build a lookup_fn that queries ChromaDB v2 (cosine). Returns the top-1 document
+    ONLY when: distance→sim ≥ threshold AND the document is NOT MCQ (contamination filter).
+    Fail-safe: error/unavailable → None.
     """
     import httpx
 
@@ -138,7 +138,7 @@ def chroma_source(
 
 
 # ---------------------------------------------------------------------------
-# Źródło 3: MiniLM lokalny embedder na statycznej bazie atomów (offline, 0 latency sieciowej)
+# Source 3: MiniLM local embedder over a static atom database (offline, 0 network latency)
 # ---------------------------------------------------------------------------
 
 def minilm_factbase_source(
@@ -149,26 +149,26 @@ def minilm_factbase_source(
     min_sim: float = DEFAULT_MIN_SIM,
     min_len: int = DEFAULT_MIN_ATOM_LEN,
 ) -> "Callable[[str], Optional[str]]":
-    """Zbuduj lookup_fn z lokalnej bazy atomów (lista par (question, answer)).
+    """Build a lookup_fn from a local atom database (a list of (question, answer) pairs).
 
-    Embeduje pytania bazy raz przy budowie (macierz N×384 w RAM), potem
-    cosine per query: mat @ qv, argmax, próg. Offline, deterministyczne,
-    ~0ms latency sieciowej. Wymaga onnxruntime + tokenizers (systemowy python3).
+    Embeds the database questions once at build time (an N×384 matrix in RAM), then
+    cosine per query: mat @ qv, argmax, threshold. Offline, deterministic,
+    ~0ms network latency. Requires onnxruntime + tokenizers (system python3).
 
     Args:
-        atoms: lista (question, answer) — pytania bazy i oczekiwane odpowiedzi.
-        embedder: opcjonalny gotowy embedder (np. get_embedder('minilm')). Gdy None,
-                  ładuje singleton z cache_dir.
-        cache_dir: katalog z modelem ONNX (domyślnie ~/.bgml/models/embeddings).
-        min_sim: próg cosine similarity (domyślnie DEFAULT_MIN_SIM=0.82).
-        min_len: minimalny len odpowiedzi.
+        atoms: list of (question, answer) — database questions and expected answers.
+        embedder: optional ready-made embedder (e.g. get_embedder('minilm')). When None,
+                  loads a singleton from cache_dir.
+        cache_dir: directory with the ONNX model (default ~/.bgml/models/embeddings).
+        min_sim: cosine similarity threshold (default DEFAULT_MIN_SIM=0.82).
+        min_len: minimum answer length.
 
     Returns:
         lookup_fn: callable(question: str) → Optional[str]
 
-    Fail-safe: błąd ładowania embeddera → None zawsze (nie crash).
+    Fail-safe: embedder loading error → always None (no crash).
 
-    Przykład:
+    Example:
         from gatecat.koryto_sources import minilm_factbase_source, multi_source
         from gatecat.koryto import Koryto, FactBase
 
@@ -186,7 +186,7 @@ def minilm_factbase_source(
         if not pairs:
             return lambda q: None
         questions = [q for q, _ in pairs]
-        # encode_batch w chunkach po 8 - unikamy OOM na duzych bazach
+        # encode_batch in chunks of 8 - avoids OOM on large databases
         CHUNK = 8
         vecs = []
         for i in range(0, len(questions), CHUNK):
@@ -217,12 +217,12 @@ def minilm_factbase_from_jsonl(
     cache_dir: str = "C:/Users/bogum/.bgml/models/embeddings",
     min_sim: float = DEFAULT_MIN_SIM,
 ) -> "Callable[[str], Optional[str]]":
-    """Wygodny wrapper: wczytaj atomy z pliku JSONL i zbuduj minilm_factbase_source.
+    """Convenience wrapper: load atoms from a JSONL file and build minilm_factbase_source.
 
-    Format pliku: jedna linia = JSON {"q": "pytanie", "a": "odpowiedź", ...}.
-    Ignoruje linie bez q_field / a_field.
+    File format: one line = JSON {"q": "question", "a": "answer", ...}.
+    Ignores lines without q_field / a_field.
 
-    Przykład:
+    Example:
         lookup = minilm_factbase_from_jsonl("E:/atoms/conala/conala_atoms.jsonl")
         koryto = Koryto(fact_base=FactBase(lookup_fn=lookup))
     """
@@ -247,20 +247,20 @@ def minilm_factbase_from_jsonl(
 
 
 # ---------------------------------------------------------------------------
-# Multi-source: pytaj WSZYSTKIE, weź pierwszy przechodzący bramkę jakości
+# Multi-source: query ALL, take the first one that passes the quality gate
 # ---------------------------------------------------------------------------
 
 def multi_source(sources: Sequence[Callable[[str], Optional[str]]]) -> Callable[[str], Optional[str]]:
-    """Złóż wiele lookup_fn w jeden. Pyta po kolei (priorytet = kolejność),
-    zwraca pierwszy atom przechodzący bramkę jakości danego źródła. None gdy żadne.
+    """Compose multiple lookup_fn into one. Queries them in order (priority = order),
+    returns the first atom that passes a given source's quality gate. None when none do.
 
-    Użycie:
+    Usage:
         from gatecat.koryto_sources import http_cache_source, chroma_source, multi_source
         from gatecat.koryto import Koryto, FactBase
 
         lookup = multi_source([
-            http_cache_source("http://vps:8000/v1/cache", api_key=KEY),   # 4M, główne
-            chroma_source("http://gtx:8775", "coding_cache_v1_id"),       # coding, po filtrze MCQ
+            http_cache_source("http://vps:8000/v1/cache", api_key=KEY),   # 4M, primary
+            chroma_source("http://gtx:8775", "coding_cache_v1_id"),       # coding, after the MCQ filter
         ])
         koryto = Koryto(fact_base=FactBase(lookup_fn=lookup))
     """

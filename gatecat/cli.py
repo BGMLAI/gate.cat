@@ -6,7 +6,7 @@ Usage:
     gatecat evict              # Remove expired entries
     gatecat clear              # Clear all entries
     gatecat lookup "query"     # Test a cache lookup
-    gatecat audit data.jsonl   # "ile zgaduje TWOJ agent" — gate-audit na endpoincie
+    gatecat audit data.jsonl   # "how much does YOUR agent guess" — gate-audit against an endpoint
 """
 
 # Annotations are lazy strings (PEP 563) so `cmd_stats(cache: SemanticCache, ...)`
@@ -101,19 +101,20 @@ def cmd_lookup(cache: SemanticCache, args):
 
 
 def cmd_audit(args):
-    """'Ile zgaduje TWOJ agent' — gate-audit na endpoincie OpenAI-compatible.
+    """'How much does YOUR agent guess' — gate-audit against an OpenAI-compatible endpoint.
 
-    Trust proof-point: dev wskazuje swoj model + zestaw Q&A, dostaje liczbe
-    confident-wrong (model myli sie PEWNIE) + AUC gate. To konkretny dowod, ze
-    warto wpiac veto/gate — nie marketing, zmierzone na JEGO agencie.
+    Trust proof-point: the dev points at their model + a Q&A set and gets a
+    confident-wrong count (the model is CONFIDENTLY wrong) + gate AUC. This is
+    concrete evidence that it's worth wiring in a veto/gate — not marketing,
+    measured on THEIR agent.
 
-    data.jsonl: po jednym JSON na linie: {"q": "...", "gold": "...", "aliases": [...]}.
+    data.jsonl: one JSON per line: {"q": "...", "gold": "...", "aliases": [...]}.
     Endpoint: --base-url (OpenAI-compatible /chat/completions), --model, --api-key
-    (lub env OPENAI_API_KEY). Gate woła model N razy przy temp>0 -> rozrzut -> uncertainty.
+    (or env OPENAI_API_KEY). The gate calls the model N times at temp>0 -> spread -> uncertainty.
     """
     from gatecat.audit import run_audit
 
-    # 1. wczytaj zbior Q&A
+    # 1. load the Q&A set
     rows = []
     with open(args.data, encoding="utf-8") as f:
         for line in f:
@@ -121,15 +122,15 @@ def cmd_audit(args):
             if line:
                 rows.append(json.loads(line))
     if not rows:
-        print("Brak pytan w pliku.")
+        print("No questions in the file.")
         return
-    print(f"Audyt {len(rows)} pytan na modelu '{args.model}' przez {args.base_url} ...")
+    print(f"Auditing {len(rows)} questions on model '{args.model}' via {args.base_url} ...")
 
-    # 2. klient endpointu usera (httpx — juz w extras [proxy])
+    # 2. client for the user's endpoint (httpx — already in the [proxy] extras)
     try:
         import httpx
     except ImportError:
-        print("Brak httpx. Zainstaluj: pip install 'gate.cat[proxy]'")
+        print("httpx not found. Install: pip install 'gate.cat[proxy]'")
         return
     key = args.api_key or os.environ.get("OPENAI_API_KEY", "")
     url = args.base_url.rstrip("/") + "/chat/completions"
@@ -144,10 +145,10 @@ def cmd_audit(args):
             r = httpx.post(url, json=body, headers=headers, timeout=60.0)
             r.raise_for_status()
             return r.json()["choices"][0]["message"]["content"] or ""
-        except Exception as e:  # blad sieci/modelu -> pusta probka (gate to zniesie)
+        except Exception as e:  # network/model error -> empty sample (the gate handles it)
             return ""
 
-    # sample_fn = temp wysoka (rozrzut dla gate); answer_fn = temp 0 (scoring)
+    # sample_fn = high temp (spread for the gate); answer_fn = temp 0 (scoring)
     report = run_audit(
         sample_fn=lambda p: _call(p, 0.8),
         answer_fn=lambda p: _call(p, 0.0),
@@ -159,8 +160,8 @@ def cmd_audit(args):
     print()
     print(report.render_text())
     if report.confident_wrong > 0:
-        print(f"\n>> {report.confident_wrong} odpowiedzi BLEDNYCH ktore model podal PEWNIE.")
-        print(">> To wlasnie tu agent moze wykonac confident-wrong akcje. Wepnij gate.cat:")
+        print(f"\n>> {report.confident_wrong} WRONG answers that the model gave CONFIDENTLY.")
+        print(">> This is exactly where an agent can take a confident-wrong action. Wire in gate.cat:")
         print(">>   pip install gate.cat   |   https://bgmlai.github.io/gate-landing/")
 
 
@@ -186,14 +187,14 @@ def main():
     lookup_p = sub.add_parser("lookup", help="Test a cache lookup")
     lookup_p.add_argument("query", nargs="*", help="Query text")
 
-    audit_p = sub.add_parser("audit", help="'Ile zgaduje TWOJ agent' — gate-audit na endpoincie")
-    audit_p.add_argument("data", help="JSONL z pytaniami: {q, gold, aliases?} per linia")
+    audit_p = sub.add_parser("audit", help="'How much does YOUR agent guess' — gate-audit against an endpoint")
+    audit_p.add_argument("data", help="JSONL of questions: {q, gold, aliases?} per line")
     audit_p.add_argument("--base-url", default="https://openrouter.ai/api/v1",
                          help="OpenAI-compatible base URL (default: OpenRouter)")
     audit_p.add_argument("--model", default="openai/gpt-4o-mini", help="Model ID")
-    audit_p.add_argument("--api-key", default="", help="API key (lub env OPENAI_API_KEY)")
-    audit_p.add_argument("--samples", type=int, default=5, help="Probki gate (rozrzut)")
-    audit_p.add_argument("--gate-threshold", type=float, default=0.30, help="Prog uncertainty")
+    audit_p.add_argument("--api-key", default="", help="API key (or env OPENAI_API_KEY)")
+    audit_p.add_argument("--samples", type=int, default=5, help="Gate samples (spread)")
+    audit_p.add_argument("--gate-threshold", type=float, default=0.30, help="Uncertainty threshold")
 
     args = parser.parse_args()
 
@@ -201,7 +202,7 @@ def main():
         parser.print_help()
         return
 
-    # audit NIE potrzebuje SemanticCache — dziala na endpoincie usera
+    # audit does NOT need SemanticCache — it runs against the user's endpoint
     if args.command == "audit":
         cmd_audit(args)
         return

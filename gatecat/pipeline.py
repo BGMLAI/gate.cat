@@ -1,50 +1,54 @@
-"""gatecat.pipeline — uniwersalny pipeline prawdy i compliance (SLM i LLM).
+"""gatecat.pipeline — universal truth and compliance pipeline (SLM and LLM).
 
-Składa klocki SDK w JEDNO wejście. Kolejność celowa (koszt + komplementarność):
+Assembles the SDK building blocks into ONE entry point. The order is deliberate
+(cost + complementarity):
 
-  1. KORYTO   (gatecat.koryto)  — deterministyczna weryfikacja atomu
-               (exec/calc/lookup). Łapie confident-wrong: rzeka wylewa z koryta,
-               a rozrzut tego nie widzi (model myli się PEWNIE). $0, bez modelu.
-  2. STAGNACJA (gatecat.stagnation) — pilnuje KORYTA: seria miękkich odrzuceń
-               bez postępu = koryto zgniło (stale baza), nie rzeka się myli.
-  3. ARBITER  (opcjonalny callback) — rozsądza miękkie rozbieżności (lookup może
-               być stale — NIGDY nie blokujemy twardo na samym lookupie).
-  4. GATE     (gatecat.gate) — rozrzut N próbek rzeki. Dopiero gdy koryto nie
-               zna atomu (gate kosztuje N wywołań modelu; koryto-first = taniej).
-               Łapie WAHANIE, nie kłamstwo.
-  5. VETO     (gatecat.veto) — compliance na AKCJACH: policy deny / próg kwoty /
-               human-in-the-loop / niezależny exec-check, ZANIM akcja dotknie świata.
+  1. KORYTO   (gatecat.koryto)  — deterministic verification of an atom
+               (exec/calc/lookup). Catches confident-wrong: the river overflows
+               its bed, and sample dispersion does not see it (the model is
+               CONFIDENTLY wrong). $0, no model.
+  2. STAGNACJA (gatecat.stagnation) — watches the KORYTO: a run of soft rejections
+               with no progress = the koryto has gone stale (stale base), it is
+               not the river that is wrong.
+  3. ARBITER  (optional callback) — adjudicates soft discrepancies (a lookup may
+               be stale — we NEVER hard-block on a lookup alone).
+  4. GATE     (gatecat.gate) — dispersion of N samples of the river. Only when the
+               koryto does not know the atom (gate costs N model calls; koryto-first
+               = cheaper). Catches HESITATION, not a lie.
+  5. VETO     (gatecat.veto) — compliance on ACTIONS: policy deny / amount threshold /
+               human-in-the-loop / independent exec-check, BEFORE the action touches
+               the world.
 
-Model-agnostic: SLM na telefonie i frontier LLM wchodzą tym samym `sample_fn`
-(callback prompt→str). Zero zależności od floty/orchestratora.
+Model-agnostic: an SLM on a phone and a frontier LLM enter through the same
+`sample_fn` (prompt→str callback). Zero dependency on the fleet/orchestrator.
 
-UCZCIWOŚĆ WERDYKTU (nie udajemy więcej niż mierzymy):
-  confirmed — koryto zna atom i odpowiedź się zgadza (hard=czy exec/calc).
-  refuted   — koryto zna atom i odpowiedź jest błędna; twarde od razu, miękkie
-              dopiero po potwierdzeniu arbitrem (koryto-stale to realny koszt).
-  uncertain — sygnał "nie ufaj": miękka rozbieżność bez arbitra, albo rozrzut
-              rzeki ponad progiem. Eskaluj / abstain, nie publikuj.
-  unchecked — poza zasięgiem koryta i bez alarmu gate. NIE znaczy "prawda" —
-              znaczy "nie mieliśmy czym rozstrzygnąć". To jest granica, jawnie.
+VERDICT HONESTY (we do not claim more than we measure):
+  confirmed — koryto knows the atom and the answer agrees (hard=whether exec/calc).
+  refuted   — koryto knows the atom and the answer is wrong; hard immediately, soft
+              only after an arbiter confirms it (a stale koryto is a real cost).
+  uncertain — a "do not trust" signal: a soft discrepancy without an arbiter, or the
+              river's dispersion above threshold. Escalate / abstain, do not publish.
+  unchecked — beyond the koryto's reach and with no gate alarm. Does NOT mean "true" —
+              it means "we had nothing to decide it with". This is a limit, made explicit.
 
-PRECEDENS WERDYKTÓW (kontrakt — hierarchia rozstrzygania sprzeczności):
-  1. exec/calc (twarde koryto)  — rozstrzyga ZAWSZE; gate nie jest nawet pytany.
-  2. lookup    (miękkie koryto) — rozbieżność idzie do arbitra; bez arbitra →
-     uncertain (chyba że lookup_hard_block=True — wtedy refuted od razu).
-  3. gate      — TYLKO gdy koryto nie zna atomu (verdict "unknown").
-  4. veto      — oś ortogonalna (akcje, nie odpowiedzi); zawsze fail-closed.
-  Sprzeczność koryto-vs-gate jest niemożliwa z konstrukcji: gate nie startuje,
-  gdy koryto się wypowiedziało.
+VERDICT PRECEDENCE (contract — hierarchy for resolving contradictions):
+  1. exec/calc (hard koryto)   — decides ALWAYS; the gate is not even asked.
+  2. lookup    (soft koryto)   — a discrepancy goes to the arbiter; without an arbiter →
+     uncertain (unless lookup_hard_block=True — then refuted immediately).
+  3. gate      — ONLY when the koryto does not know the atom (verdict "unknown").
+  4. veto      — an orthogonal axis (actions, not answers); always fail-closed.
+  A koryto-vs-gate contradiction is impossible by construction: the gate does not
+  start once the koryto has spoken.
 
-CZYTANIE WYNIKU:
-  report.reliable — True TYLKO dla confirmed (miałeś dowód). Do systemów
-                    krytycznych filtruj po reliable, nie po trusted.
-  report.trusted  — confirmed LUB unchecked (wolno publikować, ale unchecked
-                    to świadoma publikacja BEZ dowodu — nie myl z prawdą).
-  report.stages   — pełny ślad decyzji (observability: kto się wypowiedział,
-                    z czym, dlaczego werdykt jest taki a nie inny).
+READING THE RESULT:
+  report.reliable — True ONLY for confirmed (you had proof). For critical systems
+                    filter by reliable, not by trusted.
+  report.trusted  — confirmed OR unchecked (may be published, but unchecked is a
+                    deliberate publication WITHOUT proof — do not confuse it with truth).
+  report.stages   — the full decision trail (observability: who spoke up, with what,
+                    why the verdict is this and not another).
 
-Użycie (minimalne):
+Usage (minimal):
     from gatecat import TruthPipeline, ActionPolicy
 
     pipe = TruthPipeline(
@@ -58,7 +62,7 @@ Użycie (minimalne):
 
     @pipe.guard()
     def deploy(target): ...
-    deploy(target="terraform apply prod")     # ActionVetoed ZANIM się wykona
+    deploy(target="terraform apply prod")     # ActionVetoed BEFORE it runs
 """
 from __future__ import annotations
 
@@ -83,16 +87,16 @@ VERDICT_UNCHECKED = "unchecked"
 
 @dataclass
 class TruthReport:
-    """Wynik pipeline'u dla jednej pary (pytanie, odpowiedź) — do audytu.
+    """Pipeline result for a single (question, answer) pair — for auditing.
 
-    `stages` to uporządkowany ślad KAŻDEGO etapu który się wypowiedział
-    (koryto/stagnacja/arbiter/gate) — kompletny materiał dowodowy decyzji.
+    `stages` is an ordered trail of EVERY stage that spoke up
+    (koryto/stagnation/arbiter/gate) — the complete evidentiary record of the decision.
     """
     verdict: str                               # confirmed | refuted | uncertain | unchecked
     question: str
     answer: str
-    truth: Optional[str] = None                # atom prawdy (gdy koryto zna)
-    hard: bool = False                         # True = dowód fizycznie niezależny (exec/calc)
+    truth: Optional[str] = None                # the truth atom (when the koryto knows it)
+    hard: bool = False                         # True = physically independent proof (exec/calc)
     channel: str = "none"                      # exec | calc | lookup | gate | none
     koryto: Optional[KorytoVerdict] = None
     gate: Optional[GateVerdict] = None
@@ -103,22 +107,22 @@ class TruthReport:
 
     @property
     def caught(self) -> bool:
-        """Czy pipeline złapał błąd modelu (refuted)."""
+        """Whether the pipeline caught a model error (refuted)."""
         return self.verdict == VERDICT_REFUTED
 
     @property
     def trusted(self) -> bool:
-        """Czy odpowiedź wolno publikować bez eskalacji (confirmed/unchecked).
+        """Whether the answer may be published without escalation (confirmed/unchecked).
 
-        UWAGA: unchecked = publikacja BEZ dowodu (świadoma). Do systemów
-        krytycznych używaj `reliable`, nie `trusted`.
+        NOTE: unchecked = publication WITHOUT proof (deliberate). For critical
+        systems use `reliable`, not `trusted`.
         """
         return self.verdict in (VERDICT_CONFIRMED, VERDICT_UNCHECKED)
 
     @property
     def reliable(self) -> bool:
-        """True TYLKO gdy odpowiedź ma dowód (confirmed). Filtr dla systemów
-        krytycznych — unchecked/uncertain nigdy nie przechodzi."""
+        """True ONLY when the answer has proof (confirmed). Filter for critical
+        systems — unchecked/uncertain never passes."""
         return self.verdict == VERDICT_CONFIRMED
 
     def to_dict(self) -> dict:
@@ -136,37 +140,37 @@ class TruthReport:
 
 
 class TruthPipeline:
-    """Uniwersalny pipeline prawdy i compliance: koryto → arbiter → gate + veto.
+    """Universal truth and compliance pipeline: koryto → arbiter → gate + veto.
 
     Args:
-        sample_fn:  callback(prompt) -> str. Wołaj SWÓJ model raz przy temp>0
-                    (SLM lokalny / flota / OpenAI-compatible / cokolwiek).
-                    Bez niego etap gate jest pominięty (koryto dalej działa).
-        koryto:     gotowe Koryto. Domyślnie exec+calc (+lookup gdy fact_base).
-        fact_base:  dict | FactBase | callable(question)->Optional[str] dla kanału
-                    lookup (ignorowane gdy podałeś własne `koryto`).
-        policy:     ActionPolicy dla bramki veto na akcjach (guard()).
+        sample_fn:  callback(prompt) -> str. Call YOUR model once at temp>0
+                    (local SLM / fleet / OpenAI-compatible / anything).
+                    Without it the gate stage is skipped (koryto still works).
+        koryto:     a ready-made Koryto. Defaults to exec+calc (+lookup when fact_base).
+        fact_base:  dict | FactBase | callable(question)->Optional[str] for the
+                    lookup channel (ignored when you pass your own `koryto`).
+        policy:     ActionPolicy for the veto gate on actions (guard()).
         arbiter_fn: callback(question, answer, KorytoVerdict) -> Optional[bool].
-                    Rozsądza MIĘKKIE odrzucenia: True = koryto ma rację (refute
-                    stoi), False = model miał rację (koryto stale), None = brak
-                    werdyktu. Wyjątek arbitra NIE blokuje (fail-safe → uncertain).
-        lookup_hard_block: domyślnie False — lookup jest sygnałem miękkim, bo
-                    baza może być stale/niepełna (realny koszt: fałszywe blokady).
-                    Ustaw True TYLKO gdy Twoja baza jest aktualna w momencie
-                    zapytania i akceptujesz to ryzyko: rozbieżność lookup →
-                    refuted od razu, bez arbitra.
-        n_samples/threshold/embedder: konfiguracja gate (jak gatecat.gate.Gate).
-        stagnation: czy pilnować koryta StagnationMonitorem (default True).
-        human_approve/amount_of/exec_check: przekazywane do VetoGate (guard()).
-                    Bramka jest STRICT: pusta ActionPolicy() bez reguł → ValueError
-                    przy konstrukcji (pusta bramka przepuszczałaby wszystko).
-                    UWAGA (jawna granica): pipeline z SAMYM exec_check weryfikuje
-                    tylko akcje, dla których exec_check zwróci statementy — akcje
-                    bez sprawdzalnego atomu przechodzą. Chcesz twardych zakazów →
-                    dodaj policy z deny/max_amount.
-        on_event:   callback(dict) na KAŻDE zdarzenie audytowe (evaluate/veto).
-                    Wyjątki połykane — telemetria nie może psuć decyzji.
-        audit_max:  ile ostatnich zdarzeń trzymać w pamięci (default 1000).
+                    Adjudicates SOFT rejections: True = the koryto is right (the refute
+                    stands), False = the model was right (koryto stale), None = no
+                    verdict. An arbiter exception does NOT block (fail-safe → uncertain).
+        lookup_hard_block: defaults to False — a lookup is a soft signal, because the
+                    base may be stale/incomplete (real cost: false blocks).
+                    Set True ONLY when your base is current at query time and you
+                    accept that risk: a lookup discrepancy →
+                    refuted immediately, without the arbiter.
+        n_samples/threshold/embedder: gate configuration (as in gatecat.gate.Gate).
+        stagnation: whether to watch the koryto with StagnationMonitor (default True).
+        human_approve/amount_of/exec_check: passed through to VetoGate (guard()).
+                    The gate is STRICT: an empty ActionPolicy() with no rules → ValueError
+                    at construction (an empty gate would let everything through).
+                    NOTE (explicit limit): a pipeline with ONLY exec_check verifies
+                    only actions for which exec_check returns statements — actions
+                    without a checkable atom pass. If you want hard prohibitions →
+                    add a policy with deny/max_amount.
+        on_event:   callback(dict) on EVERY audit event (evaluate/veto).
+                    Exceptions are swallowed — telemetry must not break decisions.
+        audit_max:  how many recent events to keep in memory (default 1000).
     """
 
     def __init__(
@@ -203,21 +207,21 @@ class TruthPipeline:
         self.lookup_hard_block = bool(lookup_hard_block)
         self.monitor = StagnationMonitor() if stagnation else None
         self.policy = policy
-        # strict=True: pusta ActionPolicy() bez żadnej reguły NIE przechodzi
-        # konstrukcji — bez tego guard() wyglądał na uzbrojony, a przepuszczał
-        # wszystko (workflow review 2026-07-02, fail-closed P1/P2)
+        # strict=True: an empty ActionPolicy() with no rules does NOT pass
+        # construction — without this guard() looked armed while it let
+        # everything through (workflow review 2026-07-02, fail-closed P1/P2)
         self._veto = VetoGate(
             policy, koryto=self.koryto, human_approve=human_approve,
             amount_of=amount_of, exec_check=exec_check, strict=True,
         ) if (policy is not None or exec_check is not None) else None
         self.on_event = on_event
         self.audit: deque[dict] = deque(maxlen=max(1, int(audit_max)))
-        self._lock = threading.Lock()  # audit/stagnacja — pipeline bywa współdzielony między wątkami
+        self._lock = threading.Lock()  # audit/stagnation — the pipeline may be shared across threads
         self._last_stagnation: Optional[StagnationState] = None
-        self._koryto_suspect_events = 0  # historia zgnilizny koryta (nie tylko ostatni stan)
+        self._koryto_suspect_events = 0  # history of koryto rot (not just the last state)
 
     # ------------------------------------------------------------------
-    # audyt
+    # audit
     # ------------------------------------------------------------------
     def _emit(self, kind: str, payload: dict) -> None:
         event = {"ts": time.time(), "kind": kind, **payload}
@@ -227,17 +231,17 @@ class TruthPipeline:
             try:
                 self.on_event(event)
             except Exception:
-                pass  # telemetria nie może psuć decyzji
+                pass  # telemetry must not break decisions
 
     def compliance_report(self) -> dict:
-        """Zbiorczy raport audytowy: ile werdyktów którego typu, ile wet.
+        """Aggregate audit report: how many verdicts of each type, how many vetoes.
 
-        To jest ślad EGZEKWOWANIA (policy enforcement + audit trail), nie
-        certyfikat zgodności — regulacje wymagają procesu wokół, nie tylko logów.
+        This is an ENFORCEMENT trail (policy enforcement + audit trail), not a
+        compliance certificate — regulations require a process around it, not just logs.
         """
         counts: dict[str, int] = {}
         vetoes = allowed_actions = 0
-        with self._lock:  # snapshot — iteracja deque podczas append = RuntimeError
+        with self._lock:  # snapshot — iterating the deque during an append = RuntimeError
             events = list(self.audit)
             last_st = self._last_stagnation
             suspect_events = self._koryto_suspect_events
@@ -254,14 +258,14 @@ class TruthPipeline:
             "actions_allowed": allowed_actions,
             "actions_vetoed": vetoes,
             "koryto_suspect": bool(last_st and last_st.koryto_suspect),
-            # historia: ile razy koryto BYŁO podejrzane w retencjonowanym okresie —
-            # sam ostatni stan ukrywał zgniliznę wyczyszczoną późniejszymi confirmami
+            # history: how many times the koryto WAS suspect in the retained window —
+            # the last state alone hid rot that was cleared by later confirms
             "koryto_suspect_events": suspect_events,
             "events_retained": len(events),
         }
 
     # ------------------------------------------------------------------
-    # oś PRAWDY: evaluate / ask
+    # the TRUTH axis: evaluate / ask
     # ------------------------------------------------------------------
     def evaluate(
         self,
@@ -272,11 +276,11 @@ class TruthPipeline:
         exec_js: Optional[str] = None,
         aliases: Sequence[str] = (),
     ) -> TruthReport:
-        """Zweryfikuj odpowiedź (dowolnego modelu) względem koryta, arbitra i gate.
+        """Verify an answer (from any model) against the koryto, the arbiter and the gate.
 
-        answer=None (awaria backendu / brak odpowiedzi) → uncertain od razu:
-        brak odpowiedzi to NIE confident-wrong, refute byłby przekłamaniem.
-        Falsy odpowiedzi (0, 0.0, False) są normalnie weryfikowane."""
+        answer=None (backend failure / no answer) → uncertain immediately:
+        no answer is NOT confident-wrong, a refute would be a distortion.
+        Falsy answers (0, 0.0, False) are verified normally."""
         question = "" if question is None else str(question)
         stages: list[dict] = []
 
@@ -288,15 +292,15 @@ class TruthPipeline:
             return self._finish(report)
         answer = str(answer)
 
-        # 1. KORYTO — deterministyczne, $0, bez wołania modelu
+        # 1. KORYTO — deterministic, $0, no model call
         kv = self.koryto.verify(question, answer, exec_stmts=exec_stmts,
                                 exec_js=exec_js, aliases=aliases)
         stages.append({"stage": "koryto", **kv.to_dict()})
 
-        # 2. STAGNACJA — obserwuj każdy werdykt koryta (pilnuje koryta, nie rzeki)
+        # 2. STAGNACJA — observe every koryto verdict (watches the koryto, not the river)
         st = None
         if self.monitor is not None:
-            with self._lock:  # monitor mutuje okno — przeplot dwóch evaluate przekłamuje streaki
+            with self._lock:  # the monitor mutates the window — interleaving two evaluate calls corrupts the streaks
                 st = self.monitor.observe(kv)
                 self._last_stagnation = st
                 if st.koryto_suspect:
@@ -317,15 +321,15 @@ class TruthPipeline:
         if kv.verdict == "refute":
             report.truth, report.channel = kv.truth, kv.channel
             if kv.hard:
-                # exec/calc: fizycznie niezależne od modelu — blokuj od razu
+                # exec/calc: physically independent of the model — block immediately
                 report.verdict, report.hard = VERDICT_REFUTED, True
                 return self._finish(report)
             if self.lookup_hard_block:
-                # jawny opt-in usera: "moja baza jest aktualna" → blokuj od razu
+                # explicit user opt-in: "my base is current" → block immediately
                 report.verdict = VERDICT_REFUTED
                 stages.append({"stage": "lookup_hard_block", "applied": True})
                 return self._finish(report)
-            # miękkie (lookup może być stale) → arbiter; NIGDY twarda blokada solo
+            # soft (a lookup may be stale) → arbiter; NEVER a hard block on its own
             arb = None
             if self.arbiter_fn is not None:
                 try:
@@ -339,7 +343,7 @@ class TruthPipeline:
                     report.verdict = VERDICT_REFUTED
                     report.arbiter = "koryto-potwierdzone"
                 else:
-                    # model miał rację, koryto stale — NIE karz odpowiedzi
+                    # the model was right, koryto stale — do NOT penalize the answer
                     report.verdict = VERDICT_CONFIRMED
                     report.arbiter = "model-mial-racje"
                     report.truth = None
@@ -347,7 +351,7 @@ class TruthPipeline:
             report.verdict = VERDICT_UNCERTAIN
             return self._finish(report)
 
-        # kv.verdict == "unknown" → koryto nie zna atomu; pytamy rzekę o rozrzut
+        # kv.verdict == "unknown" → the koryto does not know the atom; we ask the river for its dispersion
         if self.gate is not None:
             gv = self.gate.check(question)
             report.gate = gv
@@ -355,9 +359,9 @@ class TruthPipeline:
             if gv.uncertain:
                 report.verdict, report.channel = VERDICT_UNCERTAIN, "gate"
                 return self._finish(report)
-            # model spójny, ale czy spójny NA OCENIANĄ odpowiedź? Spójne 5× "Kraków"
-            # przy answer="Warszawa" to silny sygnał błędu — zmierzony rozrzutem,
-            # nie wolno go zignorować (workflow review 2026-07-02, P2)
+            # the model is consistent, but consistent ON THE EVALUATED answer? A consistent 5x "Kraków"
+            # with answer="Warszawa" is a strong error signal — measured by dispersion,
+            # it must not be ignored (workflow review 2026-07-02, P2)
             if gv.samples and not any(
                 atoms_match(answer, s) or atoms_match(s, answer) for s in gv.samples
             ):
@@ -366,21 +370,21 @@ class TruthPipeline:
                 report.verdict, report.channel = VERDICT_UNCERTAIN, "gate"
                 return self._finish(report)
 
-        report.verdict = VERDICT_UNCHECKED  # jawna granica: nie mieliśmy czym rozstrzygnąć
+        report.verdict = VERDICT_UNCHECKED  # explicit limit: we had nothing to decide it with
         return self._finish(report)
 
     def ask(self, question: str, **verify_kw) -> TruthReport:
-        """Wygeneruj odpowiedź modelem (sample_fn) i od razu ją zweryfikuj.
+        """Generate an answer with the model (sample_fn) and verify it right away.
 
-        Przy `refuted` z twardego koryta poprawna wartość jest w `report.truth` —
-        wołający może skorygować odpowiedź zamiast ją publikować.
+        On `refuted` from the hard koryto the correct value is in `report.truth` —
+        the caller can correct the answer instead of publishing it.
         """
         if self.sample_fn is None:
-            raise ValueError("ask() wymaga sample_fn (model do odpytania)")
+            raise ValueError("ask() requires sample_fn (a model to query)")
         raw = self.sample_fn(question)
-        # None ≠ odpowiedź "None" — gate.check_samples filtruje ten sam przypadek
-        # PRZED str() (padnięty backend udawałby pewną odpowiedź); evaluate(None)
-        # zwraca uncertain z jawnym stage no_answer
+        # None != the answer "None" — gate.check_samples filters the same case
+        # BEFORE str() (a crashed backend would fake a confident answer); evaluate(None)
+        # returns uncertain with an explicit no_answer stage
         answer = raw if raw is None else str(raw)
         return self.evaluate(question, answer, **verify_kw)
 
@@ -390,8 +394,8 @@ class TruthPipeline:
             "hard": report.hard, "question": report.question[:500],
             "answer": report.answer[:500], "truth": report.truth,
             "arbiter": report.arbiter,
-            # audyt musi odróżniać "unchecked bez gate" od "unchecked po spójnym
-            # gate" (wydano N wywołań modelu i zebrano dowód spójności)
+            # the audit must distinguish "unchecked without a gate" from "unchecked after a
+            # consistent gate" (N model calls were spent and consistency evidence gathered)
             "gate_ran": report.gate is not None,
             "gate_disagreement": (round(report.gate.disagreement, 4)
                                   if report.gate is not None else None),
@@ -401,18 +405,18 @@ class TruthPipeline:
         return report
 
     # ------------------------------------------------------------------
-    # oś COMPLIANCE: guard / check_action
+    # the COMPLIANCE axis: guard / check_action
     # ------------------------------------------------------------------
     def check_action(self, call_repr: str, args: tuple = (), kwargs: Optional[dict] = None,
                      fn: Optional[Callable] = None) -> VetoDecision:
-        """Oceń akcję bramką veto BEZ wykonywania. Każda decyzja idzie do audytu.
+        """Evaluate an action with the veto gate WITHOUT executing it. Every decision goes to the audit.
 
-        `fn` (opcjonalne): funkcja-narzędzie — pozwala bramce związać argumenty
-        pozycyjne z nazwami (próg kwoty działa też dla `charge(5000)`)."""
+        `fn` (optional): the tool function — lets the gate bind positional
+        arguments to names (the amount threshold also works for `charge(5000)`)."""
         if self._veto is None:
             raise ValueError(
-                "check_action() wymaga policy lub exec_check w konstruktorze — "
-                "pusta bramka przepuszczałaby wszystko (fail-closed by design)"
+                "check_action() requires policy or exec_check in the constructor — "
+                "an empty gate would let everything through (fail-closed by design)"
             )
         dec = self._veto.evaluate(call_repr, args, dict(kwargs or {}), fn=fn)
         self._emit("action", {
@@ -422,15 +426,15 @@ class TruthPipeline:
         return dec
 
     def guard(self, on_veto: Optional[Callable[[VetoDecision], Any]] = None):
-        """Dekorator compliance na funkcji-narzędziu: veto ZANIM akcja się wykona.
+        """Compliance decorator on a tool function: veto BEFORE the action runs.
 
-        Jak gatecat.veto.before_action, ale ze wspólną policy/koryto pipeline'u
-        i pełnym śladem audytowym (KAŻDA decyzja — allow i veto — logowana).
+        Like gatecat.veto.before_action, but with the pipeline's shared policy/koryto
+        and a full audit trail (EVERY decision — allow and veto — is logged).
         """
         if self._veto is None:
             raise ValueError(
-                "guard() wymaga policy lub exec_check w konstruktorze — "
-                "pusta bramka przepuszczałaby wszystko (fail-closed by design)"
+                "guard() requires policy or exec_check in the constructor — "
+                "an empty gate would let everything through (fail-closed by design)"
             )
 
         def deco(fn: Callable):
@@ -444,8 +448,8 @@ class TruthPipeline:
                     if not dec.allowed:
                         if on_veto is not None:
                             res = on_veto(dec)
-                            # async on_veto bez await = handler nigdy nie działa,
-                            # caller dostaje truthy coroutine (cichy misfire)
+                            # async on_veto without await = the handler never runs,
+                            # the caller gets a truthy coroutine (a silent misfire)
                             return await res if inspect.isawaitable(res) else res
                         raise ActionVetoed(dec)
                     return await fn(*args, **kwargs)

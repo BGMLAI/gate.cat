@@ -1,36 +1,37 @@
-"""stagnation — stagnation-by-state: pilnuje KORYTA, nie rzeki.
+"""stagnation — stagnation-by-state: watches the KORYTO (channel), not the river.
 
-ARCHITEKTURA (Aksjomat 1 / teoria τ, user-designed REJESTR 2026-06-26):
-  "Koryto pilnuje rzeki, STAGNACJA pilnuje koryta."
+ARCHITECTURE (Axiom 1 / theory τ, user-designed REGISTER 2026-06-26):
+  "The koryto watches the river, STAGNATION watches the koryto."
 
-Dwie role, NIE mylić:
-  - GatedLoop (gatecat.agent): pilnuje RZEKI — przerywa runaway agenta gdy model
-    zgaduje w pętli (rozrzut próbek). Sygnał = WAHANIE rzeki.
-  - StagnationMonitor (TU): pilnuje KORYTA — wykrywa gdy koryto ODRZUCA odpowiedź
-    za odpowiedzią bez postępu. Sygnał = brak-postępu-mimo-odrzuceń = KORYTO ZGNIŁO
-    (baza stale/zła odrzuca DOBRE odpowiedzi), nie rzeka się myli.
+Two roles, do NOT confuse them:
+  - GatedLoop (gatecat.agent): watches the RIVER — interrupts a runaway agent when
+    the model is guessing in a loop (sample scatter). Signal = river HESITATION.
+  - StagnationMonitor (HERE): watches the KORYTO — detects when the koryto REJECTS
+    answer after answer without progress. Signal = no-progress-despite-rejections =
+    THE KORYTO HAS ROTTED (a stale/bad database rejects GOOD answers), not the river
+    getting it wrong.
 
-PO CO (zmierzone, REJESTR 2026-06-27): koryto-lookup SAMO bywa confident-wrong —
-zepsuta/nieaktualna baza wprowadza własny błąd (koryto-stale: Casablanca zamiast
-Rabat → odrzuca poprawną odpowiedź modelu = bad-block). Sam licznik rozrzutu tego
-NIE złapie (koryto jest deterministyczne, zero rozrzutu). Stagnation-by-state to
-OBIEKTYWNY licznik: seria odrzuceń przez koryto bez akceptacji = sygnał "to koryto
-zgniło". Wtedy eskaluj do web-rozjemcy (rozsądzi KTO ma rację) zamiast ślepo ufać
-korytu.
+WHY (measured, REGISTER 2026-06-27): a koryto-lookup BY ITSELF can be confident-wrong —
+a broken/outdated database introduces its own error (koryto-stale: Casablanca instead
+of Rabat → rejects the model's correct answer = bad-block). A plain scatter counter will
+NOT catch this (the koryto is deterministic, zero scatter). Stagnation-by-state is an
+OBJECTIVE counter: a run of rejections by the koryto without any acceptance = signal "this
+koryto has rotted". In that case escalate to a web-arbiter (it decides WHO is right) instead
+of blindly trusting the koryto.
 
-Lekki, bez zależności. Trzyma stan (okno ostatnich werdyktów) i mówi KIEDY przestać
-ufać korytu i sięgnąć po arbitra.
+Lightweight, no dependencies. Holds state (a window of recent verdicts) and says WHEN to
+stop trusting the koryto and reach for an arbiter.
 
-Użycie:
+Usage:
     from gatecat.stagnation import StagnationMonitor
 
     mon = StagnationMonitor(window=5, refute_ratio=0.8)
     for q, ans in stream:
         kv = koryto.verify(q, ans)
-        st = mon.observe(kv)            # podaj werdykt koryta
+        st = mon.observe(kv)            # pass in the koryto verdict
         if st.koryto_suspect:
-            # koryto odrzuca za dużo bez akceptacji → może samo zgniło
-            # → NIE blokuj na korycie, eskaluj do web-rozjemcy
+            # the koryto rejects too much without any acceptance → it may have rotted itself
+            # → do NOT block on the koryto, escalate to a web-arbiter
             ...
 """
 from __future__ import annotations
@@ -42,11 +43,11 @@ from typing import Any, Optional
 
 @dataclass
 class StagnationState:
-    """Migawka stanu monitora po obserwacji jednego werdyktu."""
-    koryto_suspect: bool          # czy koryto wygląda na zgniłe (za dużo odrzuceń bez postępu)
-    refute_streak: int            # ile odrzuceń Z RZĘDU (twardych/miękkich łącznie)
-    soft_refute_streak: int       # ile MIĘKKICH odrzuceń (lookup, needs_arbiter) z rzędu — to one sygnalizują stale
-    window_refute_ratio: float    # odsetek odrzuceń w oknie
+    """Snapshot of the monitor state after observing a single verdict."""
+    koryto_suspect: bool          # whether the koryto looks rotted (too many rejections without progress)
+    refute_streak: int            # how many rejections IN A ROW (hard/soft combined)
+    soft_refute_streak: int       # how many SOFT rejections (lookup, needs_arbiter) in a row — these are the ones that signal stale
+    window_refute_ratio: float    # fraction of rejections in the window
     reason: str = ""
 
     def to_dict(self) -> dict:
@@ -60,17 +61,18 @@ class StagnationState:
 
 
 class StagnationMonitor:
-    """Licznik stanu koryta: wykrywa "koryto zgniło" przez serię odrzuceń bez postępu.
+    """Koryto state counter: detects "the koryto has rotted" via a run of rejections without progress.
 
-    Sygnał celowo skupia się na MIĘKKICH odrzuceniach (lookup, needs_arbiter=True),
-    bo to one bywają stale. TWARDE odrzucenia (exec/calc) to prawdziwy confident-wrong
-    rzeki — ich seria NIE jest podejrzana wobec koryta (interpreter się nie myli).
+    The signal deliberately focuses on SOFT rejections (lookup, needs_arbiter=True),
+    because those are the ones that can be stale. HARD rejections (exec/calc) are a genuine
+    confident-wrong of the river — a run of them is NOT suspicious toward the koryto (the
+    interpreter does not get it wrong).
 
     Args:
-        window: rozmiar okna ostatnich werdyktów (default 5).
-        refute_ratio: odsetek odrzuceń w oknie powyżej którego koryto jest podejrzane (default 0.8).
-        soft_streak_trigger: ile MIĘKKICH odrzuceń z rzędu = od razu podejrzane (default 3).
-                             Miękkie = lookup/needs_arbiter (potencjalnie stale baza).
+        window: size of the window of recent verdicts (default 5).
+        refute_ratio: fraction of rejections in the window above which the koryto is suspect (default 0.8).
+        soft_streak_trigger: how many SOFT rejections in a row = immediately suspect (default 3).
+                             Soft = lookup/needs_arbiter (potentially stale database).
     """
 
     def __init__(self, *, window: int = 5, refute_ratio: float = 0.8,
@@ -83,13 +85,13 @@ class StagnationMonitor:
         self._soft_refute_streak = 0
 
     def observe(self, verdict: Any) -> StagnationState:
-        """Podaj KorytoVerdict (lub dict-like z .verdict/.hard/.needs_arbiter).
-        Zwraca StagnationState mówiący czy koryto jest podejrzane."""
+        """Pass in a KorytoVerdict (or dict-like with .verdict/.hard/.needs_arbiter).
+        Returns a StagnationState saying whether the koryto is suspect."""
         v = self._verdict_str(verdict)
         is_refute = (v == "refute")
         is_soft = is_refute and self._is_soft(verdict)
 
-        # okno trzyma (verdict, is_soft) — by window-ratio rozróżniał twarde od miękkich
+        # the window holds (verdict, is_soft) — so the window-ratio can tell hard from soft
         self._recent.append((v, is_soft))
 
         if is_refute:
@@ -105,22 +107,22 @@ class StagnationMonitor:
         soft_refutes = sum(1 for vv, sf in self._recent if vv == "refute" and sf)
         ratio = refutes / len(self._recent) if self._recent else 0.0
 
-        # PODEJRZANE gdy:
-        #  (a) seria MIĘKKICH odrzuceń (lookup/needs_arbiter) >= próg — stale baza?
-        #  (b) okno pełne, wysoki odsetek odrzuceń, I są w nim MIĘKKIE odrzucenia.
-        # KLUCZ: czysto TWARDE odrzucenia (exec/calc) NIGDY nie czynią koryta podejrzanym —
-        # interpreter się nie myli, to prawdziwy confident-wrong rzeki (nie zgnite koryto).
+        # SUSPECT when:
+        #  (a) a run of SOFT rejections (lookup/needs_arbiter) >= threshold — stale database?
+        #  (b) the window is full, high rejection fraction, AND it contains SOFT rejections.
+        # KEY: purely HARD rejections (exec/calc) NEVER make the koryto suspect —
+        # the interpreter does not get it wrong, that is a genuine confident-wrong of the river (not a rotted koryto).
         suspect = False
         reason = ""
         if self._soft_refute_streak >= self.soft_streak_trigger:
             suspect = True
-            reason = (f"{self._soft_refute_streak} miękkich odrzuceń z rzędu (lookup/needs_arbiter) "
-                      f"→ koryto może być stale; eskaluj do web-rozjemcy")
+            reason = (f"{self._soft_refute_streak} soft rejections in a row (lookup/needs_arbiter) "
+                      f"→ the koryto may be stale; escalate to a web-arbiter")
         elif (len(self._recent) >= self.window and ratio >= self.refute_ratio
               and soft_refutes > 0):
             suspect = True
-            reason = (f"odsetek odrzuceń {ratio:.0%} w oknie {self.window} ≥ {self.refute_ratio:.0%} "
-                      f"({soft_refutes} miękkich) → brak postępu mimo odrzuceń; sprawdź czy koryto nie zgniło")
+            reason = (f"rejection fraction {ratio:.0%} in window {self.window} ≥ {self.refute_ratio:.0%} "
+                      f"({soft_refutes} soft) → no progress despite rejections; check whether the koryto has rotted")
 
         return StagnationState(
             koryto_suspect=suspect,
@@ -135,7 +137,7 @@ class StagnationMonitor:
         self._refute_streak = 0
         self._soft_refute_streak = 0
 
-    # --- adaptery na różne kształty werdyktu ---
+    # --- adapters for various verdict shapes ---
     @staticmethod
     def _verdict_str(verdict: Any) -> str:
         if hasattr(verdict, "verdict"):
@@ -146,12 +148,12 @@ class StagnationMonitor:
 
     @staticmethod
     def _is_soft(verdict: Any) -> bool:
-        """Miękkie odrzucenie = lookup/needs_arbiter (potencjalnie stale), NIE exec/calc (twarde)."""
+        """Soft rejection = lookup/needs_arbiter (potentially stale), NOT exec/calc (hard)."""
         if hasattr(verdict, "needs_arbiter"):
-            # twarde (exec/calc) ma hard=True; miękkie (lookup) ma needs_arbiter=True
+            # hard (exec/calc) has hard=True; soft (lookup) has needs_arbiter=True
             hard = bool(getattr(verdict, "hard", False))
             return bool(getattr(verdict, "needs_arbiter", False)) or not hard
         if isinstance(verdict, dict):
             hard = bool(verdict.get("hard", False))
             return bool(verdict.get("needs_arbiter", False)) or not hard
-        return True  # nieznany kształt → traktuj jako miękki (ostrożniej)
+        return True  # unknown shape → treat as soft (more cautious)

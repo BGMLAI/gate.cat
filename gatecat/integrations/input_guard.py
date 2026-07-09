@@ -11,7 +11,7 @@ to HIJACK it via prompt injection.
   malicious string is DATA the agent read, not a command it issued. input_guard
   scans that data and flags/neutralizes the injection before it steers the agent.
 
-SCOPE (deliberately narrow - REJESTR 2026-07-05, anti-scope-creep):
+SCOPE (deliberately narrow - REGISTER 2026-07-05, anti-scope-creep):
   ONE class only - "does this content try to seize control of the agent?"
   (instruction-override, fake system/role blocks, tool/exfil hijack embedded in
   content). NOT sentiment, NOT PII-scanning, NOT content moderation.

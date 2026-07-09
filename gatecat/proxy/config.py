@@ -8,18 +8,18 @@ from urllib.parse import urlparse
 
 
 class UpstreamURLError(ValueError):
-    """openai_base_url wskazuje na niebezpieczny/prywatny cel (SSRF guard)."""
+    """openai_base_url points to an unsafe/private target (SSRF guard)."""
 
 
 def _is_private_host(host: str) -> bool:
-    """Czy host rozwiązuje się do prywatnego/loopback/link-local IP (SSRF)."""
-    # bezpośredni literał IP
+    """Whether the host resolves to a private/loopback/link-local IP (SSRF)."""
+    # direct IP literal
     try:
         ip = ipaddress.ip_address(host)
         return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
     except ValueError:
         pass
-    # nazwa hosta → spróbuj rozwiązać (best-effort; brak DNS = nie blokuj na ślepo)
+    # hostname → try to resolve (best-effort; no DNS = don't block blindly)
     try:
         for fam, _, _, _, sockaddr in socket.getaddrinfo(host, None):
             ip = ipaddress.ip_address(sockaddr[0])
@@ -31,11 +31,11 @@ def _is_private_host(host: str) -> bool:
 
 
 def validate_upstream_url(url: str) -> str:
-    """SSRF guard (audyt 2026-06-27 #2): odrzuć non-https i prywatne/metadata cele.
+    """SSRF guard (audit 2026-06-27 #2): reject non-https and private/metadata targets.
 
-    Domyślny api.openai.com przechodzi. Custom URL musi być https i NIE prowadzić do
-    prywatnego IP / 169.254.169.254 (cloud metadata) — inaczej proxy mógłby exfiltrować
-    klucz API do wewnętrznej usługi. Świadome rozluźnienie (lokalny LLM, http upstream):
+    The default api.openai.com passes. A custom URL must be https and must NOT point to
+    a private IP / 169.254.169.254 (cloud metadata) — otherwise the proxy could exfiltrate
+    the API key to an internal service. Deliberate relaxation (local LLM, http upstream):
     `GATECAT_ALLOW_INSECURE_UPSTREAM=1`.
     """
     if os.environ.get("GATECAT_ALLOW_INSECURE_UPSTREAM", "0").strip() in ("1", "true", "True"):
@@ -43,16 +43,16 @@ def validate_upstream_url(url: str) -> str:
     p = urlparse(url)
     if p.scheme != "https":
         raise UpstreamURLError(
-            f"openai_base_url musi być https (jest {p.scheme!r}). "
-            "Dla lokalnego/http upstreamu ustaw GATECAT_ALLOW_INSECURE_UPSTREAM=1."
+            f"openai_base_url must be https (it is {p.scheme!r}). "
+            "For a local/http upstream set GATECAT_ALLOW_INSECURE_UPSTREAM=1."
         )
     host = p.hostname or ""
     if not host:
-        raise UpstreamURLError(f"openai_base_url bez hosta: {url!r}")
+        raise UpstreamURLError(f"openai_base_url has no host: {url!r}")
     if _is_private_host(host):
         raise UpstreamURLError(
-            f"openai_base_url wskazuje na prywatny/metadata cel ({host}) — SSRF guard. "
-            "Świadome użycie: GATECAT_ALLOW_INSECURE_UPSTREAM=1."
+            f"openai_base_url points to a private/metadata target ({host}) — SSRF guard. "
+            "Deliberate use: GATECAT_ALLOW_INSECURE_UPSTREAM=1."
         )
     return url
 
@@ -82,62 +82,62 @@ class ProxyConfig:
     synthesis_top_k: int = 5
 
     # TruthGate (disagreement gate). off | flag | block
-    #   off:   wyłączony (zero zmian, default)
-    #   flag:  mierzy niepewność, dodaje metadane do odpowiedzi (nie blokuje)
-    #   block: gdy niepewny i brak naprawy z cache -> zwraca abstention zamiast zgadywać
+    #   off:   disabled (zero changes, default)
+    #   flag:  measures uncertainty, adds metadata to the response (does not block)
+    #   block: when uncertain and no cache repair -> returns abstention instead of guessing
     gate_mode: str = "off"
     gate_n_samples: int = 5
     gate_threshold: float = 0.30
-    gate_semantic: bool = True  # MiniLM do rozrzutu semantycznego (vs lexical)
+    gate_semantic: bool = True  # MiniLM for semantic spread (vs lexical)
 
-    # ACTION-VETO na tool-calle — bramka dzialaniowa NA POZIOMIE PROXY.
-    # Gdy upstream (Ollama/NIM/OpenRouter/vLLM/...) zwraca tool_calls, kazdy jest
-    # sprawdzany przeciw 20 politykom DOGFOOD (recursive-force delete, prod infra
-    # teardown, destructive SQL, repo/registry deletion, disk wipe, ...). Grozny
-    # tool-call jest ZABLOKOWANY zanim agent go wykona — klient nie pisze zadnego
-    # kodu, tylko wskazuje base_url na proxy.
-    # block | flag | off  (default: block — to jest sens tego proxy).
-    #   block: grozny tool-call -> zwroc agentowi odmowe zamiast wywolania
-    #   flag:  nie blokuj, tylko dopisz metadane `gatecat.tool_veto_flag`
-    #   off:   przepusc (stare zachowanie)
+    # ACTION-VETO on tool-calls — an action gate AT THE PROXY LEVEL.
+    # When the upstream (Ollama/NIM/OpenRouter/vLLM/...) returns tool_calls, each one is
+    # checked against 20 DOGFOOD policies (recursive-force delete, prod infra
+    # teardown, destructive SQL, repo/registry deletion, disk wipe, ...). A dangerous
+    # tool-call is BLOCKED before the agent executes it — the client writes no
+    # code at all, it just points base_url at the proxy.
+    # block | flag | off  (default: block — this is the whole point of this proxy).
+    #   block: dangerous tool-call -> return a refusal to the agent instead of the call
+    #   flag:  don't block, just append the `gatecat.tool_veto_flag` metadata
+    #   off:   let it through (old behavior)
     tool_veto: str = "block"
 
-    # Gałęzie naprawy (gdy gate niepewny + cache słaby): web → tools → abstain
-    web_enabled: bool = False        # 3. gałąź: Brave web-search (wymaga BRAVE_API_KEY)
+    # Repair branches (when gate uncertain + cache weak): web → tools → abstain
+    web_enabled: bool = False        # 3rd branch: Brave web-search (requires BRAVE_API_KEY)
     brave_api_key: str = ""
-    tools_enabled: bool = True       # 4. gałąź: wbudowane narzędzia (calc)
+    tools_enabled: bool = True       # 4th branch: built-in tools (calc)
 
-    # KORYTO — deterministyczny weryfikator atomu. off | flag | block
-    #   Działa NIEZALEŻNIE od gate (na strukturze pytania, nie na rozrzucie) → łapie
-    #   confident-wrong, którego gate nie widzi (rozrzut zero). To brakujące ogniwo:
-    #   gate/audit DIAGNOZUJĄ confident-wrong, koryto na niego REAGUJE.
-    #   off:   wyłączony (default, zero zmian).
-    #   flag:  weryfikuje exec/calc/lookup, dodaje werdykt do metadanych (nie blokuje).
-    #   block: gdy TWARDE koryto (exec/calc) odrzuca odpowiedź → zwraca prawdę z koryta
-    #          zamiast confident-wrong modelu. Lookup (miękki) NIGDY nie blokuje sam
-    #          (needs_arbiter) — wymaga web-rozjemcy, bo baza bywa stale.
+    # KORYTO — a deterministic atom verifier. off | flag | block
+    #   Works INDEPENDENTLY of the gate (on the question's structure, not on spread) → catches
+    #   confident-wrong that the gate doesn't see (zero spread). This is the missing link:
+    #   gate/audit DIAGNOSE confident-wrong, koryto REACTS to it.
+    #   off:   disabled (default, zero changes).
+    #   flag:  verifies exec/calc/lookup, adds a verdict to the metadata (does not block).
+    #   block: when the HARD koryto (exec/calc) rejects the answer → returns the truth from koryto
+    #          instead of the model's confident-wrong. Lookup (soft) NEVER blocks on its own
+    #          (needs_arbiter) — it requires a web arbiter, because the base can be stale.
     koryto_mode: str = "off"
-    koryto_fact_base: str = ""       # ścieżka do JSON {pytanie-fragment: wartość} dla kanału lookup
-    # REALNE BAZY dla kanału lookup (multi-source z bramką jakości, REJESTR 2026-06-27).
-    # Lookup pyta WSZYSTKIE dobrej jakości, nie tylko mały JSON. Bramka: sim≥próg + filtr-MCQ.
-    koryto_cache_url: str = ""       # URL semantic cache (np. 4M VPS) — http_cache_source
-    koryto_cache_key: str = ""       # klucz do cache (gdy wymaga)
-    koryto_chroma_url: str = ""      # URL ChromaDB v2 (np. GTX1070 :8775)
-    koryto_chroma_collection: str = ""  # collection id w ChromaDB (po filtrze MCQ)
-    koryto_lookup_min_sim: float = 0.82  # próg jakości retrievalu (trafny vs luźny)
-    # STAGNACJA — pilnuje czy koryto nie zgniło (seria miękkich odrzuceń = stale baza)
+    koryto_fact_base: str = ""       # path to JSON {question-fragment: value} for the lookup channel
+    # REAL BASES for the lookup channel (multi-source with a quality gate, REGISTER 2026-06-27).
+    # Lookup queries ALL good-quality ones, not just the small JSON. Gate: sim≥threshold + MCQ filter.
+    koryto_cache_url: str = ""       # semantic cache URL (e.g. 4M VPS) — http_cache_source
+    koryto_cache_key: str = ""       # key for the cache (when required)
+    koryto_chroma_url: str = ""      # ChromaDB v2 URL (e.g. GTX1070 :8775)
+    koryto_chroma_collection: str = ""  # collection id in ChromaDB (after the MCQ filter)
+    koryto_lookup_min_sim: float = 0.82  # retrieval quality threshold (on-target vs loose)
+    # STAGNATION — watches whether koryto has rotted (a run of soft rejections = stale base)
     stagnation_window: int = 5
-    stagnation_soft_streak: int = 3  # ile miękkich odrzuceń z rzędu = koryto podejrzane
-    # EXEC — kanał interpreter. Jawne pole koryto_exec w body działa (przez sandbox).
-    # AUTO-wyłuskanie kodu z RUCHU domyślnie OFF (czysty pip-sandbox nie jest w pełni
-    # szczelny dla wrogiego kodu — nazwa env z UNSAFE celowo, operator widzi ryzyko).
-    koryto_exec_from_query: bool = False    # GATECAT_KORYTO_EXEC_UNSAFE=1 by włączyć
+    stagnation_soft_streak: int = 3  # how many soft rejections in a row = koryto suspect
+    # EXEC — interpreter channel. An explicit koryto_exec field in the body works (via sandbox).
+    # AUTO-extraction of code from TRAFFIC is OFF by default (a plain pip-sandbox is not fully
+    # airtight against hostile code — the env name has UNSAFE on purpose, the operator sees the risk).
+    koryto_exec_from_query: bool = False    # set GATECAT_KORYTO_EXEC_UNSAFE=1 to enable
     koryto_exec_timeout: float = 5.0
     koryto_exec_mem_mb: int = 512
 
-    # Bezpieczeństwo upstream (audyt 2026-06-27 #3): domyślnie NIE przekazuj
-    # klienckiego Authorization header upstream (atakujący mógłby wstrzyknąć swój klucz).
-    # Świadome włączenie (proxy multi-tenant gdzie klient podaje własny klucz):
+    # Upstream security (audit 2026-06-27 #3): by default do NOT forward the
+    # client's Authorization header upstream (an attacker could inject their own key).
+    # Deliberate enablement (multi-tenant proxy where the client supplies their own key):
     # GATECAT_ALLOW_CLIENT_AUTH=1.
     allow_client_auth: bool = False
 

@@ -32,9 +32,9 @@ class ChatCompletionRequest(BaseModel):
     # Tool use — passthrough (no caching for tool calls)
     tools: Optional[list[Any]] = None
     tool_choice: Optional[Any] = None
-    # KORYTO-exec — jawny szczelny kanał: klient świadomie podaje wykonywalny kod
-    # do weryfikacji odpowiedzi. {"lang":"python","stmts":[...]} lub {"lang":"node","code":"..."}.
-    # Przechodzi przez pełny sandbox. Niezależny od auto-wyłuskania z ruchu (które jest UNSAFE).
+    # KORYTO-exec — explicit sealed channel: the client deliberately supplies executable code
+    # to verify the response. {"lang":"python","stmts":[...]} or {"lang":"node","code":"..."}.
+    # Runs through the full sandbox. Independent of auto-extraction from traffic (which is UNSAFE).
     koryto_exec: Optional[dict] = None
     # Any other params → passthrough
     model_config = {"extra": "allow"}

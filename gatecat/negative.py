@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 def _safe_json(raw) -> dict:
-    """Parsuj metadata-JSON odporne na uszkodzenie (audyt 2026-06-27 #6/#7).
-    Uszkodzony JSON w kolumnie metadata (korupcja DB / ręczny SQL) NIE może crashować
-    publicznego list()/_get_entry() — fallback na {}."""
+    """Parse metadata JSON with resilience to corruption (audit 2026-06-27 #6/#7).
+    Corrupted JSON in the metadata column (DB corruption / manual SQL) must NOT crash
+    the public list()/_get_entry() — fall back to {}."""
     if not raw:
         return {}
     try:

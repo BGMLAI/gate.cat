@@ -1,21 +1,21 @@
-"""truthgate — gałęzie naprawy: web + tools (3. i 4. stopień kaskady).
+"""truthgate — repair branches: web + tools (3rd and 4th stage of the cascade).
 
-Pełna kaskada produktu (mechanizm /goal, council 6/6):
-    SLM(pewny → stop) → cache(sim≥0.92) → WEB(snippet ma odp) → TOOLS(calc/lookup) → abstain
+Full product cascade (/goal mechanism, council 6/6):
+    SLM(confident → stop) → cache(sim≥0.92) → WEB(snippet has answer) → TOOLS(calc/lookup) → abstain
 
-Gdy gate mówi "model nie wie" a cache nie naprawił, sięgamy po świeże/policzalne
-źródło ZANIM pozwolimy modelowi zgadywać. Każda gałąź jest lekka, samodzielna,
-bez zależności od floty BGML.
+When the gate says "model does not know" and cache did not repair, we reach for a
+fresh/computable source BEFORE we let the model guess. Each branch is lightweight,
+self-contained, with no dependency on the BGML fleet.
 
-UCZCIWE OGRANICZENIE (Badanie C, zmierzone):
-  Web naprawia 75-77% GDY snippet ma odpowiedź (W_hit), ale web-SZUM psuje
-  base-correct 57-68% — 2-3× mocniej niż zły cache. Dlatego web wstrzykuje się
-  TYLKO po progu jakości snippetu (snippet_score ≥ próg). Ślepe wstrzykiwanie
-  web = trucizna. To samo dla tools: zła obserwacja gorsza niż brak.
+HONEST LIMITATION (Study C, measured):
+  Web repairs 75-77% WHEN the snippet has the answer (W_hit), but web NOISE damages
+  base-correct 57-68% — 2-3× more strongly than bad cache. That is why web is injected
+  ONLY above the snippet quality threshold (snippet_score ≥ threshold). Blind web
+  injection = poison. The same for tools: a bad observation is worse than none.
 
-Web: domyślnie Brave Search API (klucz BRAVE_API_KEY / param). Pluggable —
-podaj własny search_fn(query)->list[dict] dla innego dostawcy.
-Tools: lekkie wbudowane (calc bezpieczny przez ast, lookup-callback). Pluggable.
+Web: Brave Search API by default (BRAVE_API_KEY key / param). Pluggable —
+supply your own search_fn(query)->list[dict] for a different provider.
+Tools: lightweight built-ins (calc safe via ast, lookup-callback). Pluggable.
 """
 from __future__ import annotations
 
@@ -26,16 +26,16 @@ import re
 from dataclasses import dataclass
 from typing import Any, Callable, Sequence
 
-# --- próg jakości snippetu web (Badanie C: poniżej = W_noise = trucizna) ---
-# Dla retrieval_score od dostawcy: 0.55 (zmierzone Badanie C).
+# --- web snippet quality threshold (Study C: below = W_noise = poison) ---
+# For retrieval_score from the provider: 0.55 (measured in Study C).
 WEB_SNIPPET_MIN = float(os.environ.get("TRUTHGATE_WEB_SNIPPET_MIN", "0.55"))
-# Token-overlap to grubszy proxy (gdy dostawca nie daje retrieval_score) —
-# inna skala, niższy próg. "co najmniej 1/4 słów pytania w snippecie".
+# Token-overlap is a coarser proxy (when the provider gives no retrieval_score) —
+# different scale, lower threshold. "at least 1/4 of the question words in the snippet".
 WEB_OVERLAP_MIN = float(os.environ.get("TRUTHGATE_WEB_OVERLAP_MIN", "0.25"))
 
 
 # ======================================================================
-# WEB (gałąź 3)
+# WEB (branch 3)
 # ======================================================================
 
 def _token_overlap(query: str, text: str) -> float:
@@ -48,8 +48,8 @@ def _token_overlap(query: str, text: str) -> float:
 
 
 def best_web_snippet_score(results: Sequence[dict], query: str) -> tuple[float, bool]:
-    """Najwyższy score snippetu (proxy snippet_has_gold). Zwraca (score, used_retrieval_score).
-    Używa retrieval_score jeśli dostawca go daje (próg 0.55), inaczej token-overlap (próg 0.25)."""
+    """Highest snippet score (proxy for snippet_has_gold). Returns (score, used_retrieval_score).
+    Uses retrieval_score if the provider gives it (threshold 0.55), otherwise token-overlap (threshold 0.25)."""
     best = 0.0
     used_rs = False
     for r in results or []:
@@ -65,7 +65,7 @@ def best_web_snippet_score(results: Sequence[dict], query: str) -> tuple[float, 
 
 
 def brave_search(query: str, *, api_key: str | None = None, count: int = 5) -> list[dict]:
-    """Brave Search API → lista {title, snippet, url}. Pusta lista przy błędzie."""
+    """Brave Search API → list of {title, snippet, url}. Empty list on error."""
     import httpx
     key = api_key or os.environ.get("BRAVE_API_KEY", "")
     if not key:
@@ -86,14 +86,14 @@ def brave_search(query: str, *, api_key: str | None = None, count: int = 5) -> l
 
 @dataclass
 class WebResult:
-    used: bool                 # czy snippet przeszedł próg i nadaje się do wstrzyknięcia
-    score: float               # najlepszy snippet_score
-    context: str               # sklejony kontekst do wstrzyknięcia (pusty gdy used=False)
+    used: bool                 # whether the snippet passed the threshold and is fit for injection
+    score: float               # best snippet_score
+    context: str               # concatenated context for injection (empty when used=False)
     results: list[dict]
 
 
 class WebBranch:
-    """3. gałąź: świeży kontekst z web, TYLKO gdy snippet ma odpowiedź (próg jakości)."""
+    """3rd branch: fresh context from the web, ONLY when the snippet has the answer (quality threshold)."""
 
     def __init__(self, search_fn: Callable[[str], list[dict]] | None = None,
                  *, api_key: str | None = None, threshold: float | None = None, top_k: int = 3):
@@ -106,7 +106,7 @@ class WebBranch:
         score, used_rs = best_web_snippet_score(results, query)
         thr = self.threshold if self.threshold is not None else (WEB_SNIPPET_MIN if used_rs else WEB_OVERLAP_MIN)
         if score < thr:
-            # W_noise: poniżej progu = trucizna, NIE wstrzykuj
+            # W_noise: below threshold = poison, do NOT inject
             return WebResult(used=False, score=score, context="", results=results)
         snippets = []
         for r in results[: self.top_k]:
@@ -119,7 +119,7 @@ class WebBranch:
 
 
 # ======================================================================
-# TOOLS (gałąź 4)
+# TOOLS (branch 4)
 # ======================================================================
 
 _SAFE_OPS = {
@@ -142,13 +142,13 @@ def _safe_eval(node):
 
 
 def _extract_expr(text: str) -> str:
-    """Wyłuskaj wyrażenie arytmetyczne ze zdania ('ile to 12 * 7?' -> '12 * 7').
-    Gdy całe wejście to już czyste wyrażenie (np. '2*(3+4)') — zwróć je w całości."""
+    """Extract an arithmetic expression from a sentence ('ile to 12 * 7?' -> '12 * 7').
+    When the whole input is already a clean expression (e.g. '2*(3+4)') — return it in full."""
     t = (text or "").replace("×", "*").replace("÷", "/")
-    # czyste wyrażenie (tylko cyfry/operatory/nawiasy/spacje) → użyj wprost (zachowuje nawiasy)
+    # clean expression (only digits/operators/parens/spaces) → use directly (preserves parens)
     if re.fullmatch(r"[\d.+\-*/%()\s]+", t.strip()) and re.search(r"\d", t):
         return t.strip()
-    # inaczej wyłuskaj ze zdania: ciąg z operatorem między liczbami (z opcjonalnymi nawiasami)
+    # otherwise extract from the sentence: a run with an operator between numbers (with optional parens)
     matches = re.findall(r"[\d.(]+(?:\s*[+\-*/%()]\s*[\d.()]+)+", t)
     if matches:
         return max(matches, key=len)
@@ -156,13 +156,13 @@ def _extract_expr(text: str) -> str:
 
 
 def calculate(expr: str) -> str:
-    """Bezpieczny kalkulator (ast, bez eval). Liczby + - * / ** % //.
-    Akceptuje też zdanie ('ile to 12*7?') — wyłuskuje wyrażenie."""
+    """Safe calculator (ast, no eval). Numbers + - * / ** % //.
+    Also accepts a sentence ('ile to 12*7?') — extracts the expression."""
     try:
         raw = _extract_expr(expr)
         cleaned = re.sub(r"[^0-9+\-*/.()%\s]", "", raw).strip()
         if not cleaned or not re.search(r"\d", cleaned):
-            return "calc: brak wyrażenia"
+            return "calc: no expression"
         tree = ast.parse(cleaned, mode="eval")
         return str(_safe_eval(tree.body))
     except Exception as e:
@@ -176,16 +176,16 @@ class Tool:
     run: Callable[[str], str]
 
 
-# wbudowane, samodzielne narzędzia (bez floty)
+# built-in, self-contained tools (no fleet)
 BUILTIN_TOOLS = [
     Tool(name="calculate",
-         description="Policz wyrażenie arytmetyczne. Wejście: '2*(3+4)'. Użyj do liczb.",
+         description="Compute an arithmetic expression. Input: '2*(3+4)'. Use for numbers.",
          run=calculate),
 ]
 
 
 def looks_like_math(query: str) -> bool:
-    """Heurystyka: czy zapytanie to obliczenie (kieruj do calc)."""
+    """Heuristic: is the query a calculation (route to calc)."""
     q = (query or "").lower()
     if re.search(r"\d\s*[\+\-\*/×÷]\s*\d", q):
         return True
@@ -194,13 +194,13 @@ def looks_like_math(query: str) -> bool:
 
 
 class ToolBranch:
-    """4. gałąź: deterministyczne narzędzia (calc, lookup-callback) gdy pasują."""
+    """4th branch: deterministic tools (calc, lookup-callback) when they match."""
 
     def __init__(self, tools: Sequence[Tool] | None = None):
         self.tools = {t.name: t for t in (tools or BUILTIN_TOOLS)}
 
     def maybe_run(self, query: str) -> tuple[str, str] | None:
-        """Zwraca (tool_name, observation) jeśli któreś narzędzie pasuje, inaczej None."""
+        """Returns (tool_name, observation) if some tool matches, otherwise None."""
         if "calculate" in self.tools and looks_like_math(query):
             return ("calculate", self.tools["calculate"].run(query))
         return None

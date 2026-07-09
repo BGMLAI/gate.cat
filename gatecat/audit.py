@@ -1,28 +1,28 @@
-"""truthgate audit — "Gate Report": zmierz na CZYIMŚ modelu i CZYICH danych,
-na ilu zapytaniach model zgaduje, i jak dobrze gate to przewiduje.
+"""truthgate audit — "Gate Report": measure, on SOMEONE'S model and SOMEONE'S data,
+on how many queries the model is guessing, and how well the gate predicts it.
 
-To jest deliverable produktu: klient daje (1) swój model (Ollama / vLLM /
-OpenAI-compatible base_url) + (2) zbiór Q&A z gold (200-500 par) → dostaje
-raport z liczbami NA JEGO DANYCH:
-  - hit-rate gate (% zapytań oflagowanych jako niepewne),
-  - AUC gate (czy rozrzut przewiduje błąd — wymaga gold do scoringu poprawności),
-  - confident-wrong: ile błędów model popełnia PEWNIE (gate ich NIE łapie — uczciwie),
-  - lista najgorszych przypadków.
+This is the product deliverable: the client provides (1) their model (Ollama / vLLM /
+OpenAI-compatible base_url) + (2) a Q&A set with gold (200-500 pairs) → receives
+a report with numbers ON THEIR DATA:
+  - gate hit-rate (% of queries flagged as uncertain),
+  - gate AUC (whether the spread predicts errors — requires gold to score correctness),
+  - confident-wrong: how many errors the model makes CONFIDENTLY (the gate does NOT catch them — honestly),
+  - list of the worst cases.
 
-UCZCIWOŚĆ (wbudowana w raport, nie do pominięcia):
-  - AUC liczone TYLKO gdy n_wrong >= 10 (inaczej winner's curse, niewiarygodne).
-  - Raport jawnie rozdziela "uncertain-wrong" (gate łapie) od "confident-wrong"
-    (gate przepuszcza) — to jest strukturalne ograniczenie, nie wada implementacji.
-  - Gate = uncertainty flag, NIE hallucination guarantee. Tak też raportuje.
+HONESTY (built into the report, not to be skipped):
+  - AUC computed ONLY when n_wrong >= 10 (otherwise winner's curse, unreliable).
+  - The report explicitly separates "uncertain-wrong" (gate catches) from "confident-wrong"
+    (gate lets through) — this is a structural limitation, not an implementation flaw.
+  - Gate = uncertainty flag, NOT a hallucination guarantee. It reports it that way too.
 
-Format Q&A (JSONL, jedna para/linia):
+Q&A format (JSONL, one pair per line):
     {"q": "Who wrote Hamlet?", "gold": "Shakespeare", "aliases": ["william shakespeare"]}
 
-Użycie (CLI):
+Usage (CLI):
     truthgate-audit --model qwen2.5:7b --backend ollama \\
         --data clients_qa.jsonl --n-samples 5 --out gate_report.json
 
-Użycie (programowo):
+Usage (programmatic):
     from gatecat.audit import run_audit
     report = run_audit(sample_fn=my_llm, answer_fn=my_llm_greedy, data=pairs)
 """
@@ -46,8 +46,8 @@ def _normalize(s: str) -> str:
 
 
 def is_correct(answer: str, gold: str, aliases: Sequence[str] = ()) -> bool:
-    """Exact-match z guardem (BGML Badanie B C1): pusta pred nie matchuje,
-    alias >= 3 znaki, word-boundary (nie substring)."""
+    """Exact-match with a guard (BGML Study B C1): empty pred does not match,
+    alias >= 3 chars, word-boundary (not substring)."""
     if not answer or not answer.strip():
         return False
     na = _normalize(answer)
@@ -61,10 +61,10 @@ def is_correct(answer: str, gold: str, aliases: Sequence[str] = ()) -> bool:
 
 
 def _auc(disagreements: list[float], wrong_flags: list[bool]) -> float | None:
-    """AUC: czy disagreement przewiduje błąd. Mann-Whitney U / (n_pos*n_neg).
-    Zwraca None gdy za mało przypadków każdej klasy (niewiarygodne)."""
-    pos = [d for d, w in zip(disagreements, wrong_flags) if w]      # błędne
-    neg = [d for d, w in zip(disagreements, wrong_flags) if not w]  # poprawne
+    """AUC: whether disagreement predicts an error. Mann-Whitney U / (n_pos*n_neg).
+    Returns None when there are too few cases of each class (unreliable)."""
+    pos = [d for d, w in zip(disagreements, wrong_flags) if w]      # wrong
+    neg = [d for d, w in zip(disagreements, wrong_flags) if not w]  # correct
     if len(pos) < 10 or len(neg) < 10:
         return None  # winner's curse guard
     wins = 0.0
@@ -83,12 +83,12 @@ class AuditReport:
     n_correct: int
     n_wrong: int
     base_accuracy: float
-    gate_flag_rate: float                  # % oflagowanych jako niepewne
-    auc: float | None                      # czy gate przewiduje błąd (None gdy n_wrong<10)
-    uncertain_wrong: int                   # błędy KTÓRE gate złapał (uncertain=True)
-    confident_wrong: int                   # błędy KTÓRE gate przepuścił (uncertain=False) — NIEŁAPALNE
+    gate_flag_rate: float                  # % flagged as uncertain
+    auc: float | None                      # whether the gate predicts errors (None when n_wrong<10)
+    uncertain_wrong: int                   # errors THAT the gate caught (uncertain=True)
+    confident_wrong: int                   # errors THAT the gate let through (uncertain=False) — UNCATCHABLE
     recall_on_errors: float                # uncertain_wrong / n_wrong
-    false_alarm_rate: float                # poprawne-ale-oflagowane / n_correct
+    false_alarm_rate: float                # correct-but-flagged / n_correct
     worst_confident_wrong: list[dict] = field(default_factory=list)
     threshold: float = 0.30
     n_samples: int = 5
@@ -119,18 +119,18 @@ class AuditReport:
         L.append("=" * 56)
         L.append("  TRUTHGATE — GATE REPORT")
         L.append("=" * 56)
-        L.append(f"  Pytań:                {self.n}")
-        L.append(f"  Dokładność modelu:    {self.base_accuracy:.1%}  ({self.n_correct}/{self.n})")
-        L.append(f"  Gate oflagował:       {self.gate_flag_rate:.1%}  jako niepewne")
+        L.append(f"  Questions:            {self.n}")
+        L.append(f"  Model accuracy:       {self.base_accuracy:.1%}  ({self.n_correct}/{self.n})")
+        L.append(f"  Gate flagged:         {self.gate_flag_rate:.1%}  as uncertain")
         if self.auc is not None:
-            L.append(f"  AUC (gate→błąd):      {self.auc:.3f}  (>0.5 = gate przewiduje błędy)")
+            L.append(f"  AUC (gate→error):     {self.auc:.3f}  (>0.5 = gate predicts errors)")
         else:
-            L.append(f"  AUC:                  N/A  (za mało błędów <10, niewiarygodne)")
+            L.append(f"  AUC:                  N/A  (too few errors <10, unreliable)")
         L.append("-" * 56)
-        L.append(f"  Błędów łącznie:       {self.n_wrong}")
-        L.append(f"  ├ złapane (niepewne): {self.uncertain_wrong}  ({self.recall_on_errors:.0%} błędów)")
-        L.append(f"  └ PRZEPUSZCZONE:      {self.confident_wrong}  (model myli się PEWNIE)")
-        L.append(f"  Fałszywe alarmy:      {self.false_alarm_rate:.1%}  poprawnych oflagowano")
+        L.append(f"  Errors total:         {self.n_wrong}")
+        L.append(f"  ├ caught (uncertain): {self.uncertain_wrong}  ({self.recall_on_errors:.0%} of errors)")
+        L.append(f"  └ LET THROUGH:        {self.confident_wrong}  (model is CONFIDENTLY wrong)")
+        L.append(f"  False alarms:         {self.false_alarm_rate:.1%}  of correct answers flagged")
         L.append("-" * 56)
         for note in self.notes:
             L.append(f"  ⚠ {note}")
@@ -148,12 +148,12 @@ def run_audit(
     embedder=None,
     progress: Callable[[int, int], None] | None = None,
 ) -> AuditReport:
-    """Przepuść zbiór Q&A przez gate + scoring poprawności.
+    """Run a Q&A set through the gate + correctness scoring.
 
-    sample_fn(prompt)->str : próbka przy temp>0 (gate woła N razy).
-    answer_fn(prompt)->str : odpowiedź deterministyczna (temp=0) do scoringu poprawności.
-                             Jeśli None, używa pierwszej próbki z sample_fn.
-    data : lista {"q","gold","aliases"?}.
+    sample_fn(prompt)->str : a sample at temp>0 (the gate calls it N times).
+    answer_fn(prompt)->str : a deterministic answer (temp=0) for correctness scoring.
+                             If None, uses the first sample from sample_fn.
+    data : list of {"q","gold","aliases"?}.
     """
     gate = Gate(sample_fn=sample_fn, n_samples=n_samples, threshold=threshold, embedder=embedder)
     diss: list[float] = []
@@ -187,20 +187,20 @@ def run_audit(
     correct_flagged = sum(1 for w, f in zip(wrongs, flagged) if (not w) and f)
 
     notes = [
-        "Gate wykrywa NIEPEWNOSC (rozrzut probek), nie klamstwo. "
-        "'Confident-wrong' (model myli sie pewnie) jest NIELAPALNY rozrzutem.",
-        "AUC>0.5 oznacza ze gate przewiduje bledy lepiej niz losowo. "
-        "Wartosc to uncertainty-flag do human-review, NIE gwarancja poprawnosci.",
+        "The gate detects UNCERTAINTY (sample spread), not falsehood. "
+        "'Confident-wrong' (the model is confidently wrong) is UNCATCHABLE by spread.",
+        "AUC>0.5 means the gate predicts errors better than random. "
+        "The value is an uncertainty flag for human review, NOT a correctness guarantee.",
     ]
     auc = _auc(diss, wrongs)
     if auc is None:
-        notes.append(f"AUC pominiete: za malo bledow lub poprawnych (<10) dla wiarygodnosci.")
+        notes.append(f"AUC skipped: too few errors or correct answers (<10) for reliability.")
     if confident_wrong > uncertain_wrong:
         notes.append(
-            f"WIEKSZOSC bledow ({confident_wrong}/{n_wrong}) to confident-wrong — "
-            f"gate sam ich nie zlapie; potrzebny cache/web/human na tych zapytaniach.")
+            f"MOST errors ({confident_wrong}/{n_wrong}) are confident-wrong — "
+            f"the gate alone will not catch them; cache/web/human needed on those queries.")
 
-    confident_wrong_cases.sort(key=lambda c: c["disagreement"])  # najpewniejsze błędy pierwsze
+    confident_wrong_cases.sort(key=lambda c: c["disagreement"])  # most confident errors first
     return AuditReport(
         n=n, n_correct=n_correct, n_wrong=n_wrong,
         base_accuracy=(n_correct / n if n else 0.0),
@@ -215,11 +215,11 @@ def run_audit(
     )
 
 
-# ---- backendy modelu (Ollama / OpenAI-compatible) ----
+# ---- model backends (Ollama / OpenAI-compatible) ----
 def make_backend(model: str, backend: str = "ollama", base_url: str | None = None,
                  api_key: str | None = None):
-    """Zwraca (sample_fn, answer_fn) dla danego backendu.
-    sample_fn: temp=0.7 (próbki gate). answer_fn: temp=0 (odpowiedź do scoringu)."""
+    """Returns (sample_fn, answer_fn) for the given backend.
+    sample_fn: temp=0.7 (gate samples). answer_fn: temp=0 (answer for scoring)."""
     import os
     import httpx
 
@@ -251,15 +251,15 @@ def make_backend(model: str, backend: str = "ollama", base_url: str | None = Non
 def main(argv: list[str] | None = None) -> int:
     import argparse
     ap = argparse.ArgumentParser(prog="truthgate-audit", description="Gate Report on your model + your data")
-    ap.add_argument("--model", required=True, help="nazwa modelu (np. qwen2.5:7b)")
+    ap.add_argument("--model", required=True, help="model name (e.g. qwen2.5:7b)")
     ap.add_argument("--backend", default="ollama", choices=["ollama", "openai"])
     ap.add_argument("--base-url", default=None)
-    ap.add_argument("--data", required=True, help="JSONL z {q, gold, aliases?}")
+    ap.add_argument("--data", required=True, help="JSONL with {q, gold, aliases?}")
     ap.add_argument("--n-samples", type=int, default=5)
     ap.add_argument("--threshold", type=float, default=0.30)
-    ap.add_argument("--semantic", action="store_true", help="użyj MiniLM do rozrzutu semantycznego")
-    ap.add_argument("--out", default=None, help="zapisz raport JSON")
-    ap.add_argument("--limit", type=int, default=0, help="ogranicz liczbę pytań (0=wszystkie)")
+    ap.add_argument("--semantic", action="store_true", help="use MiniLM for semantic spread")
+    ap.add_argument("--out", default=None, help="save JSON report")
+    ap.add_argument("--limit", type=int, default=0, help="limit the number of questions (0=all)")
     args = ap.parse_args(argv)
 
     data = []
@@ -277,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
             from gatecat.embedders import get_embedder
             embedder = get_embedder("minilm")
         except Exception as e:
-            print(f"[warn] semantic embedder niedostepny ({e}); lexical fallback")
+            print(f"[warn] semantic embedder unavailable ({e}); lexical fallback")
 
     sample_fn, answer_fn = make_backend(args.model, args.backend, args.base_url)
 
@@ -285,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         if i % 10 == 0 or i == total:
             print(f"  [{i}/{total}]", flush=True)
 
-    print(f"Audyt modelu '{args.model}' ({args.backend}) na {len(data)} pytaniach...")
+    print(f"Auditing model '{args.model}' ({args.backend}) on {len(data)} questions...")
     report = run_audit(
         sample_fn=sample_fn, answer_fn=answer_fn, data=data,
         n_samples=args.n_samples, threshold=args.threshold,
@@ -296,7 +296,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:
             json.dump(report.to_dict(), f, ensure_ascii=False, indent=2)
-        print(f"\nRaport JSON -> {args.out}")
+        print(f"\nJSON report -> {args.out}")
     return 0
 
 

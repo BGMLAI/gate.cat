@@ -1,23 +1,23 @@
-"""truthgate.agent — gate dla pętli agenta: zatrzymaj runaway ZANIM przepali budżet.
+"""truthgate.agent — gate for the agent loop: stop a runaway BEFORE it burns the budget.
 
-Problem (z życia): agent wpada w pętlę / przepala budżet, bo model jest PEWNY
-(nie gadatliwy) — hard `max_steps` / `thinking_budget` łapie to PO fakcie i tnie
-też dobre długie rozumowanie. Realny przypadek: cache-write spiral, $305 w 24h.
+Real-world problem: an agent falls into a loop / burns the budget because the model
+is CONFIDENT (not verbose) — a hard `max_steps` / `thinking_budget` catches this AFTER
+the fact and also cuts off good long reasoning. Real case: a cache-write spiral, $305 in 24h.
 
-TruthGate gatuje na ZMIERZONEJ niepewności: probe N tanich próbek następnego
-kroku → jeśli model nie zgadza się ze sobą (rozrzut) = zgaduje = pauza/eskalacja/
-abstain. Zatrzymuje TYLKO kroki które realnie zgadują, nie drogie-ale-poprawne.
+TruthGate gates on MEASURED uncertainty: probe N cheap samples of the next
+step → if the model disagrees with itself (spread) = it's guessing = pause/escalate/
+abstain. It stops ONLY the steps that are genuinely guessing, not expensive-but-correct ones.
 
-UCZCIWOŚĆ: gate łapie WAHANIE, nie KŁAMSTWO. Confident-wrong (pewny błąd) jest
-niełapalny rozrzutem — to uncertainty-signal, nie correctness-guarantee.
+HONESTY: the gate catches HESITATION, not LYING. Confident-wrong (a confident error) is
+not catchable by spread — this is an uncertainty signal, not a correctness guarantee.
 
-Użycie:
+Usage:
     from gatecat.agent import GatedLoop
 
-    def step(state) -> StepResult:        # jeden krok agenta
-        ...                               # zwraca StepResult(output, done, prompt)
+    def step(state) -> StepResult:        # one agent step
+        ...                               # returns StepResult(output, done, prompt)
 
-    def sample(prompt) -> str:            # model agenta przy temp>0
+    def sample(prompt) -> str:            # agent model at temp>0
         return agent_llm(prompt, temperature=0.7)
 
     loop = GatedLoop(step_fn=step, sample_fn=sample,
@@ -35,19 +35,19 @@ from gatecat.gate import Gate
 
 @dataclass
 class StepResult:
-    """Zwracane przez step_fn agenta."""
-    output: Any                    # wynik kroku (stan, obserwacja, cokolwiek)
-    done: bool = False             # czy agent skończył zadanie
-    prompt: str | None = None      # prompt który gate probe'uje na NASTĘPNY krok
-    cost: float = 0.0              # opcjonalny koszt kroku (tokeny/$ — do budżetu)
+    """Returned by the agent's step_fn."""
+    output: Any                    # result of the step (state, observation, whatever)
+    done: bool = False             # whether the agent finished the task
+    prompt: str | None = None      # prompt the gate probes for the NEXT step
+    cost: float = 0.0              # optional cost of the step (tokens/$ — for the budget)
 
 
 @dataclass
 class LoopResult:
     stopped_reason: str            # "done" | "runaway_guessing" | "max_steps" | "budget"
     steps: int
-    uncertain_steps: int           # ile kroków oflagowano jako niepewne
-    consecutive_uncertain: int     # najdłuższa seria niepewnych z rzędu
+    uncertain_steps: int           # how many steps were flagged as uncertain
+    consecutive_uncertain: int     # longest run of consecutive uncertain steps
     total_cost: float
     final_output: Any = None
     trace: list[dict] = field(default_factory=list)
@@ -63,19 +63,19 @@ class LoopResult:
 
 
 class GatedLoop:
-    """Owija pętlę agenta. Przerywa gdy agent zgaduje (N niepewnych kroków z rzędu).
+    """Wraps the agent loop. Aborts when the agent is guessing (N consecutive uncertain steps).
 
     Args:
-        step_fn(state) -> StepResult : jeden krok agenta.
-        sample_fn(prompt) -> str     : model agenta przy temp>0 (gate probe).
-        max_uncertain_steps : ile niepewnych KROKÓW Z RZĘDU = runaway → stop (default 3).
-        max_steps           : twardy backstop (default 50).
-        max_cost            : opcjonalny limit kosztu (None = bez limitu).
-        on_uncertain        : opcjonalny callback(step_idx, verdict, state) — np. eskalacja
-                              do silniejszego modelu / człowieka. Zwróć True by KONTYNUOWAĆ
-                              (np. po eskalacji), False/None by liczyć jako niepewny krok.
-        n_samples, threshold: konfiguracja gate.
-        embedder            : opcjonalny embedder (semantyczny rozrzut).
+        step_fn(state) -> StepResult : one agent step.
+        sample_fn(prompt) -> str     : agent model at temp>0 (gate probe).
+        max_uncertain_steps : how many CONSECUTIVE uncertain STEPS = runaway → stop (default 3).
+        max_steps           : hard backstop (default 50).
+        max_cost            : optional cost limit (None = no limit).
+        on_uncertain        : optional callback(step_idx, verdict, state) — e.g. escalation
+                              to a stronger model / a human. Return True to CONTINUE
+                              (e.g. after escalation), False/None to count it as an uncertain step.
+        n_samples, threshold: gate configuration.
+        embedder            : optional embedder (semantic spread).
     """
 
     def __init__(
@@ -123,16 +123,16 @@ class GatedLoop:
                 return LoopResult("done", steps, uncertain_total, max_consecutive,
                                   total_cost, last_output, trace)
 
-            # gate probe na NASTĘPNY krok (jeśli agent dał prompt)
+            # gate probe for the NEXT step (if the agent provided a prompt)
             if result.prompt:
                 verdict = self.gate.check(result.prompt)
                 entry["uncertain"] = verdict.uncertain
                 entry["disagreement"] = round(verdict.disagreement, 3)
                 if verdict.uncertain:
                     uncertain_total += 1
-                    # eskalacja: callback może "naprawić" krok i pozwolić kontynuować.
-                    # FAIL-SAFE (audyt 2026-06-27 #5): wyjątek w callbacku NIE może
-                    # crashować pętli — degraduj do rescued=False (niepewny krok liczony).
+                    # escalation: the callback may "fix" the step and allow continuing.
+                    # FAIL-SAFE (audit 2026-06-27 #5): an exception in the callback MUST NOT
+                    # crash the loop — degrade to rescued=False (the uncertain step is counted).
                     if self.on_uncertain:
                         try:
                             rescued = bool(self.on_uncertain(steps, verdict, state))
@@ -149,16 +149,16 @@ class GatedLoop:
                 else:
                     consecutive = 0
             else:
-                entry["uncertain"] = None  # brak promptu = brak gate dla tego kroku
+                entry["uncertain"] = None  # no prompt = no gate for this step
 
             trace.append(entry)
 
-            # RUNAWAY: N niepewnych kroków z rzędu = agent zgaduje w pętli → stop
+            # RUNAWAY: N consecutive uncertain steps = agent is guessing in a loop → stop
             if consecutive >= self.max_uncertain_steps:
                 return LoopResult("runaway_guessing", steps, uncertain_total,
                                   max_consecutive, total_cost, last_output, trace)
 
-            # budżet
+            # budget
             if self.max_cost is not None and total_cost >= self.max_cost:
                 return LoopResult("budget", steps, uncertain_total,
                                   max_consecutive, total_cost, last_output, trace)

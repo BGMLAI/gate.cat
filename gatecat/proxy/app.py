@@ -160,12 +160,12 @@ async def _sse_from_completion(resp_data: dict):
 
 def build_upstream_headers(api_key: str, client_auth_header: str,
                            allow_client_auth: bool) -> dict:
-    """Zbuduj nagłówki upstream (audyt 2026-06-27 #3 — testowalna, czysta funkcja).
+    """Build upstream headers (audit 2026-06-27 #3 — testable, pure function).
 
-    Domyślnie używaj WYŁĄCZNIE skonfigurowanego klucza. Kliencki Authorization
-    przekazywany TYLKO gdy allow_client_auth=True i brak skonfigurowanego klucza
-    (proxy multi-tenant) — inaczej atakujący wstrzyknąłby własny/obcy klucz.
-    Bez klucza: NIE wysyłaj pustego Bearer.
+    By default use ONLY the configured key. The client Authorization is
+    forwarded ONLY when allow_client_auth=True and no key is configured
+    (multi-tenant proxy) — otherwise an attacker could inject their own/foreign key.
+    Without a key: do NOT send an empty Bearer.
     """
     key = api_key
     if not key and allow_client_auth and client_auth_header.startswith("Bearer "):
@@ -188,8 +188,8 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
     gate = None  # TruthGate (gatecat.Gate), init in lifespan if gate_mode != off
     web_branch = None   # 3rd cascade branch (gatecat.WebBranch)
     tool_branch = None  # 4th cascade branch (gatecat.ToolBranch)
-    koryto = None       # deterministyczny weryfikator atomu (gatecat.Koryto)
-    stagnation = None   # stagnation-by-state: pilnuje czy koryto nie zgniło
+    koryto = None       # deterministic atom verifier (gatecat.Koryto)
+    stagnation = None   # stagnation-by-state: watches whether the koryto has gone stale
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -251,7 +251,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 logger.warning("TruthGate init failed: %s", e)
 
         # Repair branches: web (3rd) + tools (4th).
-        # Włączane gdy gate LUB koryto aktywne — web-rozjemca obsługuje też rozbieżność koryta.
+        # Enabled when gate OR koryto is active — the web arbiter also handles koryto disagreement.
         if config.gate_mode in ("flag", "block") or config.koryto_mode in ("flag", "block"):
             try:
                 if config.web_enabled:
@@ -265,7 +265,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             except Exception as e:
                 logger.warning("Repair branches init failed: %s", e)
 
-        # KORYTO — deterministyczny weryfikator atomu (działa NIEZALEŻNIE od gate)
+        # KORYTO — deterministic atom verifier (works INDEPENDENTLY of the gate)
         if config.koryto_mode in ("flag", "block"):
             try:
                 from gatecat.koryto import Koryto, FactBase
@@ -273,7 +273,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 from gatecat.koryto_sources import (
                     http_cache_source, chroma_source, multi_source,
                 )
-                # plik JSON (mały, walidacyjny)
+                # JSON file (small, for validation)
                 facts = {}
                 if config.koryto_fact_base:
                     try:
@@ -281,26 +281,26 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                         logger.info("Koryto fact-base (JSON): %d entries", len(facts))
                     except Exception as e:
                         logger.warning("Koryto fact-base JSON load failed (%s)", e)
-                # REALNE BAZY (multi-source z bramką jakości; REJESTR 2026-06-27).
-                # Lookup pyta WSZYSTKIE dobrej jakości: 4M cache + ChromaDB (po filtrze MCQ).
+                # REAL DATABASES (multi-source with a quality gate; REGISTRY 2026-06-27).
+                # Lookup queries ALL good-quality ones: 4M cache + ChromaDB (after the MCQ filter).
                 sources = []
                 if config.koryto_cache_url:
                     sources.append(http_cache_source(
                         config.koryto_cache_url, api_key=config.koryto_cache_key,
                         min_sim=config.koryto_lookup_min_sim))
-                    logger.info("Koryto lookup źródło: cache %s", config.koryto_cache_url)
+                    logger.info("Koryto lookup source: cache %s", config.koryto_cache_url)
                 if config.koryto_chroma_url and config.koryto_chroma_collection:
                     sources.append(chroma_source(
                         config.koryto_chroma_url, config.koryto_chroma_collection,
                         min_sim=config.koryto_lookup_min_sim))
-                    logger.info("Koryto lookup źródło: chroma %s/%s (filtr MCQ)",
+                    logger.info("Koryto lookup source: chroma %s/%s (MCQ filter)",
                                 config.koryto_chroma_url, config.koryto_chroma_collection)
                 lookup_fn = multi_source(sources) if sources else None
                 fb = None
                 if facts or lookup_fn is not None:
                     fb = FactBase(facts or None, lookup_fn=lookup_fn)
                 koryto = Koryto(fact_base=fb)
-                # stagnation-by-state pilnuje koryta (czy seria miękkich odrzuceń = stale baza)
+                # stagnation-by-state watches the koryto (whether a run of soft rejections = stale database)
                 stagnation = StagnationMonitor(
                     window=config.stagnation_window,
                     soft_streak_trigger=config.stagnation_soft_streak,
@@ -416,13 +416,13 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             return _build_response(synth_text, model, synthesized=True)
 
         # --- Tier 2.5: TruthGate (disagreement over upstream model) ---
-        # Cache nie naprawiło → zmierz czy mały model jest pewny. Niepewny =
-        # próbuj naprawy (tools/web), potem oznacz (flag) lub odmów (block).
+        # Cache did not repair it → measure whether the small model is confident. Uncertain =
+        # try repair (tools/web), then flag it (flag) or refuse (block).
         gate_meta = None
         if gate is not None:
             gate_meta = await _gate_probe(body, model)
             if gate_meta and gate_meta.get("uncertain"):
-                # gałąź 4 (tools): deterministyczne, gdy pasuje (np. obliczenie)
+                # branch 4 (tools): deterministic, when it applies (e.g. a calculation)
                 if tool_branch is not None:
                     hit = tool_branch.maybe_run(query)
                     if hit:
@@ -432,12 +432,12 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                             observation, model,
                             gate={**gate_meta, "repaired_by": f"tool:{tool_name}"},
                         )
-                # gałąź 3 (web): świeży kontekst TYLKO gdy snippet ma odpowiedź
+                # branch 3 (web): fresh context ONLY when the snippet has the answer
                 if web_branch is not None:
                     wr = web_branch.fetch(query)
                     if wr.used:
                         logger.debug("[proxy] WEB (score=%.2f): %s", wr.score, query[:60])
-                        # wstrzyknij kontekst web do promptu i wymuś odpowiedź upstream
+                        # inject the web context into the prompt and force an upstream answer
                         body = dict(body)
                         body["messages"] = [
                             {"role": "system", "content": "Use ONLY this context to answer. "
@@ -445,18 +445,18 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                             *body.get("messages", []),
                         ]
                         gate_meta = {**gate_meta, "repaired_by": "web", "web_score": round(wr.score, 3)}
-                        # spadnij do Tier 3 z wzbogaconym promptem (nie block)
+                        # fall through to Tier 3 with the enriched prompt (do not block)
                     elif config.gate_mode == "block":
                         return _build_response(
-                            "Nie mam wystarczającej pewności, by odpowiedzieć wiarygodnie. "
-                            "(disagreement=%.2f) — zalecana weryfikacja przez człowieka."
+                            "I am not confident enough to answer reliably. "
+                            "(disagreement=%.2f) — human verification recommended."
                             % gate_meta.get("disagreement", 0.0),
                             model, gate=gate_meta, abstained=True,
                         )
                 elif config.gate_mode == "block":
                     return _build_response(
-                        "Nie mam wystarczającej pewności, by odpowiedzieć wiarygodnie. "
-                        "(disagreement=%.2f) — zalecana weryfikacja przez człowieka."
+                        "I am not confident enough to answer reliably. "
+                        "(disagreement=%.2f) — human verification recommended."
                         % gate_meta.get("disagreement", 0.0),
                         model, gate=gate_meta, abstained=True,
                     )
@@ -464,9 +464,9 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
         # --- Tier 3: Upstream API call ---
         upstream_resp = await _forward_upstream(body, False, request)
 
-        # --- Tier 3.5: KORYTO — zweryfikuj odpowiedź modelu deterministycznie ---
-        # Działa NIEZALEŻNIE od gate: łapie confident-wrong (rozrzut zero) którego
-        # gate nie widzi. Twarde koryto (exec/calc) odrzuca → zwróć prawdę z koryta.
+        # --- Tier 3.5: KORYTO — verify the model's answer deterministically ---
+        # Works INDEPENDENTLY of the gate: catches confident-wrong (zero spread) that
+        # the gate does not see. A hard koryto (exec/calc) rejects → return the truth from the koryto.
         koryto_meta = None
         original_text = None
         if koryto is not None and isinstance(upstream_resp, JSONResponse):
@@ -476,30 +476,30 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 exec_payload, exec_source = _koryto_exec_payload(req, query)
                 kv = koryto.verify(query, model_answer, **exec_payload)
                 if exec_source:
-                    pass  # exec_source dodane do meta niżej
+                    pass  # exec_source added to meta below
                 if kv.verdict != "unknown":
-                    # TRUTH-FORGERY GUARD: exec z source='auto' = kod z query usera.
-                    # Atakujący kontroluje query → kontroluje exec-"prawdę". NIE koryguj
-                    # twardo na samym auto-exec; tylko jawne pole ('explicit') lub calc/lookup.
+                    # TRUTH-FORGERY GUARD: exec with source='auto' = code from the user's query.
+                    # The attacker controls the query → controls the exec-"truth". Do NOT correct
+                    # hard on auto-exec alone; only an explicit field ('explicit') or calc/lookup.
                     forgeable = (kv.channel == "exec" and exec_source == "auto")
 
                     koryto_meta = kv.to_dict()
                     if exec_source:
                         koryto_meta["exec_source"] = exec_source
-                    # NIE leakuj sfałszowanej "prawdy" do metadanych (audyt 2026-06-27 should-fix):
-                    # gdy forgeable, atakujący-kontrolowany output nie może udawać 'truth'.
+                    # Do NOT leak the forged "truth" into the metadata (audit 2026-06-27 should-fix):
+                    # when forgeable, attacker-controlled output must not masquerade as 'truth'.
                     if forgeable:
                         koryto_meta["truth"] = None
                         koryto_meta["forgeable"] = True
 
-                    # stagnacja: śledź czy koryto nie zgniło (seria miękkich odrzuceń)
+                    # stagnation: track whether the koryto has gone stale (a run of soft rejections)
                     if stagnation is not None:
                         st = stagnation.observe(kv)
                         koryto_meta["stagnation"] = st.to_dict()
 
                     if config.koryto_mode == "block" and kv.verdict == "refute" and kv.truth:
                         if kv.hard and not kv.needs_arbiter and not forgeable:
-                            # TWARDE koryto (exec/calc): interpreter się nie myli → koryguj od razu.
+                            # HARD koryto (exec/calc): the interpreter does not err → correct immediately.
                             original_text = model_answer
                             corrected = _apply_koryto_correction(resp_data, kv.truth)
                             koryto_meta["corrected"] = True
@@ -512,20 +512,20 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                                 "X-Koryto-Verdict": "refute", "X-Koryto-Channel": kv.channel,
                                 "X-Koryto-Corrected": "true"})
                         elif kv.needs_arbiter and web_branch is not None:
-                            # MIĘKKIE koryto (lookup): baza bywa stale → web-ROZJEMCA rozsądza
-                            # KTO ma rację (model czy koryto). NIE blokuj ślepo na bazie.
+                            # SOFT koryto (lookup): the database can be stale → the web ARBITER decides
+                            # WHO is right (the model or the koryto). Do NOT block blindly on the database.
                             arb = _web_arbiter(query, model_answer, kv.truth)
                             koryto_meta["arbiter"] = arb
                             if arb["verdict"] == "koryto":
-                                # web potwierdza koryto → model faktycznie zły → koryguj
+                                # web confirms the koryto → the model is genuinely wrong → correct
                                 corrected = _apply_koryto_correction(resp_data, kv.truth)
                                 corrected["gatecat_koryto"] = {**koryto_meta, "corrected": True,
                                     "repaired_by": "koryto:lookup+web", "original_answer": model_answer[:200]}
                                 return JSONResponse(content=corrected, headers={
                                     "X-Koryto-Verdict": "refute", "X-Koryto-Channel": "lookup+web",
                                     "X-Koryto-Corrected": "true"})
-                            # arb=="model" (koryto stale, uratuj model) lub "niejasne" → NIE koryguj,
-                            # tylko oznacz (odpowiedź modelu zostaje).
+                            # arb=="model" (koryto stale, rescue the model) or "niejasne" → do NOT correct,
+                            # just flag it (the model's answer stays).
             except Exception as e:
                 logger.warning("[proxy] koryto check failed: %s", e)
 
@@ -545,7 +545,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             except Exception:
                 pass
 
-        # Cache the response — NIE cache'uj odpowiedzi którą koryto odrzuciło jako błędną
+        # Cache the response — do NOT cache an answer the koryto rejected as wrong
         if isinstance(upstream_resp, JSONResponse) and not (koryto_meta and koryto_meta.get("verdict") == "refute"):
             try:
                 resp_data = json.loads(upstream_resp.body.decode())
@@ -608,8 +608,8 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 "max_tokens": 256,
             }
 
-            # krótki timeout per-probe: gate to overhead na każdym zapytaniu,
-            # nie może wisieć. Lepiej brak gate (None) niż zawieszony pipeline.
+            # short per-probe timeout: the gate is overhead on every request,
+            # it must not hang. Better no gate (None) than a stalled pipeline.
             probe_timeout = float(os.environ.get("GATECAT_GATE_TIMEOUT", "20"))
 
             async def one():
@@ -774,8 +774,8 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                     cache.populate(query, full_text, model=model)
 
         except httpx.HTTPError as e:
-            # detal tylko do logu; klient dostaje generic (audyt 2026-06-27 #8:
-            # surowy str(e) leakował DNS/SSL/ścieżki = recon dla atakującego)
+            # detail only to the log; the client gets a generic message (audit 2026-06-27 #8:
+            # raw str(e) leaked DNS/SSL/paths = recon for an attacker)
             logger.error("[proxy] upstream stream error: %s", e)
             error_data = {
                 "error": {"message": "Upstream service error", "type": "proxy_error"}
@@ -801,7 +801,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 status_code=resp.status_code,
             )
         except (httpx.HTTPError, AttributeError) as e:
-            # detal tylko do logu; klient dostaje generic (audyt 2026-06-27 #8)
+            # detail only to the log; the client gets a generic message (audit 2026-06-27 #8)
             logger.error("[proxy] upstream error: %s", e)
             return JSONResponse(
                 content={"error": {"message": "Upstream service error", "type": "proxy_error"}},
@@ -809,7 +809,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             )
 
     def _upstream_headers(request: Request) -> dict:
-        """Build headers for upstream API call (audyt 2026-06-27 #3 — patrz build_upstream_headers)."""
+        """Build headers for upstream API call (audit 2026-06-27 #3 — see build_upstream_headers)."""
         return build_upstream_headers(
             config.openai_api_key,
             request.headers.get("authorization", ""),
@@ -825,11 +825,11 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
         return None
 
     def _koryto_exec_payload(req, query: str):
-        """Zwraca (payload_dict, source). payload do koryto.verify(**payload).
-        Kolejność: (1) jawne pole req.koryto_exec (szczelne, klient świadomy),
-        (2) auto-wyłuskanie z query TYLKO gdy config.koryto_exec_from_query (UNSAFE),
-        (3) None. Kod ZAWSZE z query (nie z odpowiedzi modelu) — inaczej tautologia."""
-        # (1) jawne pole
+        """Returns (payload_dict, source). payload for koryto.verify(**payload).
+        Order: (1) the explicit field req.koryto_exec (airtight, client is aware),
+        (2) auto-extraction from the query ONLY when config.koryto_exec_from_query (UNSAFE),
+        (3) None. The code ALWAYS comes from the query (not the model's answer) — otherwise a tautology."""
+        # (1) explicit field
         ke = getattr(req, "koryto_exec", None)
         if isinstance(ke, dict):
             lang = (ke.get("lang") or "python").lower()
@@ -838,7 +838,7 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             stmts = ke.get("stmts")
             if isinstance(stmts, list) and stmts:
                 return ({"exec_stmts": [str(s) for s in stmts]}, "explicit")
-        # (2) auto-wyłuskanie z query — TYLKO gdy operator świadomie włączył
+        # (2) auto-extraction from the query — ONLY when the operator has deliberately enabled it
         if config.koryto_exec_from_query:
             try:
                 from gatecat.codeblocks import extract_code_blocks, to_exec_statements
@@ -852,8 +852,8 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
         return ({}, None)
 
     def _apply_koryto_correction(resp_data: dict, truth: str) -> dict:
-        """Podmień treść odpowiedzi na prawdę z koryta, zachowując strukturę OpenAI.
-        Zwraca KOPIĘ (nie mutuje oryginału)."""
+        """Replace the response content with the truth from the koryto, preserving the OpenAI structure.
+        Returns a COPY (does not mutate the original)."""
         data = json.loads(json.dumps(resp_data))  # deep copy
         choices = data.get("choices") or [{}]
         msg = choices[0].setdefault("message", {})
@@ -863,33 +863,33 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
         return data
 
     def _web_arbiter(query: str, model_answer: str, koryto_truth: str) -> dict:
-        """Web-ROZJEMCA: gdy miękkie koryto (lookup) odrzuca odpowiedź modelu, web
-        rozsądza KTO ma rację. Zwraca {verdict: model|koryto|niejasne, ...}.
+        """Web ARBITER: when the soft koryto (lookup) rejects the model's answer, the web
+        decides WHO is right. Returns {verdict: model|koryto|niejasne, ...}.
 
-        Mechanizm (Badanie C, REJESTR): snippety wspierają model → koryto stale
-        (uratuj model). Wspierają koryto → model zły (koryguj). Oba/żadne → niejasne.
-        Próg jakości snippetu zapobiega truciu (web-szum)."""
+        Mechanism (Study C, REGISTRY): snippets support the model → koryto stale
+        (rescue the model). They support the koryto → the model is wrong (correct). Both/neither → niejasne.
+        The snippet-quality threshold prevents poisoning (web noise)."""
         try:
             from gatecat.branches import _token_overlap
             wr = web_branch.fetch(query)
             text = wr.context or " ".join(
                 str(r.get("title", "") + " " + r.get("snippet", "")) for r in (wr.results or []))
             if not text.strip():
-                return {"verdict": "niejasne", "reason": "brak snippetów", "web_score": wr.score}
+                return {"verdict": "niejasne", "reason": "no snippets", "web_score": wr.score}
             sup_model = _token_overlap(model_answer, text)
             sup_koryto = _token_overlap(str(koryto_truth), text)
-            # wsparcie = atom obecny w snippecie z marginesem nad drugim
+            # support = the atom is present in the snippet with a margin over the other
             margin = 0.15
             if sup_model >= sup_koryto + margin:
-                return {"verdict": "model", "reason": "web wspiera model (koryto stale)",
+                return {"verdict": "model", "reason": "web supports the model (koryto stale)",
                         "sup_model": round(sup_model, 3), "sup_koryto": round(sup_koryto, 3)}
             if sup_koryto >= sup_model + margin:
-                return {"verdict": "koryto", "reason": "web potwierdza koryto (model zły)",
+                return {"verdict": "koryto", "reason": "web confirms the koryto (model wrong)",
                         "sup_model": round(sup_model, 3), "sup_koryto": round(sup_koryto, 3)}
-            return {"verdict": "niejasne", "reason": "web nie rozstrzygnął",
+            return {"verdict": "niejasne", "reason": "web did not decide",
                     "sup_model": round(sup_model, 3), "sup_koryto": round(sup_koryto, 3)}
         except Exception as e:
-            # detal tylko do logu; metadane klienta dostają generic (audyt 2026-06-27 #8)
+            # detail only to the log; the client metadata gets a generic message (audit 2026-06-27 #8)
             logger.warning("[proxy] web arbiter failed: %s", e)
             return {"verdict": "niejasne", "reason": "web arbiter unavailable"}
 

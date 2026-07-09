@@ -34,7 +34,7 @@ def test_cache_hit_is_never_hard_even_at_sim_1():
     h = provide_hint("Ottawa", sim=1.0, source="cache")
     assert isinstance(h, Hint)
     assert h.kind == "SOFT"
-    assert "niezweryfikowane" in h.label()
+    assert "unverified" in h.label()
     # NIE da się przemycić Hint jako Verified
     assert not isinstance(h, Verified)
 

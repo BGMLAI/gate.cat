@@ -55,7 +55,8 @@ def test_calculate():
     assert calculate("2*(3+4)") == "14"
     assert calculate("(10+5)*2") == "30"
     assert calculate("2**8") == "256"
-    assert "error" in calculate("import os").lower() or "brak" in calculate("import os").lower()
+    # non-math input (code) is rejected, not evaluated: "calc: no expression"
+    assert "no expression" in calculate("import os").lower()
 
 
 def test_tool_branch_math_routing():

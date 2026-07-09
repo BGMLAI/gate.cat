@@ -269,9 +269,10 @@ class SemanticCache:
             # LRU eviction if over limit
             if self._max_entries and self._index.count > self._max_entries:
                 evicted = self._store.evict_lru(self._max_entries)
-                # Re-sync licznika indeksu (audyt 2026-06-27 should-fix): evict_lru
-                # kasuje ze store ale HNSW nie ma delete; bez dekrementu _count dryfował
-                # od store → kolejne triggery eviction liczone na stałej liczbie.
+                # Re-sync the index counter (2026-06-27 audit should-fix): evict_lru
+                # deletes from the store but HNSW has no delete; without decrementing
+                # _count it drifted away from the store → subsequent eviction triggers
+                # were counted against a constant number.
                 if evicted:
                     self._index._count = max(0, self._index._count - evicted)
 

@@ -1,25 +1,25 @@
-"""koryto_sandbox — szczelne wykonanie kodu Z RUCHU dla koryto-exec.
+"""koryto_sandbox — airtight execution of IN-FLIGHT code for koryto-exec.
 
-KONTEKST (workflow exec-hardening, 5 pentesterów, 26 udanych ataków na naiwny sandbox,
-REJESTR 2026-06-27): koryto-exec wykonuje kod by zweryfikować odpowiedź modelu. Gdy kod
-pochodzi z `query` użytkownika = WROGIE WEJŚCIE. Naiwny subprocess+timeout jest dziurawy:
-  - format-string omija deny-list AST ('{0.__class__.__bases__}'.format(()))
-  - runner leakuje os.environ (sekrety) + pełne builtins (eval/exec/open)
-  - Windows brak `import resource` → DoS-limity martwe (9**9**9 pali CPU)
-  - subclasses()-chain → Popen bez importu
+CONTEXT (exec-hardening workflow, 5 pentesters, 26 successful attacks on the naive sandbox,
+REGISTRY 2026-06-27): koryto-exec runs code to verify the model's answer. When the code
+comes from the user's `query` = HOSTILE INPUT. A naive subprocess+timeout is leaky:
+  - format-string bypasses the AST deny-list ('{0.__class__.__bases__}'.format(()))
+  - the runner leaks os.environ (secrets) + full builtins (eval/exec/open)
+  - Windows lacks `import resource` → DoS limits are dead (9**9**9 burns CPU)
+  - subclasses()-chain → Popen without an import
 
-OBRONA (równoległe, niezależne mury + fail-closed):
-  A. ast_gate ALLOW-LIST (default-deny) — dozwolone tylko bezpieczne węzły; Attribute
-     zakazany BEZWARUNKOWO; Call tylko do SAFE_BUILTINS; statyczne capy anty-DoS.
-  B. __builtins__ = SAFE_DICT — nawet gdyby gadget dotarł do runtime, brak eval/exec/open.
-  C. isolated interp: python -I -S -E (bez env/site/usersite).
-  D. clean env: tylko PATH minimal + SYSTEMROOT — NIGDY os.environ (sekrety nie istnieją w dziecku).
-  E. OS limits: Linux setrlimit+setsid; Windows Job Object (fail-closed gdy setup zawiedzie).
+DEFENSE (parallel, independent walls + fail-closed):
+  A. ast_gate ALLOW-LIST (default-deny) — only safe nodes allowed; Attribute
+     forbidden UNCONDITIONALLY; Call only to SAFE_BUILTINS; static anti-DoS caps.
+  B. __builtins__ = SAFE_DICT — even if a gadget reached runtime, no eval/exec/open.
+  C. isolated interp: python -I -S -E (no env/site/usersite).
+  D. clean env: only minimal PATH + SYSTEMROOT — NEVER os.environ (secrets do not exist in the child).
+  E. OS limits: Linux setrlimit+setsid; Windows Job Object (fail-closed when setup fails).
 
-UCZCIWY LIMIT (rekomendacja pentesterów): czysty pip-sandbox NIE jest w pełni szczelny
-dla wrogiego JS / DoS-na-Windows. Auto-exec kodu z ruchu domyślnie OFF. Pełna izolacja
-= deploy-level (kontener/microVM). Te warstwy = mocna obrona in-process, nie zastępują
-izolacji kernela.
+HONEST LIMIT (pentesters' recommendation): a pure pip-sandbox is NOT fully airtight
+against hostile JS / DoS-on-Windows. Auto-exec of in-flight code is OFF by default. Full isolation
+= deploy-level (container/microVM). These layers = strong in-process defense, they do not replace
+kernel isolation.
 """
 from __future__ import annotations
 
@@ -31,17 +31,17 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
-# --- limity statyczne (jedyna obrona anty-DoS cross-platform, bo resource brak na Win) ---
+# --- static limits (the only cross-platform anti-DoS defense, since resource is absent on Win) ---
 MAX_CODE_BYTES = 2048
 MAX_AST_NODES = 500
 MAX_AST_DEPTH = 50
-MAX_INT_DIGITS = 7          # Constant int >7 cyfr (>~10^7) → DROP (anti 9**9**9 wynik)
-MAX_POW_EXP = 20            # BinOp Pow z prawym Constant > 20 → DROP
-MAX_SEQ_MULT = 1000        # 'a'*N / [0]*N z N>1000 → DROP
+MAX_INT_DIGITS = 7          # Constant int >7 digits (>~10^7) → DROP (anti 9**9**9 result)
+MAX_POW_EXP = 20            # BinOp Pow with right Constant > 20 → DROP
+MAX_SEQ_MULT = 1000        # 'a'*N / [0]*N with N>1000 → DROP
 MAX_RANGE_ARG = 10 ** 6    # range/list arg Constant > 10^6 → DROP
 
-# Nazwy site-builtins / introspekcyjne zakazane nawet jako bare Name (load).
-# (-S usuwa license/help w runtime, ale blokujemy statycznie dla pewności i czytelności.)
+# site-builtins / introspection names forbidden even as a bare Name (load).
+# (-S removes license/help at runtime, but we block statically for certainty and readability.)
 DENY_NAMES = frozenset({
     "license", "help", "copyright", "credits", "exit", "quit", "breakpoint",
     "__import__", "eval", "exec", "compile", "open", "input", "globals", "locals",
@@ -49,15 +49,15 @@ DENY_NAMES = frozenset({
     "memoryview", "bytearray", "bytes", "__builtins__", "__loader__", "__spec__",
 })
 
-# Białe listy: TYLKO te builtins wolno wołać (default-deny dla reszty).
+# Allow-list: ONLY these builtins may be called (default-deny for the rest).
 SAFE_BUILTINS = frozenset({
     "len", "range", "sum", "min", "max", "abs", "round", "sorted", "int", "float",
     "str", "list", "dict", "set", "tuple", "bool", "enumerate", "zip", "map",
     "filter", "reversed", "chr", "ord", "divmod", "pow", "all", "any",
-    "print",  # bezpieczny: pisze do stdout (który czytamy), nie daje escape
+    "print",  # safe: writes to stdout (which we read), does not grant an escape
 })
 
-# Dozwolone typy węzłów AST (default-deny: cokolwiek spoza → DROP).
+# Allowed AST node types (default-deny: anything outside → DROP).
 _ALLOWED_NODES = (
     ast.Module, ast.Interactive, ast.Expression, ast.Expr,
     ast.Assign, ast.AnnAssign, ast.AugAssign,
@@ -72,7 +72,7 @@ _ALLOWED_NODES = (
     ast.Subscript, ast.Slice, ast.Index if hasattr(ast, "Index") else ast.Slice,
     ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp, ast.comprehension,
     ast.IfExp, ast.keyword, ast.Starred,
-    ast.Call,  # dozwolony WARUNKOWO (tylko Name w SAFE_BUILTINS) — sprawdzane osobno
+    ast.Call,  # allowed CONDITIONALLY (only Name in SAFE_BUILTINS) — checked separately
 )
 
 
@@ -90,14 +90,14 @@ def _ast_depth(node, depth=0):
 
 
 def ast_gate(code: str, lang: str = "python") -> GateResult:
-    """Allow-list AST + statyczne capy. fail-closed: cokolwiek nierozpoznane → DROP."""
+    """Allow-list AST + static caps. fail-closed: anything unrecognized → DROP."""
     if lang != "python":
-        # JS: regex-deny niedo­obronienia → auto-exec OFF (chyba że vm-wrapper, osobna ścieżka)
-        return GateResult(False, "js-exec-disabled (regex-deny nie do obronienia; wymaga vm-wrapper)")
+        # JS: regex-deny is indefensible → auto-exec OFF (unless vm-wrapper, a separate path)
+        return GateResult(False, "js-exec-disabled (regex-deny indefensible; requires vm-wrapper)")
     if not code or not code.strip():
-        return GateResult(False, "pusty kod")
+        return GateResult(False, "empty code")
     if len(code.encode("utf-8")) > MAX_CODE_BYTES:
-        return GateResult(False, f"kod > {MAX_CODE_BYTES}B")
+        return GateResult(False, f"code > {MAX_CODE_BYTES}B")
     try:
         tree = ast.parse(code, mode="exec")
     except (SyntaxError, ValueError, RecursionError) as e:
@@ -105,39 +105,39 @@ def ast_gate(code: str, lang: str = "python") -> GateResult:
 
     nodes = list(ast.walk(tree))
     if len(nodes) > MAX_AST_NODES:
-        return GateResult(False, f"za dużo węzłów AST (>{MAX_AST_NODES})")
+        return GateResult(False, f"too many AST nodes (>{MAX_AST_NODES})")
     if _ast_depth(tree) > MAX_AST_DEPTH:
-        return GateResult(False, f"AST za głębokie (>{MAX_AST_DEPTH})")
+        return GateResult(False, f"AST too deep (>{MAX_AST_DEPTH})")
 
-    # zbierz nazwy zdefiniowane LOKALNIE (przypisania + targety comprehension + args lambda)
-    # — wolno je wołać (np. [g() for g in fns] gdzie g to lambda). Bezpieczne, bo Attribute
-    # zakazany + builtins-firewall + brak importów; lokalna nazwa nie da dostępu do gadgetów.
+    # collect names defined LOCALLY (assignments + comprehension targets + lambda args)
+    # — they may be called (e.g. [g() for g in fns] where g is a lambda). Safe, because Attribute
+    # is forbidden + builtins-firewall + no imports; a local name grants no access to gadgets.
     local_names = set()
     for node in nodes:
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
             local_names.add(node.id)
         elif isinstance(node, ast.arg):
             local_names.add(node.arg)
-    # lambda jest dozwolona (potrzebna dla flagowego [lambda: i ...]) — dodaj jej węzły
+    # lambda is allowed (needed for the flagged [lambda: i ...]) — add its nodes
     _allowed = _ALLOWED_NODES + (ast.Lambda, ast.arguments, ast.arg)
 
     for node in nodes:
-        # ATTRIBUTE zakazany BEZWARUNKOWO (zabija .format/.__class__/.gi_frame/.mro)
+        # ATTRIBUTE forbidden UNCONDITIONALLY (kills .format/.__class__/.gi_frame/.mro)
         if isinstance(node, ast.Attribute):
-            return GateResult(False, "ast.Attribute zakazany (gadget chains)")
-        # nieznany typ węzła → DROP (default-deny)
+            return GateResult(False, "ast.Attribute forbidden (gadget chains)")
+        # unknown node type → DROP (default-deny)
         if not isinstance(node, _allowed):
-            return GateResult(False, f"węzeł niedozwolony: {type(node).__name__}")
-        # Name (load): zakaz nazw z DENY (site-gadgety/introspekcja), nawet bez Call
+            return GateResult(False, f"node not allowed: {type(node).__name__}")
+        # Name (load): forbid DENY names (site-gadgets/introspection), even without a Call
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
             if node.id in DENY_NAMES:
-                return GateResult(False, f"nazwa zakazana: {node.id}")
-        # CALL tylko do Name w SAFE_BUILTINS lub nazwy zdefiniowanej lokalnie
+                return GateResult(False, f"name forbidden: {node.id}")
+        # CALL only to a Name in SAFE_BUILTINS or a locally defined name
         if isinstance(node, ast.Call):
             if not isinstance(node.func, ast.Name):
-                return GateResult(False, f"Call do nie-Name: {type(node.func).__name__}")
+                return GateResult(False, f"Call to non-Name: {type(node.func).__name__}")
             if node.func.id not in SAFE_BUILTINS and node.func.id not in local_names:
-                return GateResult(False, f"Call do niedozwolonej funkcji: {node.func.id}")
+                return GateResult(False, f"Call to disallowed function: {node.func.id}")
             # pow(base, exp) builtin is NOT capped by the ast.Pow branch below, so
             # pow(9999999, 9999999) passed the gate and burned CPU to the timeout
             # (Codex round-4 DoS). Cap the 2-arg form by estimating result digits
@@ -151,43 +151,43 @@ def ast_gate(code: str, lang: str = "python") -> GateResult:
                     if abs(b.value) > 1 and e.value > 0:
                         digits = e.value * math.log10(abs(b.value)) + 1
                         if digits > MAX_INT_DIGITS:
-                            return GateResult(False, f"pow(): wynik > {MAX_INT_DIGITS} cyfr (DoS)")
-        # statyczne capy anty-DoS
+                            return GateResult(False, f"pow(): result > {MAX_INT_DIGITS} digits (DoS)")
+        # static anti-DoS caps
         if isinstance(node, ast.Constant):
             if isinstance(node.value, int) and not isinstance(node.value, bool):
                 if len(str(abs(node.value))) > MAX_INT_DIGITS:
-                    return GateResult(False, f"literal int > {MAX_INT_DIGITS} cyfr (DoS)")
+                    return GateResult(False, f"literal int > {MAX_INT_DIGITS} digits (DoS)")
             if isinstance(node.value, str) and len(node.value) > MAX_CODE_BYTES:
-                return GateResult(False, "literal str za długi")
+                return GateResult(False, "literal str too long")
         if isinstance(node, ast.BinOp):
-            # Pow: wykładnik MUSI być małym literałem całkowitym. Inaczej DROP — to zabija
-            # wieżę potęg 9**9**9 (prawy operand = BinOp Pow, nie Constant → DROP) oraz 10**9.
+            # Pow: the exponent MUST be a small integer literal. Otherwise DROP — this kills
+            # the power tower 9**9**9 (right operand = BinOp Pow, not Constant → DROP) and 10**9.
             if isinstance(node.op, ast.Pow):
                 r = node.right
                 if not (isinstance(r, ast.Constant) and isinstance(r.value, int)
                         and not isinstance(r.value, bool) and 0 <= r.value <= MAX_POW_EXP):
-                    return GateResult(False, f"potęga: wykładnik musi być literałem 0..{MAX_POW_EXP} (DoS)")
-                # gdy baza też literał — policz statycznie i odrzuć gdy wynik za duży
-                # (łapie 10**9, 10**10: wynik >7 cyfr → DROP). Nie-literałowa baza: dozwolona
-                # (np. x**2 gdzie x mała lokalna), bo cap int na literałach i tak ogranicza wejścia.
+                    return GateResult(False, f"power: exponent must be a literal 0..{MAX_POW_EXP} (DoS)")
+                # when the base is a literal too — compute statically and reject when the result is too large
+                # (catches 10**9, 10**10: result >7 digits → DROP). Non-literal base: allowed
+                # (e.g. x**2 where x is a small local), because the int cap on literals limits inputs anyway.
                 if isinstance(node.left, ast.Constant) and isinstance(node.left.value, int) \
                         and not isinstance(node.left.value, bool):
                     try:
                         val = node.left.value ** r.value
                         if len(str(abs(val))) > MAX_INT_DIGITS:
-                            return GateResult(False, f"potęga: wynik > {MAX_INT_DIGITS} cyfr (DoS)")
+                            return GateResult(False, f"power: result > {MAX_INT_DIGITS} digits (DoS)")
                     except Exception:
-                        return GateResult(False, "potęga: niepoliczalna statycznie (DoS)")
-            # mnożenie sekwencji: List/Str/Tuple * N gdzie N duże LUB nie-literał
+                        return GateResult(False, "power: not statically computable (DoS)")
+            # sequence multiplication: List/Str/Tuple * N where N is large OR non-literal
             if isinstance(node.op, ast.Mult):
                 for side, other in ((node.left, node.right), (node.right, node.left)):
                     if isinstance(side, (ast.List, ast.Tuple)) or \
                        (isinstance(side, ast.Constant) and isinstance(side.value, str)):
-                        # mnożnik musi być małym literałem
+                        # the multiplier must be a small literal
                         if not (isinstance(other, ast.Constant) and isinstance(other.value, int)
                                 and not isinstance(other.value, bool) and abs(other.value) <= MAX_SEQ_MULT):
-                            return GateResult(False, f"mnożenie sekwencji: mnożnik > {MAX_SEQ_MULT} lub nie-literał (DoS)")
-        # range/list z dużym argumentem
+                            return GateResult(False, f"sequence multiplication: multiplier > {MAX_SEQ_MULT} or non-literal (DoS)")
+        # range/list with a large argument
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and \
            node.func.id in ("range", "list"):
             for a in node.args:
@@ -197,24 +197,24 @@ def ast_gate(code: str, lang: str = "python") -> GateResult:
     return GateResult(True, "")
 
 
-# --- SAFE builtins dict (warstwa B: firewall runtime, niezależny od AST) ---
+# --- SAFE builtins dict (layer B: runtime firewall, independent of the AST) ---
 def _safe_builtins_dict() -> dict:
     import builtins as _b
     safe = {}
     for name in SAFE_BUILTINS:
         if hasattr(_b, name):
             safe[name] = getattr(_b, name)
-    # True/False/None potrzebne jako stałe — i tak są słowami kluczowymi, ale dla pewności
+    # True/False/None needed as constants — they are keywords anyway, but for certainty
     return safe
 
 
 def _clean_env() -> dict:
-    """Środowisko dziecka: tylko niezbędne. NIGDY os.environ (sekrety OPENAI/BRAVE
-    nie wyciekną). PATH zawiera katalog interpretera (potrzebny by python.dll się
-    załadował — to runtime-path, nie sekret) + systemowe minimum."""
+    """Child environment: only the essentials. NEVER os.environ (OPENAI/BRAVE secrets
+    will not leak). PATH contains the interpreter directory (needed so python.dll
+    loads — this is a runtime-path, not a secret) + the system minimum."""
     env = {}
-    # katalog python.exe ORAZ base_prefix (venv-na-uv: python.exe to shim, prawdziwy
-    # interpreter+DLL żyje w base_prefix — bez niego "Unable to create process").
+    # the python.exe directory AND base_prefix (venv-on-uv: python.exe is a shim, the real
+    # interpreter+DLL lives in base_prefix — without it "Unable to create process").
     interp_dir = os.path.dirname(sys.executable)
     base_dir = getattr(sys, "base_prefix", sys.prefix)
     if sys.platform == "win32":
@@ -223,7 +223,7 @@ def _clean_env() -> dict:
         parts = [interp_dir, os.path.join(interp_dir, "Scripts"),
                  base_dir, os.path.join(base_dir, "Scripts"),
                  os.path.join(sysroot, "System32"), sysroot]
-        env["PATH"] = os.pathsep.join(dict.fromkeys(parts))  # dedup, zachowaj kolejność
+        env["PATH"] = os.pathsep.join(dict.fromkeys(parts))  # dedup, preserve order
     else:
         parts = [interp_dir, os.path.join(base_dir, "bin"), "/usr/bin", "/bin"]
         env["PATH"] = os.pathsep.join(dict.fromkeys(parts))
@@ -231,15 +231,15 @@ def _clean_env() -> dict:
 
 
 def _linux_limits(timeout: float, mem_mb: int):
-    """preexec_fn dla Linux: setrlimit (mem/cpu/nproc/fsize) + setsid (kill grupy)."""
+    """preexec_fn for Linux: setrlimit (mem/cpu/nproc/fsize) + setsid (kill the group)."""
     def _apply():
-        import resource  # tylko Linux
+        import resource  # Linux only
         mem_bytes = mem_mb * 1024 * 1024
         resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
         cpu = max(1, int(timeout) + 1)
         resource.setrlimit(resource.RLIMIT_CPU, (cpu, cpu))
         resource.setrlimit(resource.RLIMIT_NPROC, (0, 0))      # fork-bomb
-        resource.setrlimit(resource.RLIMIT_FSIZE, (0, 0))      # zakaz zapisu
+        resource.setrlimit(resource.RLIMIT_FSIZE, (0, 0))      # no writing allowed
         try:
             resource.setrlimit(resource.RLIMIT_NOFILE, (16, 16))
         except Exception:
@@ -250,17 +250,17 @@ def _linux_limits(timeout: float, mem_mb: int):
 
 @dataclass
 class SandboxResult:
-    ok: bool                 # czy wykonano (False = odrzucono/błąd, NIE wynik kodu)
+    ok: bool                 # whether it ran (False = rejected/error, NOT the code's result)
     stdout: Optional[str] = None
     reason: str = ""
 
 
 def run_sandboxed(code: str, *, lang: str = "python", timeout: float = 5.0,
                   mem_mb: int = 256) -> SandboxResult:
-    """Wykonaj kod w izolowanym procesie. fail-closed: gdy izolacja niemożliwa → NIE wykonuj.
+    """Run code in an isolated process. fail-closed: when isolation is impossible → DO NOT run.
 
-    Warstwa A (ast_gate) MUSI być wywołana PRZED tym (caller), ale dla pewności robimy
-    ją też tu (gate na granicy wykonania = każda ścieżka exec przez sandbox).
+    Layer A (ast_gate) MUST be called BEFORE this (the caller), but for certainty we run
+    it here too (a gate at the execution boundary = every exec path goes through the sandbox).
     """
     gate = ast_gate(code, lang)
     if not gate.ok:
@@ -269,8 +269,8 @@ def run_sandboxed(code: str, *, lang: str = "python", timeout: float = 5.0,
         return SandboxResult(False, reason="js-exec-disabled")
 
     env = _clean_env()
-    # warstwa B: opakuj kod w harness wymuszający SAFE __builtins__
-    # (kod sam już przeszedł allow-list, ale to drugi mur)
+    # layer B: wrap the code in a harness that enforces SAFE __builtins__
+    # (the code already passed the allow-list, but this is a second wall)
     harness = (
         "_b=__builtins__\n"
         "_src=_b if isinstance(_b,dict) else vars(_b)\n"
@@ -280,8 +280,8 @@ def run_sandboxed(code: str, *, lang: str = "python", timeout: float = 5.0,
         "_ns={'__builtins__':_safe}\n"
         "exec(compile(" + repr(code) + ",'<koryto>','exec'), _ns)\n"
     )
-    # bazowy interpreter, NIE venv-shim: shim (np. venv-na-uv) zależy od zmiennych
-    # __PYVENV_LAUNCHER__ których clean-env nie ma → "Unable to create process".
+    # base interpreter, NOT the venv-shim: the shim (e.g. venv-on-uv) depends on the
+    # __PYVENV_LAUNCHER__ variables that clean-env lacks → "Unable to create process".
     py = getattr(sys, "_base_executable", None) or sys.executable
     argv = [py, "-I", "-S", "-E", "-c", harness]
 
@@ -296,28 +296,28 @@ def run_sandboxed(code: str, *, lang: str = "python", timeout: float = 5.0,
         except Exception as e:
             return SandboxResult(False, reason=f"exec-error: {type(e).__name__}")
     else:
-        # Windows: brak resource. Job Object jako WARUNEK (fail-closed gdy setup padnie).
+        # Windows: no resource. Job Object as a REQUIREMENT (fail-closed when setup fails).
         return _run_windows_jobobject(argv, env, timeout, mem_mb)
 
 
 def run_context_guard(stmts, *, timeout: float = 5.0, mem_mb: int = 256) -> SandboxResult:
-    """Wykonaj context-guard koryto (statementy[:-1] jako setup, [-1] jako eval) w sandboxie.
+    """Run the koryto context-guard (statements[:-1] as setup, [-1] as eval) in the sandbox.
 
-    BEZPIECZEŃSTWO: gate'uje KAŻDY statement użytkownika (allow-list AST) PRZED złożeniem
-    harnessu. Harness sam (ns={}, exec, eval, print) jest NASZ/zaufany — nie przechodzi przez
-    gate (inaczej własny exec/eval by się zablokował). Trust-boundary: gate na WEJŚCIU usera,
-    harness deterministyczny. Wykonanie: izolowany interp + clean env + Job Object/rlimit.
+    SECURITY: gates EVERY user statement (allow-list AST) BEFORE assembling the
+    harness. The harness itself (ns={}, exec, eval, print) is OURS/trusted — it does not go through
+    the gate (otherwise its own exec/eval would be blocked). Trust-boundary: gate on the user's INPUT,
+    deterministic harness. Execution: isolated interp + clean env + Job Object/rlimit.
     """
     stmts = [str(s) for s in (stmts or []) if str(s).strip()]
     if not stmts:
-        return SandboxResult(False, reason="brak statementów")
-    # gate na każdym statemencie usera (połączone, by złapać wieloliniowe konstrukcje)
+        return SandboxResult(False, reason="no statements")
+    # gate on every user statement (joined, to catch multi-line constructs)
     joined = "\n".join(stmts)
     gate = ast_gate(joined, "python")
     if not gate.ok:
         return SandboxResult(False, reason=f"gate-drop: {gate.reason}")
 
-    # zaufany harness context-guard (NIE przez gate — to nasz kod, nie usera)
+    # trusted context-guard harness (NOT through the gate — this is our code, not the user's)
     setup = "\n".join(f"exec({s!r}, ns)" for s in stmts[:-1])
     # Suppress setup-statement stdout: only the FINAL eval's value is the proof.
     # Otherwise a setup `print(999)` poisons the output and _clean_exec_output
@@ -354,7 +354,7 @@ def run_context_guard(stmts, *, timeout: float = 5.0, mem_mb: int = 256) -> Sand
 
 
 def _run_windows_jobobject(argv, env, timeout: float, mem_mb: int) -> SandboxResult:
-    """Windows: uruchom w Job Object z limitem pamięci + kill-on-close. fail-closed."""
+    """Windows: run in a Job Object with a memory limit + kill-on-close. fail-closed."""
     try:
         import ctypes
         from ctypes import wintypes
@@ -362,7 +362,7 @@ def _run_windows_jobobject(argv, env, timeout: float, mem_mb: int) -> SandboxRes
         return SandboxResult(False, reason="ctypes-unavailable (fail-closed)")
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    # stałe
+    # constants
     JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
     JOB_OBJECT_LIMIT_ACTIVE_PROCESS = 0x00000008
     JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
@@ -374,7 +374,7 @@ def _run_windows_jobobject(argv, env, timeout: float, mem_mb: int) -> SandboxRes
         if not hJob:
             return SandboxResult(False, reason="CreateJobObject-fail (fail-closed)")
 
-        # JOBOBJECT_EXTENDED_LIMIT_INFORMATION — uproszczona struktura
+        # JOBOBJECT_EXTENDED_LIMIT_INFORMATION — simplified structure
         class IO_COUNTERS(ctypes.Structure):
             _fields_ = [("ReadOperationCount", ctypes.c_ulonglong),
                         ("WriteOperationCount", ctypes.c_ulonglong),
@@ -407,8 +407,8 @@ def _run_windows_jobobject(argv, env, timeout: float, mem_mb: int) -> SandboxRes
             JOB_OBJECT_LIMIT_PROCESS_MEMORY | JOB_OBJECT_LIMIT_ACTIVE_PROCESS |
             JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE)
         info.BasicLimitInformation.ActiveProcessLimit = 1
-        # floor 512MB: Python interpreter + importy potrzebują bazowo ~kilkaset MB;
-        # niższy limit zabija start procesu (ZMIERZONE: 256MB → proces nie wypisuje).
+        # floor 512MB: the Python interpreter + imports need ~a few hundred MB baseline;
+        # a lower limit kills process startup (MEASURED: 256MB → the process prints nothing).
         info.ProcessMemoryLimit = max(mem_mb, 512) * 1024 * 1024
 
         JobObjectExtendedLimitInformation = 9
@@ -418,16 +418,16 @@ def _run_windows_jobobject(argv, env, timeout: float, mem_mb: int) -> SandboxRes
             kernel32.CloseHandle(hJob)
             return SandboxResult(False, reason="SetInformationJobObject-fail (fail-closed)")
 
-        # uruchom proces (bez suspend — Popen nie daje uchwytu wątku do ResumeThread),
-        # natychmiast przypisz do Job. Mikro-okno przed assign akceptowalne: gate już
-        # zablokował groźny kod, a Job egzekwuje limit pamięci/kill dla DoS.
+        # start the process (no suspend — Popen gives no thread handle for ResumeThread),
+        # assign to the Job immediately. The micro-window before assign is acceptable: the gate already
+        # blocked dangerous code, and the Job enforces the memory limit/kill for DoS.
         proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                  env=env, creationflags=CREATE_NO_WINDOW)
         try:
             hProc = int(proc._handle)
-            # FAIL-CLOSED (audyt 2026-06-27 #9): jeśli przypisanie do Job padnie, proces
-            # leci BEZ limitu pamięci → DoS omija cap. Sprawdź wynik (SetInformationJobObject
-            # wyżej JEST sprawdzany — to była niespójność). Assign-fail → zabij i odrzuć.
+            # FAIL-CLOSED (audit 2026-06-27 #9): if the Job assignment fails, the process
+            # runs WITHOUT a memory limit → DoS bypasses the cap. Check the result (SetInformationJobObject
+            # above IS checked — that was an inconsistency). Assign-fail → kill and reject.
             assigned = kernel32.AssignProcessToJobObject(hJob, hProc)
             if not assigned:
                 try:
@@ -446,7 +446,7 @@ def _run_windows_jobobject(argv, env, timeout: float, mem_mb: int) -> SandboxRes
                                capture_output=True, timeout=5)
             except Exception:
                 pass
-            kernel32.CloseHandle(hJob)  # KILL_ON_JOB_CLOSE ubije resztę drzewa
+            kernel32.CloseHandle(hJob)  # KILL_ON_JOB_CLOSE will kill the rest of the tree
             return SandboxResult(False, reason="timeout")
     except Exception as e:
         return SandboxResult(False, reason=f"jobobject-setup-fail: {type(e).__name__} (fail-closed)")

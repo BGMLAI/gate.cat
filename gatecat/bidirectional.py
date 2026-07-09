@@ -1,16 +1,16 @@
-"""bidirectional — BidirectionalGate: bramka dwukierunkowa (DOSTAWCA + STRAŻNIK) na wspólnym silniku.
+"""bidirectional — BidirectionalGate: a bidirectional gate (PROVIDER + GUARDIAN) on a shared engine.
 
-Council 10-głosów (2026-06-28) TOP-3: ten sam silnik prawdy (koryto), ale OSOBNE INTERFEJSY.
-Powód: błąd dostawcy (stary cache) NIE może skazić strażnika; strażnik może ZAWETOWAĆ akcję
-opartą na błędnym HARD od dostawcy. Izolacja blast-radius.
+10-vote council (2026-06-28) TOP-3: the same truth engine (koryto), but SEPARATE INTERFACES.
+Reason: a provider error (stale cache) must NOT contaminate the guardian; the guardian can VETO an action
+based on a faulty HARD from the provider. Blast-radius isolation.
 
-  Provider.provide_truth(op, args)   — kierunek 1: dostarcza agentowi zweryfikowany fakt (read-only).
-  Guardian.veto(action, ...)         — kierunek 2: wetuje akcję ZANIM się wykona (fail-closed).
+  Provider.provide_truth(op, args)   — direction 1: supplies the agent a verified fact (read-only).
+  Guardian.veto(action, ...)         — direction 2: vetoes an action BEFORE it executes (fail-closed).
 
-Disagreement-gate (uncertainty, SOFT) żyje osobno w gate.py — to inny mechanizm.
-Tu: bramka AKCJI/PRAWDY (dwukierunkowa pętla agenta).
+The disagreement gate (uncertainty, SOFT) lives separately in gate.py — that's a different mechanism.
+Here: the ACTION/TRUTH gate (the agent's bidirectional loop).
 
-Rdzeń 100% stdlib + koryto + veto + provider (wszystko stdlib). Zero API/model w runtime.
+Core is 100% stdlib + koryto + veto + provider (all stdlib). Zero API/model at runtime.
 """
 from __future__ import annotations
 
@@ -27,47 +27,47 @@ from gatecat.provider import (
 
 
 class Provider:
-    """Kierunek 1 — DOSTAWCA prawdy. Read-only, czyste funkcje (mutuje ⇒ Actor nie Oracle).
-    Daje agentowi Verified (HARD, exec/calc) lub Hint (SOFT, cache). NIGDY nie wykonuje akcji."""
+    """Direction 1 — TRUTH PROVIDER. Read-only, pure functions (if it mutates ⇒ Actor, not Oracle).
+    Gives the agent a Verified (HARD, exec/calc) or a Hint (SOFT, cache). NEVER executes an action."""
 
     def __init__(self, koryto: Optional[Koryto] = None):
-        # współdzielony silnik z Guardianem (council TOP-3) — ale Provider go tylko CZYTA
+        # engine shared with the Guardian (council TOP-3) — but the Provider only READS it
         self.koryto = koryto or Koryto(enable_exec=True, enable_calc=True)
 
     def provide_truth(self, op: str, args: str) -> Optional[Verified]:
-        """Zwróć Verified (HARD) lub None. Tylko exec/calc — dowód z wykonania."""
+        """Return a Verified (HARD) or None. Only exec/calc — proof from execution."""
         return _provide_truth(op, args)
 
     def provide_hint(self, value: str, sim: float, source: str = "lookup") -> Hint:
-        """Zwróć Hint (SOFT) — z cache/lookup. NIGDY HARD (nawet sim=1.0)."""
+        """Return a Hint (SOFT) — from cache/lookup. NEVER HARD (even at sim=1.0)."""
         return _provide_hint(value, sim, source)
 
     @staticmethod
     def verify_proof(verified: Verified) -> bool:
-        """Agent odtwarza dowód niezależnie (nie ufa bramce ślepo)."""
+        """The agent reproduces the proof independently (does not trust the gate blindly)."""
         return _verify_proof(verified)
 
 
 class Guardian:
-    """Kierunek 2 — STRAŻNIK. Wetuje akcję ZANIM się wykona. Fail-closed.
-    Opakowuje istniejący VetoGate (NIE zastępuje) — separacja interfejsu od dostawcy."""
+    """Direction 2 — GUARDIAN. Vetoes an action BEFORE it executes. Fail-closed.
+    Wraps the existing VetoGate (does NOT replace it) — separates the interface from the provider."""
 
     def __init__(self, veto_gate: Optional[VetoGate] = None,
                  koryto: Optional[Koryto] = None):
         self._veto = veto_gate or VetoGate(koryto=koryto)
 
     def veto(self, action: str, args=(), kwargs=None) -> VetoDecision:
-        """Oceń akcję. allowed=False ⇒ NIE wykonuj. Fail-closed na każdym wyjątku."""
+        """Evaluate the action. allowed=False ⇒ do NOT execute. Fail-closed on any exception."""
         return self._veto.evaluate(action, tuple(args), dict(kwargs or {}))
 
 
 class BidirectionalGate:
-    """Jeden silnik koryto, dwa interfejsy (council TOP-3). Pełna pętla:
-      1. provider.provide_truth() — bramka DAJE prawdę agentowi (wejście decyzji)
-      2. agent rozumuje na pewnych danych
-      3. guardian.veto() — bramka SPRAWDZA akcję (wyjście, fail-closed)
+    """One koryto engine, two interfaces (council TOP-3). The full loop:
+      1. provider.provide_truth() — the gate GIVES truth to the agent (decision input)
+      2. the agent reasons over trusted data
+      3. guardian.veto() — the gate CHECKS the action (output, fail-closed)
 
-    Wspólny Koryto = prawda jedna; osobne Provider/Guardian = blast-radius izolowany.
+    A shared Koryto = a single truth; separate Provider/Guardian = isolated blast-radius.
     """
 
     def __init__(self, policy: Optional[ActionPolicy] = None,
@@ -77,7 +77,7 @@ class BidirectionalGate:
         self.guardian = Guardian(
             veto_gate=VetoGate(policy=policy, koryto=self.koryto))
 
-    # wygodne skróty
+    # convenience shortcuts
     def provide_truth(self, op: str, args: str) -> Optional[Verified]:
         return self.provider.provide_truth(op, args)
 

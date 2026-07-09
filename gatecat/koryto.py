@@ -1,34 +1,34 @@
-"""koryto — deterministyczny weryfikator atomu: łapie confident-wrong tam, gdzie
-disagreement-gate jest ślepy (rozrzut zero, model pewny + błędny).
+"""koryto — deterministic atom verifier: catches confident-wrong where the
+disagreement-gate is blind (zero spread, model confident + wrong).
 
-TEORIA (Aksjomat 1 / τ, BGML): RZEKA (model, probabilistyczne) musi płynąć
-KORYTEM (deterministyczne źródło prawdy: interpreter / kalkulator / baza faktów).
-confident-wrong = rzeka wylewa z koryta. Gate mierzy WAHANIE rzeki; koryto mierzy
-ZGODNOŚĆ ze źródłem fizycznie niezależnym od wag modelu — dlatego widzi to, czego
-gate nie widzi.
+THEORY (Axiom 1 / τ, BGML): the RIVER (model, probabilistic) must flow through
+the CHANNEL (deterministic source of truth: interpreter / calculator / fact base).
+confident-wrong = the river overflows its channel. The gate measures the river's
+HESITATION; the channel measures AGREEMENT with a source physically independent of
+the model weights — which is why it sees what the gate cannot.
 
-ZMIERZONE (REJESTR_PRAWD 2026-06-26/27, qwen-2.5-7b, N≥40/domena):
-  - exec-koryto (kod): recall 1.0 na confident-wrong, $0, model-niezależny.
-    NIE tautologia — interpreter WYKONUJE, gold nie wchodzi do exec.
-  - calc-koryto (jawne wyrażenia): 13/13 poprawnych, pokrycie 29% mathu
-    (reszta to NL→wyrażenie = wybór operacji należy do rzeki).
-  - lookup-koryto (baza faktów): recall 0.65-1.0, ALE z dwoma realnymi kosztami:
-    (a) niekompletność → false-neg (atom spoza bazy przechodzi),
-    (b) KORYTO-STALE → zepsuta/nieaktualna baza wprowadza WŁASNY confident-wrong.
-    Dlatego lookup zwraca confidence + flagę 'może-być-stale'; NIGDY nie blokuje
-    twardo na samym lookupie bez warstwy kontroli (web-rozjemca).
+MEASURED (TRUTH_REGISTRY 2026-06-26/27, qwen-2.5-7b, N>=40/domain):
+  - exec-channel (code): recall 1.0 on confident-wrong, $0, model-independent.
+    NOT a tautology — the interpreter EXECUTES, gold never enters exec.
+  - calc-channel (explicit expressions): 13/13 correct, 29% coverage of math
+    (the rest is NL->expression = the choice of operation belongs to the river).
+  - lookup-channel (fact base): recall 0.65-1.0, BUT with two real costs:
+    (a) incompleteness -> false-neg (an atom outside the base passes through),
+    (b) CHANNEL-STALE -> a broken/outdated base introduces its OWN confident-wrong.
+    So lookup returns confidence + a 'may-be-stale' flag; it NEVER blocks
+    hard on lookup alone without a control layer (web-arbiter).
 
-GRANICA (uczciwa, ta sama we wszystkich domenach): koryto łapie błąd WYKONANIA /
-WERYFIKACJI-FAKTU (atom skwantyfikowany), NIE błąd WYBORU operacji/konceptu —
-chyba że ten wybór zamkniesz w deterministycznej regule. Skaluje przez rozrost
-bazy faktów, nie magię.
+BOUNDARY (honest, the same across all domains): the channel catches an EXECUTION /
+FACT-VERIFICATION error (a quantified atom), NOT an error in the CHOICE of
+operation/concept — unless you encode that choice in a deterministic rule. It scales
+by growing the fact base, not by magic.
 
-Zero zależności od floty/orchestratora. Pluggable fact-base (dict / callback).
+Zero dependency on the fleet/orchestrator. Pluggable fact-base (dict / callback).
 
-Użycie (minimalne):
+Usage (minimal):
     from gatecat.koryto import Koryto
 
-    koryto = Koryto()  # exec+calc wbudowane; lookup pusty dopóki nie podasz bazy
+    koryto = Koryto()  # exec+calc built in; lookup empty until you supply a base
     v = koryto.verify("In Python, fns=[lambda: i for i in range(3)]; [g() for g in fns]?",
                       answer="[0, 1, 2]")
     if v.verdict == "refute":
@@ -48,7 +48,7 @@ from typing import Callable, Optional, Sequence
 
 
 # ======================================================================
-# normalizacja / porównanie atomów
+# atom normalization / comparison
 # ======================================================================
 
 _STOP = {"the", "a", "an", "of", "and", "to", "in", "is", "was", "by"}
@@ -56,8 +56,8 @@ _STOP = {"the", "a", "an", "of", "and", "to", "in", "is", "was", "by"}
 
 def _norm(s: str) -> str:
     s = (s or "").strip().lower()
-    # diakrytyki → baza: 'Brasília' musi matchować atom 'Brasilia' (benchmark 50q
-    # 2026-07-02: poprawna odpowiedź z diakrytykiem dawała soft-refute → uncertain)
+    # diacritics → base form: 'Brasília' must match the atom 'Brasilia' (benchmark 50q
+    # 2026-07-02: a correct answer with a diacritic yielded soft-refute → uncertain)
     s = unicodedata.normalize("NFKD", s)
     s = "".join(ch for ch in s if not unicodedata.combining(ch))
     s = re.sub(r"[^\w\s.+-]", " ", s)
@@ -65,10 +65,10 @@ def _norm(s: str) -> str:
 
 
 def atoms_match(answer: str, truth: str, aliases: Sequence[str] = ()) -> bool:
-    """Czy odpowiedź modelu zawiera atom prawdy (lub alias). WYŁĄCZNIE
-    word-boundary — goły substring dawał confirmed dla '19' vs truth '9'
-    i 'comparison' vs 'Paris' (workflow review 2026-07-02, P1). Pusty atom
-    nie matchuje; answer=0/False to realne odpowiedzi (falsy ≠ brak)."""
+    """Whether the model's answer contains the truth atom (or an alias). WORD-BOUNDARY
+    ONLY — a bare substring gave confirmed for '19' vs truth '9'
+    and 'comparison' vs 'Paris' (workflow review 2026-07-02, P1). An empty atom
+    does not match; answer=0/False are real answers (falsy != missing)."""
     if answer is None or not str(answer).strip():
         return False
     na = _norm(str(answer))
@@ -82,18 +82,19 @@ def atoms_match(answer: str, truth: str, aliases: Sequence[str] = ()) -> bool:
 
 
 # ======================================================================
-# KANAŁ 1: exec (interpreter) — twarde koryto, recall 1.0 na wykonywalnym kodzie
+# CHANNEL 1: exec (interpreter) — hard channel, recall 1.0 on executable code
 # ======================================================================
 
 def koryto_exec_python(stmts: Sequence[str], timeout: float = 5.0) -> Optional[str]:
-    """exec z context-guard W SZCZELNYM SANDBOXIE: osobne statementy odtwarzają kontekst
-    pytania, ostatni to wyrażenie do wyświetlenia. Context-guard KONIECZNY (REJESTR
-    2026-06-26: naiwny 'a=257 is b' jako jeden blok → True przez peephole = rubber-stamp).
+    """exec with a context-guard IN A SEALED SANDBOX: separate statements reconstruct the
+    question's context, the last one is the expression to display. The context-guard is
+    ESSENTIAL (REGISTRY 2026-06-26: a naive 'a=257 is b' as a single block → True via the
+    peephole optimizer = rubber-stamp).
 
-    SANDBOX (workflow exec-hardening, 26 ataków): allow-list AST + clean env (bez sekretów)
-    + builtins-firewall + Job Object/rlimit. Gate na WEJŚCIU usera (każdy statement), harness
-    context-guard zaufany. Kod który nie przejdzie gate → None (bezpieczny brak werdyktu).
-    Zwraca stdout lub None (gdy nie wykonano/odrzucono)."""
+    SANDBOX (workflow exec-hardening, 26 attacks): AST allow-list + clean env (no secrets)
+    + builtins-firewall + Job Object/rlimit. Gate on the user's INPUT (every statement), the
+    harness context-guard is trusted. Code that fails the gate → None (safe absence of a verdict).
+    Returns stdout or None (when not executed/rejected)."""
     if not stmts:
         return None
     try:
@@ -105,16 +106,16 @@ def koryto_exec_python(stmts: Sequence[str], timeout: float = 5.0) -> Optional[s
 
 
 def koryto_exec_node(code: str, timeout: float = 10.0) -> Optional[str]:
-    """exec dla JavaScript (Node). Zwraca stdout lub None (gdy node brak/wyłączony/błąd).
+    """exec for JavaScript (Node). Returns stdout or None (when node is missing/disabled/errors).
 
-    🔒 BEZPIECZEŃSTWO (audyt 2026-06-27 #10): Node-exec NIE jest sandboxowany jak Python
-    (gotcha exec-hardening #4: JS regex-deny NIE DO OBRONIENIA — `'req'+'uire'`,
-    constructor.constructor, fromCharCode obchodzą każdą deny-listę). Dlatego:
-      - DOMYŚLNIE WYŁĄCZONY. Wymaga jawnego `GATECAT_KORYTO_EXEC_NODE_UNSAFE=1`
-        (nazwa z UNSAFE celowo — operator widzi że bierze odpowiedzialność).
-      - Nawet włączony: clean env (bez sekretów procesu) zamiast pełnego os.environ.
-    Pełna izolacja JS = deploy-level (kontener/vm), poza zasięgiem czystego pip.
-    Bez opt-in zwraca None (bezpieczny brak werdyktu, NIE wykonanie).
+    🔒 SECURITY (audit 2026-06-27 #10): Node-exec is NOT sandboxed like Python
+    (gotcha exec-hardening #4: a JS regex-deny is INDEFENSIBLE — `'req'+'uire'`,
+    constructor.constructor, fromCharCode bypass any deny-list). Therefore:
+      - DISABLED BY DEFAULT. Requires an explicit `GATECAT_KORYTO_EXEC_NODE_UNSAFE=1`
+        (the name says UNSAFE deliberately — the operator sees they are taking responsibility).
+      - Even when enabled: clean env (no process secrets) instead of the full os.environ.
+    Full JS isolation = deploy-level (container/vm), out of reach for plain pip.
+    Without opt-in it returns None (safe absence of a verdict, NOT execution).
     """
     if os.environ.get("GATECAT_KORYTO_EXEC_NODE_UNSAFE", "0").strip() not in ("1", "true", "True"):
         return None
@@ -137,7 +138,7 @@ def koryto_exec_node(code: str, timeout: float = 10.0) -> Optional[str]:
 
 
 # ======================================================================
-# KANAŁ 2: calc (kalkulator) — jawne wyrażenia arytmetyczne, niezależnie od gold
+# CHANNEL 2: calc (calculator) — explicit arithmetic expressions, independent of gold
 # ======================================================================
 
 _CALC_OPS = {
@@ -162,9 +163,9 @@ def _calc_eval(node):
 
 
 def koryto_calc(question: str) -> Optional[str]:
-    """Policz JAWNE wyrażenie z treści pytania (NIE z gold → nie tautologia).
-    Obsługuje 'Evaluate: 6 / 2 * 3', '(2+3) squared', '2 ^ 3 ^ 2'. Zwraca None gdy
-    pytanie to zadanie słowne (NL→wyrażenie) — wybór operacji należy do rzeki."""
+    """Compute an EXPLICIT expression from the question text (NOT from gold → not a tautology).
+    Handles 'Evaluate: 6 / 2 * 3', '(2+3) squared', '2 ^ 3 ^ 2'. Returns None when the
+    question is a word problem (NL→expression) — the choice of operation belongs to the river."""
     q = question or ""
     m = re.search(r"(?:evaluate|order of operations|compute|oblicz)[^:]*:\s*(.+)$", q, re.IGNORECASE)
     raw = m.group(1) if m else (q if re.fullmatch(r"[\s\d.+\-*/^()²]+(squared)?\.?", q.strip(), re.I) else None)
@@ -188,14 +189,14 @@ def koryto_calc(question: str) -> Optional[str]:
 
 
 # ======================================================================
-# KANAŁ 3: lookup (baza faktów) — miękkie koryto, MOŻE BYĆ STALE
+# CHANNEL 3: lookup (fact base) — soft channel, MAY BE STALE
 # ======================================================================
 
 class FactBase:
-    """Niezależna baza faktów: pytanie→klucz (substring, najdłuższy = najspecyficzniejszy).
-    Realne wady lookupu są CECHĄ, nie bugiem: niekompletność (miss), inny format,
-    nieaktualność (stale). Dlatego lookup NIGDY nie jest twardym arbitrem sam —
-    zwraca atom + sygnał, że wymaga potwierdzenia (web-rozjemca)."""
+    """Independent fact base: question→key (substring, longest = most specific).
+    The real weaknesses of lookup are a FEATURE, not a bug: incompleteness (miss), a
+    different format, staleness. That is why lookup is NEVER a hard arbiter on its own —
+    it returns an atom + a signal that it needs confirmation (web-arbiter)."""
 
     def __init__(self, facts: Optional[dict[str, str]] = None,
                  lookup_fn: Optional[Callable[[str], Optional[str]]] = None):
@@ -222,24 +223,24 @@ class FactBase:
 
 
 # ======================================================================
-# WERDYKT + ROUTER
+# VERDICT + ROUTER
 # ======================================================================
 
 @dataclass
 class KorytoVerdict:
-    """Wynik weryfikacji jednej odpowiedzi przez koryto.
+    """Result of verifying a single answer through the channel.
 
     verdict:
-      "confirm"  — koryto zna prawdę i odpowiedź modelu się z nią zgadza.
-      "refute"   — koryto zna prawdę i odpowiedź modelu jest BŁĘDNA (confident-wrong złapany).
-      "unknown"  — koryto nie ma atomu (poza zasięgiem / NL→wyrażenie / brak w bazie). Przepuść.
+      "confirm"  — the channel knows the truth and the model's answer agrees with it.
+      "refute"   — the channel knows the truth and the model's answer is WRONG (confident-wrong caught).
+      "unknown"  — the channel has no atom (out of reach / NL→expression / not in the base). Pass through.
     """
     verdict: str                       # confirm | refute | unknown
     channel: str                       # exec | calc | lookup | none
-    truth: Optional[str] = None        # atom prawdy z koryta (gdy znany)
+    truth: Optional[str] = None        # truth atom from the channel (when known)
     answer: str = ""
-    hard: bool = False                 # True dla exec/calc (fizycznie niezależne); False dla lookup (może być stale)
-    needs_arbiter: bool = False        # True gdy verdict z miękkiego koryta → potwierdź web-rozjemcą zanim zablokujesz
+    hard: bool = False                 # True for exec/calc (physically independent); False for lookup (may be stale)
+    needs_arbiter: bool = False        # True when the verdict comes from the soft channel → confirm with the web-arbiter before blocking
     note: str = ""
 
     @property
@@ -258,16 +259,16 @@ class KorytoVerdict:
 
 
 class Koryto:
-    """Deterministyczny weryfikator atomu. Składa kanały exec → calc → lookup.
+    """Deterministic atom verifier. Composes the exec → calc → lookup channels.
 
-    Kanały twarde (exec, calc) działają na strukturze pytania, fizycznie niezależnie
-    od modelu — dają verdict.hard=True (można blokować od razu). Kanał miękki (lookup)
-    może być stale → verdict.needs_arbiter=True (potwierdź zanim zablokujesz).
+    The hard channels (exec, calc) work on the question's structure, physically independent
+    of the model — they yield verdict.hard=True (can block immediately). The soft channel (lookup)
+    may be stale → verdict.needs_arbiter=True (confirm before blocking).
 
     Args:
-        fact_base: FactBase | dict | None. Baza dla kanału lookup.
-        enable_exec: czy uruchamiać interpreter (domyślnie True; wyłącz w sandboxie bez subprocess).
-        enable_calc: czy liczyć jawne wyrażenia (domyślnie True).
+        fact_base: FactBase | dict | None. Base for the lookup channel.
+        enable_exec: whether to run the interpreter (default True; disable in a sandbox without subprocess).
+        enable_calc: whether to compute explicit expressions (default True).
     """
 
     def __init__(
@@ -292,16 +293,16 @@ class Koryto:
         exec_js: Optional[str] = None,
         aliases: Sequence[str] = (),
     ) -> KorytoVerdict:
-        """Zweryfikuj odpowiedź modelu względem deterministycznego koryta.
+        """Verify the model's answer against the deterministic channel.
 
-        exec_stmts / exec_js: jawne wykonanie (gdy pytanie jest wykonywalne i znasz
-        statementy). Bez nich exec-kanał próbuje tylko jeśli pytanie wygląda na czysty kod
-        — ale pewne wykonanie wymaga podanych statementów (context-guard).
+        exec_stmts / exec_js: explicit execution (when the question is executable and you know
+        the statements). Without them the exec-channel only tries if the question looks like pure
+        code — but reliable execution requires the supplied statements (context-guard).
         """
-        # NIE `answer or ""` — 0/0.0/False to poprawne odpowiedzi (workflow P1)
+        # NOT `answer or ""` — 0/0.0/False are correct answers (workflow P1)
         answer = "" if answer is None else str(answer)
 
-        # --- KANAŁ 1: exec (twardy) ---
+        # --- CHANNEL 1: exec (hard) ---
         if self.enable_exec:
             truth = None
             if exec_js is not None:
@@ -315,10 +316,10 @@ class Koryto:
                 return KorytoVerdict(
                     verdict=("confirm" if ok else "refute"),
                     channel="exec", truth=truth, answer=answer, hard=True,
-                    note="interpreter wykonał — fizycznie niezależne od modelu",
+                    note="interpreter executed — physically independent of the model",
                 )
 
-        # --- KANAŁ 2: calc (twardy) ---
+        # --- CHANNEL 2: calc (hard) ---
         if self.enable_calc:
             truth = koryto_calc(question)
             if truth is not None:
@@ -326,10 +327,10 @@ class Koryto:
                 return KorytoVerdict(
                     verdict=("confirm" if ok else "refute"),
                     channel="calc", truth=truth, answer=answer, hard=True,
-                    note="kalkulator policzył jawne wyrażenie z treści pytania",
+                    note="calculator computed the explicit expression from the question text",
                 )
 
-        # --- KANAŁ 3: lookup (miękki, MOŻE BYĆ STALE) ---
+        # --- CHANNEL 3: lookup (soft, MAY BE STALE) ---
         if self.fact_base is not None:
             truth = self.fact_base.lookup(question)
             if truth is not None:
@@ -337,10 +338,10 @@ class Koryto:
                 return KorytoVerdict(
                     verdict=("confirm" if ok else "refute"),
                     channel="lookup", truth=truth, answer=answer, hard=False,
-                    needs_arbiter=(not ok),   # rozbieżność z miękkiego koryta → potwierdź zanim zablokujesz
-                    note="baza faktów (może być niekompletna/nieaktualna — potwierdź arbitrem przy rozbieżności)",
+                    needs_arbiter=(not ok),   # discrepancy from the soft channel → confirm before blocking
+                    note="fact base (may be incomplete/outdated — confirm with an arbiter on any discrepancy)",
                 )
 
-        # --- brak atomu: poza zasięgiem koryta (uczciwy false-neg) ---
+        # --- no atom: out of the channel's reach (honest false-neg) ---
         return KorytoVerdict(verdict="unknown", channel="none", answer=answer,
-                             note="koryto nie zna atomu — przepuść (atom spoza zasięgu/bazy)")
+                             note="channel does not know the atom — pass through (atom outside reach/base)")

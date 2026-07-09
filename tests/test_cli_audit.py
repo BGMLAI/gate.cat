@@ -51,7 +51,7 @@ def test_audit_runs_offline_with_mocked_endpoint(tmp_path, monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "GATE REPORT" in out
-    assert "PRZEPUSZCZONE" in out          # sekcja confident-wrong
+    assert "LET THROUGH" in out            # confident-wrong section
     assert "pip install gate.cat" in out            # CTA trust-loop (actionable install hint)
 
 
@@ -63,7 +63,7 @@ def test_audit_empty_file_is_safe(tmp_path, capsys):
         data=str(p), base_url="x", model="m", api_key="", samples=3, gate_threshold=0.3,
     )
     cli.cmd_audit(args)
-    assert "Brak pytan" in capsys.readouterr().out
+    assert "No questions" in capsys.readouterr().out
 
 
 def test_audit_in_cli_subcommands():

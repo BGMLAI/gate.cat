@@ -1,18 +1,18 @@
-"""provider — DOSTAWCA prawdy (kierunek 1 bramki dwukierunkowej).
+"""provider — PROVIDER of truth (direction 1 of the bidirectional gate).
 
-Council 10-głosów (2026-06-28): bramka nie tylko OCENIA output agenta (strażnik veto.py),
-ale DOSTARCZA agentowi zweryfikowane dane DO decyzji. Jeden silnik koryto, dwa interfejsy.
+Council of 10 votes (2026-06-28): the gate not only EVALUATES the agent's output (the veto.py guard),
+but also PROVIDES the agent with verified data FOR its decisions. One koryto engine, two interfaces.
 
-KLUCZOWE ZASADY (jednomyślny werdykt rady — bez nich = generator confident-wrong):
-  1. [HARD] = WYŁĄCZNIE exec/calc (dowód z WYKONANIA). Cache/lookup = SOFT (Hint) ZAWSZE,
-     nawet sim=1.0 — bo podobieństwo ≠ dowód wykonania (Kimi: "sim:0.99 = halucynacja w przebraniu").
-  2. Etykieta pochodzenia jako TYP, nie metadana: Verified<value, proof_ref> | Hint<value, sim>.
-     Brak proof_ref ⇒ automatycznie SOFT. Kod ZMUSZONY do szczerości.
-  3. proof_ref REPLAYABLE przez agenta (replay_command + hash), nie pointer do bramki.
-     Agent może SPRAWDZIĆ bramkę, nie ufa ślepo (certyfikat bez audytu = circular trust).
-  4. provide_truth = czyste/read-only/sandbox (mutuje ⇒ Actor nie Oracle).
+KEY PRINCIPLES (unanimous verdict of the council — without them = a confident-wrong generator):
+  1. [HARD] = EXCLUSIVELY exec/calc (proof from EXECUTION). Cache/lookup = SOFT (Hint) ALWAYS,
+     even at sim=1.0 — because similarity ≠ proof of execution (Kimi: "sim:0.99 = a hallucination in disguise").
+  2. Origin label as a TYPE, not metadata: Verified<value, proof_ref> | Hint<value, sim>.
+     No proof_ref ⇒ automatically SOFT. The code is FORCED to be honest.
+  3. proof_ref is REPLAYABLE by the agent (replay_command + hash), not a pointer to the gate.
+     The agent can CHECK the gate, does not trust blindly (a certificate without an audit = circular trust).
+  4. provide_truth = pure/read-only/sandbox (if it mutates ⇒ Actor, not Oracle).
 
-Rdzeń 100% stdlib (hashlib, dataclasses) + koryto (też stdlib). Zero API/model w runtime.
+Core is 100% stdlib (hashlib, dataclasses) + koryto (also stdlib). Zero API/model at runtime.
 """
 from __future__ import annotations
 
@@ -25,17 +25,17 @@ from gatecat.koryto import koryto_calc, koryto_exec_python
 
 
 # ======================================================================
-# TYPY pochodzenia — Verified (HARD) vs Hint (SOFT). Rozłączne klasy.
+# ORIGIN TYPES — Verified (HARD) vs Hint (SOFT). Disjoint classes.
 # ======================================================================
 
 @dataclass(frozen=True)
 class ProofRef:
-    """Replayable dowód wykonania. Agent może go ODTWORZYĆ niezależnie od bramki."""
+    """Replayable proof of execution. The agent can REPRODUCE it independently of the gate."""
     method: str                  # "exec" | "calc"
-    replay_command: str          # komenda którą agent może uruchomić sam (np. python -c "...")
-    input_hash: str              # sha256 wejścia
-    output_hash: str             # sha256 wyniku
-    statements: tuple = ()       # surowe statementy (do replay)
+    replay_command: str          # command the agent can run itself (e.g. python -c "...")
+    input_hash: str              # sha256 of the input
+    output_hash: str             # sha256 of the result
+    statements: tuple = ()       # raw statements (for replay)
 
     def to_dict(self) -> dict:
         return {
@@ -48,7 +48,7 @@ class ProofRef:
 
 @dataclass(frozen=True)
 class Verified:
-    """HARD fakt — prawda z WYKONANIA. Niesie replayable proof_ref."""
+    """HARD fact — truth from EXECUTION. Carries a replayable proof_ref."""
     value: str
     proof_ref: ProofRef
     kind: str = "HARD"
@@ -59,14 +59,14 @@ class Verified:
 
 @dataclass(frozen=True)
 class Hint:
-    """SOFT podpowiedź — z retrievalu/cache. NIGDY nie jest dowodem. Agent MUSI zweryfikować."""
+    """SOFT hint — from retrieval/cache. NEVER a proof. The agent MUST verify."""
     value: str
     sim: float
     source: str = "lookup"
     kind: str = "SOFT"
 
     def label(self) -> str:
-        return f"[RETRIEVED_{self.source}: {self.value} | sim={self.sim:.2f} — niezweryfikowane]"
+        return f"[RETRIEVED_{self.source}: {self.value} | sim={self.sim:.2f} — unverified]"
 
 
 def _sha(s: str) -> str:
@@ -74,7 +74,7 @@ def _sha(s: str) -> str:
 
 
 def _clean_exec_output(out: Optional[str]) -> Optional[str]:
-    """Context-guard dokleja '\\r\\nNone' (ostatni print zwraca None). Bierzemy 1. linię."""
+    """Context-guard appends '\\r\\nNone' (the last print returns None). We take the 1st line."""
     if not out:
         return None
     first = out.replace("\r\n", "\n").split("\n", 1)[0].strip()
@@ -82,18 +82,18 @@ def _clean_exec_output(out: Optional[str]) -> Optional[str]:
 
 
 # ======================================================================
-# DOSTAWCA — provide_truth(op, args). Czysta funkcja, read-only.
+# PROVIDER — provide_truth(op, args). Pure function, read-only.
 # ======================================================================
 
 def provide_truth(op: str, args: str) -> Optional[object]:
-    """Dostarcz agentowi ZWERYFIKOWANY fakt. Zwraca Verified (HARD) | None.
+    """Provide the agent with a VERIFIED fact. Returns Verified (HARD) | None.
 
     op:
-      "calc" — args = czyste wyrażenie arytmetyczne ("17*23"). Wynik z interpretera.
-      "exec" — args = JSON-lista statementów Python. Wynik z wykonania w sandboxie.
+      "calc" — args = a pure arithmetic expression ("17*23"). Result from the interpreter.
+      "exec" — args = a JSON list of Python statements. Result from execution in the sandbox.
 
-    Tylko exec/calc dają Verified (dowód z wykonania). Cache/lookup → provide_hint (SOFT).
-    Zwraca None gdy op nieobsługiwane / nie da się wykonać (bezpieczny brak faktu).
+    Only exec/calc yield Verified (proof from execution). Cache/lookup → provide_hint (SOFT).
+    Returns None when op is unsupported / cannot be executed (safe absence of a fact).
     """
     op = (op or "").strip().lower()
 
@@ -101,7 +101,7 @@ def provide_truth(op: str, args: str) -> Optional[object]:
         expr = (args or "").strip()
         truth = koryto_calc(expr)
         if truth is None:
-            return None  # nie czyste wyrażenie — brak HARD-faktu
+            return None  # not a pure expression — no HARD fact
         replay = f'python -c "print({expr})"'
         return Verified(
             value=str(truth),
@@ -136,22 +136,22 @@ def provide_truth(op: str, args: str) -> Optional[object]:
             ),
         )
 
-    return None  # nieobsługiwane op
+    return None  # unsupported op
 
 
 def provide_hint(value: str, sim: float, source: str = "lookup") -> Hint:
-    """Dostarcz SOFT podpowiedź z cache/lookup. NIGDY nie jest HARD (sim=podobieństwo).
-    Council jednomyślnie: nawet sim=1.0 zostaje Hint."""
+    """Provide a SOFT hint from cache/lookup. NEVER HARD (sim=similarity).
+    Council unanimously: even sim=1.0 stays a Hint."""
     return Hint(value=str(value), sim=float(sim), source=source)
 
 
 # ======================================================================
-# WERYFIKACJA proof_ref przez agenta (TOP-2: agent sprawdza bramkę, nie ufa ślepo)
+# proof_ref VERIFICATION by the agent (TOP-2: the agent checks the gate, does not trust blindly)
 # ======================================================================
 
 def verify_proof(verified: Verified) -> bool:
-    """Agent ODTWARZA dowód niezależnie: re-wykonuje i sprawdza output_hash.
-    Zwraca True gdy replay daje TEN SAM wynik. To eliminuje 'HARD-etykieta na zmyślonej wartości'.
+    """The agent REPRODUCES the proof independently: re-executes and checks output_hash.
+    Returns True when the replay yields THE SAME result. This eliminates 'a HARD label on a made-up value'.
     """
     pr = verified.proof_ref
     try:
@@ -163,4 +163,4 @@ def verify_proof(verified: Verified) -> bool:
             return False
         return again is not None and _sha(again) == pr.output_hash
     except Exception:
-        return False  # nie da się odtworzyć → NIE ufaj (fail-closed)
+        return False  # cannot reproduce → do NOT trust (fail-closed)
