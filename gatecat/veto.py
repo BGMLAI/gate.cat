@@ -1,33 +1,37 @@
-"""gatecat.veto — action-veto: zatrzymaj agenta ZANIM zrobi nieodwracalną akcję.
+"""gatecat.veto — action-veto: stop an agent BEFORE it takes an irreversible action.
 
-Problem (z realnych issues frameworków agentowych): agent z dostępem do narzędzi
-wykonuje akcję, której nie powinien — i jest ona NIEODWRACALNA. Zmierzone w dziczy:
-duplicate payments / trades (crewAI #5802, 65 komentarzy), agent zniszczył konto AWS
-deployując Terraform w zły cel ($106k straty, autogen #7770), brak tool-call
-authorization (crewAI #5888, 66 komentarzy). To NIE jest problem kosztu tokenów —
-to problem KONTROLI nad akcją zanim dotknie świata.
+The problem (from real agent-framework issues): an agent with tool access runs an
+action it shouldn't — and the action is IRREVERSIBLE. Seen in the wild: duplicate
+payments / trades (crewAI #5802), an agent that destroyed an AWS account by
+deploying Terraform to the wrong target ($106k loss, autogen #7770), missing
+tool-call authorization (crewAI #5888). This is not a token-cost problem — it is a
+problem of CONTROL over an action before it touches the world.
 
-GatedLoop (gatecat.agent) pilnuje RZEKI: model się waha (rozrzut) → pauza pętli.
-Veto pilnuje AKCJI: zanim funkcja-narzędzie się wykona, akcja musi przepłynąć przez
-deterministyczne KORYTO (policy + niezależny check). Confident-wrong na poziomie
-AKCJI jest niełapalny rozrzutem (model jest PEWNY że trzeba zapłacić/zdeployować) —
-łapie go dopiero policy + interpreter, nie uncertainty-signal.
+GatedLoop (gatecat.agent) watches the RIVER: the model hesitates (sample spread) →
+pause the loop. Veto watches the ACTION: before a tool function runs, the action
+must flow through a deterministic KORYTO (riverbed): policy + an independent check.
+Confident-wrong at the ACTION level is invisible to the spread signal (the model is
+CERTAIN it must pay / deploy) — only the policy + interpreter catch it, not the
+uncertainty signal.
 
-Trzy mury (fail-closed — błąd któregokolwiek = VETO, nie przepuszczenie):
-  1. POLICY — deterministyczne reguły: deny / próg kwoty / wymaga-człowieka.
-  2. KORYTO — gdy akcja ma sprawdzalny atom, interpreter weryfikuje NIEZALEŻNIE
-              od modelu (gatecat.koryto, recall 1.0, 0% false-pass w proxy).
-  3. HUMAN  — gdy policy żąda człowieka i brak zatwierdzenia → akcja zablokowana.
+Three walls (fail-closed — an error in any of them = VETO, not pass-through):
+  1. POLICY — deterministic rules: deny / amount threshold / requires-a-human.
+  2. KORYTO — when the action has a checkable atom, an interpreter verifies it
+              INDEPENDENTLY of the model (gatecat.koryto, recall 1.0, 0% false-pass
+              in the proxy).
+  3. HUMAN  — when policy demands a human and no approval is given → action blocked.
 
-UCZCIWOŚĆ (granica, nie udawajmy):
-  - Veto blokuje akcje pasujące do reguł / sprzeczne z deterministycznym checkiem.
-    To DETEKCJA+BLOKADA znanych wzorców, NIE gwarancja że każda zła akcja jest złapana.
-  - Veto musi być pewne tylko co BLOKUJE (znane wzorce, sprzeczność z interpreterem),
-    nigdy co PRZEPUSZCZA. Dlatego fail-closed: wątpliwość → veto.
-  - Policy jest tak dobra jak jej reguły. Pusta policy bez koryto = przepuszcza wszystko
-    (uczciwie zgłaszane przez `VetoGate(strict=True)` które wymaga ≥1 muru).
+HONESTY (the boundary — no pretending):
+  - Veto blocks actions matching a rule / contradicting the deterministic check.
+    That is DETECTION+BLOCKING of known patterns, NOT a guarantee every bad action
+    is caught.
+  - Veto only needs to be certain about what it BLOCKS (known patterns, a
+    contradiction with the interpreter), never about what it PASSES. Hence
+    fail-closed: doubt → veto.
+  - A policy is only as good as its rules. An empty policy with no koryto passes
+    everything (honestly surfaced by `VetoGate(strict=True)`, which requires ≥1 wall).
 
-Użycie:
+Usage:
     from gatecat.veto import before_action, ActionPolicy, ActionVetoed
 
     policy = ActionPolicy(
@@ -44,7 +48,7 @@ Użycie:
     try:
         charge_card(customer="acme", amount=5000)
     except ActionVetoed as e:
-        log.warning("akcja zablokowana: %s", e.reason)   # nieodwracalne nie stało się faktem
+        log.warning("action blocked: %s", e.reason)   # the irreversible never became fact
 """
 from __future__ import annotations
 
@@ -61,7 +65,7 @@ from gatecat.koryto import Koryto, KorytoVerdict
 
 @dataclass
 class VetoDecision:
-    """Wynik bramki veto dla jednej próby akcji (do audytu)."""
+    """Result of the veto gate for a single action attempt (for the audit trail)."""
     allowed: bool
     mur: str                       # "policy-deny" | "policy-amount" | "koryto" | "human" | "allow"
     reason: str = ""
@@ -76,36 +80,37 @@ class VetoDecision:
         }
 
 
-# ActionVetoed żyje w gatecat.exceptions (0.4.1): JEDNA klasa dla silnika i dla
-# warstwy integrations, więc `except gatecat.ActionVetoed` łapie veto z każdej
-# warstwy. Import na górze pliku re-eksportuje ją stąd — `from gatecat.veto
-# import ActionVetoed` działa jak dawniej, konstrukcja z VetoDecision też.
+# ActionVetoed lives in gatecat.exceptions (0.4.1): ONE class for both the engine
+# and the integrations layer, so `except gatecat.ActionVetoed` catches a veto from
+# any layer. The import at the top of this file re-exports it here — `from
+# gatecat.veto import ActionVetoed` works as before, and so does constructing it
+# from a VetoDecision.
 
 
 @dataclass
 class ActionPolicy:
-    """Deklaratywne koryto akcji: co WOLNO, co wymaga człowieka, co jest zakazane.
+    """Declarative action riverbed: what is ALLOWED, what needs a human, what is forbidden.
 
-    Reguły to wzorce regex dopasowywane do reprezentacji wywołania (`fn(args, kwargs)`).
-    Kolejność priorytetów: deny (twardy zakaz) > próg kwoty > wymaga-człowieka.
+    Rules are regex patterns matched against the call representation (`fn(args, kwargs)`).
+    Priority order: deny (hard block) > amount threshold > requires-a-human.
 
     Args:
-        deny:          wzorce akcji ZAKAZANYCH bezwarunkowo (veto natychmiast).
-        require_human: wzorce wymagające zatwierdzenia człowieka (veto bez approve).
-        max_amount:    próg kwoty — akcja z `amount > max_amount` wymaga człowieka.
+        deny:          patterns for actions FORBIDDEN unconditionally (veto immediately).
+        require_human: patterns requiring human approval (veto without an approve).
+        max_amount:    amount threshold — an action with `amount > max_amount` needs a human.
     """
     deny: Sequence[str] = field(default_factory=tuple)
     require_human: Sequence[str] = field(default_factory=tuple)
     max_amount: Optional[float] = None
 
-    # ReDoS-guard (audyt 2026-06-27 should-fix): catastrophic backtracking skaluje
-    # z DŁUGOŚCIĄ dopasowywanego tekstu. Wzorce pochodzą od operatora (nie z ruchu),
-    # ale długi call_repr (duże argumenty) mógłby zawiesić zły wzorzec. Przycinamy
-    # wejście do bezpiecznej długości — dopasowanie nazwy/akcji nie potrzebuje więcej.
+    # ReDoS guard (audit 2026-06-27 should-fix): catastrophic backtracking scales
+    # with the LENGTH of the matched text. Patterns come from the operator (not from
+    # traffic), but a long call_repr (large arguments) could hang a bad pattern. We
+    # trim the input to a safe length — matching a name/action needs no more.
     _MAX_MATCH_LEN = 4096
 
     def classify(self, call_repr: str, amount: Optional[float]) -> VetoDecision:
-        """Zwróć decyzję policy. Fail-closed: zły regex → traktuj jako dopasowanie (veto)."""
+        """Return the policy decision. Fail-closed: a bad regex → treat as a match (veto)."""
         call_repr = call_repr[:self._MAX_MATCH_LEN]
         for pat in self.deny:
             try:
@@ -122,8 +127,8 @@ class ActionPolicy:
             except (TypeError, ValueError):
                 return VetoDecision(False, "policy-amount",
                                     f"amount {amount!r} not comparable to cap - fail-closed veto")
-            # NaN/inf omijają porównanie '>' (IEEE 754: nan > x zawsze False) → fail-closed.
-            # Bez tego charge(amount=float('nan')) przechodziłby ponad cap. (audyt 2026-06-27 #1)
+            # NaN/inf slip past the '>' comparison (IEEE 754: nan > x is always False) → fail-closed.
+            # Without this, charge(amount=float('nan')) would pass over the cap. (audit 2026-06-27 #1)
             if math.isnan(amt_f) or math.isinf(amt_f):
                 return VetoDecision(False, "policy-amount",
                                     f"amount {amount!r} is not a finite number - fail-closed veto")
@@ -144,18 +149,18 @@ class ActionPolicy:
 
 
 class VetoGate:
-    """Bramka action-veto: ocenia próbę akcji przez trzy mury, ZANIM się wykona.
+    """Action-veto gate: evaluates an action attempt through three walls, BEFORE it runs.
 
     Args:
-        policy:        ActionPolicy (deny/próg/human). None = brak reguł policy.
-        koryto:        Koryto do niezależnego checku (domyślnie nowy z exec+calc).
-        human_approve: Callable[[call_repr], bool] pytany gdy policy żąda człowieka.
-                       Brak → każde wymaga-człowieka kończy się veto (fail-closed).
-        amount_of:     Callable(*args, **kwargs) → Optional[float] wyłuskujący kwotę.
-        exec_check:    Callable(*args, **kwargs) → Optional[Sequence[str]] zwracający
-                       statementy do uruchomienia przez koryto (gdy akcja ma sprawdzalny atom).
-        strict:        gdy True wymaga ≥1 aktywnego muru (policy z regułami / exec_check),
-                       inaczej rzuca ValueError przy konstrukcji (pusta bramka przepuszcza wszystko).
+        policy:        ActionPolicy (deny/threshold/human). None = no policy rules.
+        koryto:        Koryto for the independent check (defaults to a new exec+calc one).
+        human_approve: Callable[[call_repr], bool] asked when policy demands a human.
+                       Absent → every requires-a-human ends in a veto (fail-closed).
+        amount_of:     Callable(*args, **kwargs) → Optional[float] extracting the amount.
+        exec_check:    Callable(*args, **kwargs) → Optional[Sequence[str]] returning
+                       statements for koryto to run (when the action has a checkable atom).
+        strict:        when True, requires ≥1 active wall (policy with rules / exec_check),
+                       else raises ValueError at construction (an empty gate passes everything).
     """
 
     def __init__(
@@ -182,11 +187,11 @@ class VetoGate:
 
     def evaluate(self, call_repr: str, args: tuple, kwargs: dict,
                  fn: Optional[Callable] = None) -> VetoDecision:
-        """Oceń akcję. Zwraca VetoDecision (allowed True/False). Nie wykonuje akcji.
+        """Evaluate the action. Returns a VetoDecision (allowed True/False). Does not run it.
 
-        `fn` (opcjonalne): funkcja-narzędzie — pozwala związać argumenty POZYCYJNE
-        z nazwami parametrów. Bez tego `charge(5000)` (LLM-y często generują
-        pozycyjnie) omijał próg max_amount, bo kwota była brana tylko z
+        `fn` (optional): the tool function — lets us bind POSITIONAL arguments to
+        parameter names. Without it `charge(5000)` (LLMs often generate positionally)
+        bypassed the max_amount threshold, because the amount was only read from
         kwargs['amount'] (workflow review 2026-07-02, P1 fail-open)."""
         amount = None
         if self.amount_of is not None:
@@ -201,11 +206,11 @@ class VetoGate:
                 try:
                     bound = dict(inspect.signature(fn).bind_partial(*args, **kwargs).arguments)
                 except (TypeError, ValueError):
-                    pass  # nie da się związać — zostają same kwargs
+                    pass  # can't bind — fall back to kwargs only
             if "amount" in bound:
                 amount = bound["amount"]
 
-        # MUR 1: policy (deny / próg)
+        # WALL 1: policy (deny / threshold)
         if self.policy is not None:
             dec = self.policy.classify(call_repr, amount)
             if not dec.allowed and dec.mur in ("policy-deny", "policy-amount"):
@@ -214,7 +219,7 @@ class VetoGate:
         else:
             policy_wants_human = False
 
-        # MUR 2: koryto (niezależny check gdy akcja ma sprawdzalny atom)
+        # WALL 2: koryto (independent check when the action has a checkable atom)
         if self.exec_check is not None:
             try:
                 stmts = self.exec_check(*args, **kwargs)
@@ -259,13 +264,14 @@ def before_action(
     strict: bool = False,
     on_veto: Optional[Callable[[VetoDecision], Any]] = None,
 ):
-    """Dekorator veto-gate na funkcji-narzędziu agenta. Sprawdza ZANIM funkcja się wykona.
+    """Veto-gate decorator for an agent's tool function. Checks BEFORE the function runs.
 
-    Działa na funkcjach sync i async. Gdy akcja zawetowana:
-      - jeśli `on_veto` podane → wywołane z VetoDecision, jego wynik zwrócony zamiast akcji;
-      - inaczej → rzucony ActionVetoed (akcja NIE wykonana).
+    Works on both sync and async functions. When an action is vetoed:
+      - if `on_veto` is given → it is called with the VetoDecision and its result is
+        returned instead of the action;
+      - otherwise → ActionVetoed is raised (the action is NOT run).
 
-    Patrz VetoGate po opis murów i argumentów.
+    See VetoGate for a description of the walls and arguments.
     """
     gate = VetoGate(policy, koryto=koryto, human_approve=human_approve,
                     amount_of=amount_of, exec_check=exec_check, strict=strict)
