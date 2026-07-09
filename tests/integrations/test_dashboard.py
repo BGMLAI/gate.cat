@@ -77,6 +77,46 @@ def test_output_is_ascii_safe(tmp_path):
         r.encode("ascii")
 
 
+# --- `gate.cat report` - the free local monthly report (PRICING.md) ---------
+def test_report_counts_only_the_requested_month():
+    june = {"ts": "2026-06-30T23:59:59Z", "decision": "block",
+            "policy": "RM_RF", "context": "rm -rf /old"}
+    out = d.render_report(SAMPLE + [june], "2026-07")
+    assert "5 agent commands watched" in out    # the June event is excluded
+    assert "2 blocked" in out and "1 warned" in out
+    assert "intervention rate 60.0%" in out
+
+
+def test_report_has_the_promised_sections():
+    out = d.render_report(SAMPLE, "2026-07")
+    for section in ("month in one line", "Verdicts", "Top policies", "Timeline"):
+        assert section in out
+    assert "RM_RF" in out and "GH_DESTRUCTIVE" in out   # policies named
+
+
+def test_report_contains_no_raw_command_text_and_is_ascii():
+    # counts only: safe to paste anywhere, and cp1252-safe (D1)
+    out = d.render_report(SAMPLE, "2026-07")
+    assert "rm -rf" not in out and "id_rsa" not in out
+    out.encode("ascii")
+
+
+def test_report_empty_month_is_not_a_crash():
+    out = d.render_report(SAMPLE, "2031-01")
+    assert "No decisions logged in 2031-01" in out
+
+
+def test_report_via_cli_main(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("GATECAT_VETO_LOG", str(_write_log(tmp_path, SAMPLE)))
+    assert d.main(["report", "2026-07"]) == 0
+    assert "# gate.cat -- monthly report (2026-07)" in capsys.readouterr().out
+
+
+def test_report_rejects_a_malformed_month(capsys):
+    assert d.main(["report", "July"]) == 2
+    assert "usage" in capsys.readouterr().out
+
+
 def test_dashboard_pulls_no_ml_deps():
     import sys
     before = set(sys.modules)

@@ -8,6 +8,7 @@ decision) and shows, in one command, that gate.cat is on duty:
     gate.cat            # live status: on-duty, watched N, stopped M, last events
     gate.cat stats      # full breakdown by decision + policy
     gate.cat log        # recent decisions, newest first
+    gate.cat report     # monthly report (markdown) from the local log - free tier
     gate.cat why <cmd>  # explain what the gate would do with a command + why
 
 Zero heavy deps (no ML) - it only reads JSONL the gate already wrote, so it runs
@@ -19,6 +20,7 @@ import json
 import os
 import sys
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -163,6 +165,63 @@ def render_log(records: list[dict], n: int = 20, color: bool = True) -> str:
     return "\n".join(lines)
 
 
+def render_report(records: list[dict], month: str | None = None) -> str:
+    """`gate.cat report [YYYY-MM]` - the free local monthly report (PRICING.md:
+    "Local CLI dashboard + local reports"). Markdown, counts only - it never
+    includes command text, so the output is safe to paste into a ticket or a
+    channel. Generated 100% from the local log; nothing leaves the machine."""
+    if not month:
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+    ev = [r for r in records if (r.get("ts") or "").startswith(month)]
+    lines = [f"# gate.cat -- monthly report ({month})", ""]
+    if not ev:
+        lines += [f"No decisions logged in {month}. The gate appends to its local",
+                  "veto log on every decision, so an empty month means no agent",
+                  "traffic was watched - check that the hook is armed (`gate.cat`)."]
+        return "\n".join(lines)
+    s = _summary(ev)
+    days = sorted({(r.get("ts") or "")[:10] for r in ev})
+    rate = 100 * s["interventions"] / s["total"]
+    lines += [
+        f"**Period:** {days[0]} -> {days[-1]} | **Source:** local veto log "
+        f"(this machine) | **Generated:** "
+        f"{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
+        "",
+        "## The month in one line",
+        "",
+        f"**{s['total']:,} agent commands watched - {s['stopped']} blocked - "
+        f"{s['flagged']} warned - intervention rate {rate:.1f}%**",
+        "",
+        "> The gate is certain only about what it **blocks**; an unmatched",
+        "> action is *unchecked*, not *safe*.",
+        "",
+        "## Verdicts",
+        "",
+        "| decision | count |",
+        "|---|---|",
+    ]
+    for dec, n in s["dec"].most_common():
+        lines.append(f"| {dec} | {n:,} |")
+    if s["pol"]:
+        lines += ["", "## Top policies that fired (block + warn)", "",
+                  "| policy | interventions |", "|---|---|"]
+        for name, n in s["pol"].most_common(8):
+            lines.append(f"| {name} | {n:,} |")
+    lines += [
+        "",
+        "## Timeline",
+        "",
+        f"Decisions on **{len(days)}** distinct day(s), {days[0]} to {days[-1]}.",
+        "",
+        "---",
+        "*Generated locally by the free `gate.cat report` command - counts only,",
+        "no command text, nothing sent anywhere. This log lives on the same",
+        "machine the agent runs on; the paid tier keeps an off-machine copy",
+        "precisely because of that (see PRICING.md).*",
+    ]
+    return "\n".join(lines)
+
+
 def explain(command: str, color: bool = True) -> str:
     """`gate.cat why <cmd>` - run the FULL gate on a command and show the
     per-stage trace: which layer decided, and why. Makes the gate legible."""
@@ -201,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if cmd in ("status", "", "-h", "--help") and cmd != "why":
         if cmd in ("-h", "--help"):
-            print("gate.cat [status|stats|log|why <command>]")
+            print("gate.cat [status|stats|log|report [YYYY-MM]|why <command>]")
             return 0
         print(render_status(_read(), color))
         return 0
@@ -212,13 +271,22 @@ def main(argv: list[str] | None = None) -> int:
         n = int(args[1]) if len(args) > 1 and args[1].isdigit() else 20
         print(render_log(_read(), n, color))
         return 0
+    if cmd == "report":
+        month = args[1] if len(args) > 1 else None
+        if month and not (len(month) == 7 and month[:4].isdigit()
+                          and month[4] == "-" and month[5:].isdigit()):
+            print("usage: gate.cat report [YYYY-MM]")
+            return 2
+        print(render_report(_read(), month))
+        return 0
     if cmd == "why":
         if len(args) < 2:
             print("usage: gate.cat why '<command>'")
             return 2
         print(explain(" ".join(args[1:]), color))
         return 0
-    print(f"unknown command: {cmd}\ngate.cat [status|stats|log|why <command>]")
+    print(f"unknown command: {cmd}\n"
+          "gate.cat [status|stats|log|report [YYYY-MM]|why <command>]")
     return 2
 
 
