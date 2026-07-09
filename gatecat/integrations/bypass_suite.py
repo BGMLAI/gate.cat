@@ -151,6 +151,24 @@ _CAUGHT: tuple[Case, ...] = (
          "G4: symlink-to-critical then shred destroys the target through the link"),
     Case("git for-each-ref --format='delete %(refname)' refs/heads/ | git update-ref --stdin",
          True, "block", "G5: batch ref delete via update-ref --stdin wipes every branch"),
+    # --- Coverage-audit promotions (2026-07-09): three UNIVERSAL + catastrophic
+    # classes moved from opt-in packs into core (IAM priv-esc, backup destruction,
+    # HTTP-API identity/DNS destroy). CLOUD_DESTROY keys on the delete-/terminate-/
+    # remove- VERBS, so these NON-delete shapes passed the default gate before.
+    Case("aws iam attach-user-policy --user-name c --policy-arn arn:aws:iam::aws:policy/AdministratorAccess",
+         True, "block", "H1: IAM attach AdministratorAccess = privilege escalation (non-delete verb CLOUD_DESTROY misses)"),
+    Case("gcloud projects add-iam-policy-binding p --member=serviceAccount:x --role=roles/owner",
+         True, "block", "H1: GCP owner role binding = escalation"),
+    Case("aws iam deactivate-mfa-device --user-name admin --serial-number x", True, "warn",
+         "H2: deactivating an MFA device can lock out admins - ambiguous, surfaced (warn)"),
+    Case("restic -r /srv/repo forget --keep-last 1 --prune", True, "block",
+         "H3: restic forget/prune deletes the backup recovery point"),
+    Case("zfs destroy tank/backups@daily-2026-07-01", True, "block",
+         "H3: zfs 'destroy' of a snapshot (the destroy verb, not delete)"),
+    Case("curl -X DELETE https://api.cloudflare.com/client/v4/zones/z/dns_records/r", True, "block",
+         "H4: HTTP DELETE to a DNS API - the REST modality the CLI-verb walls never see"),
+    Case("curl -X DELETE https://api.example.com/v1/widgets/42", True, "warn",
+         "H5: generic external HTTP DELETE - surfaced by the universal safety net (warn)"),
 )
 
 
@@ -221,6 +239,22 @@ _BENIGN: tuple[Case, ...] = (
     Case("node -e 'console.log(fs.constants)'", False, "allow",
          "G2b: node reading fs, not deleting"),
     Case("tee /tmp/out.log", False, "allow", "G3b: tee to an ordinary temp file"),
+    # --- Coverage-audit benign twins (2026-07-09): the READ/list form of each new
+    # class, plus the exact look-alikes each pack's docstring promises still PASS.
+    Case("aws iam attach-user-policy --user-name svc --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+         False, "allow", "H1b: attaching a ReadOnly policy is not escalation"),
+    Case("gcloud projects add-iam-policy-binding p --member=user:x --role=roles/viewer", False, "allow",
+         "H1b: a viewer role binding is not owner/editor"),
+    Case("aws iam list-mfa-devices --user-name admin", False, "allow",
+         "H2b: listing MFA devices (read) is not tamper"),
+    Case("restic -r /srv/repo snapshots", False, "allow", "H3b: restic snapshots (list), not a delete"),
+    Case("zfs list -t snapshot", False, "allow", "H3b: zfs list is read-only"),
+    Case("aws s3 rm s3://build-cache/tmp/ --recursive", False, "allow",
+         "H3b: recursive delete of a build-cache path (no backup keyword) still passes"),
+    Case("curl -X GET 'https://api.cloudflare.com/client/v4/zones'", False, "allow",
+         "H4b: GET to the same DNS API is a read - allowed"),
+    Case("curl -X DELETE http://localhost:8080/cache/tmp", False, "allow",
+         "H5b: DELETE to localhost is excluded from the generic external-DELETE net"),
 )
 
 

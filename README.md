@@ -174,7 +174,7 @@ an accident of translation.
 Sixty seconds of your time, in exchange for:
 
 - a deterministic gate your agent cannot run `terraform destroy`, `rm -rf`,
-  `DROP TABLE` or `gh repo delete` through — 21 default policies for the
+  `DROP TABLE` or `gh repo delete` through — 28 default policies for the
   irreversible-action class, fail-closed, ~0.6% intervention rate measured on
   real traffic (it won't nag you);
 - a ready-to-paste Claude Code PreToolUse hook — the strongest mode:

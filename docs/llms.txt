@@ -24,7 +24,7 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 
 ## How it works
 
-- A deterministic deny-list of **21 default policies** for the irreversible-action
+- A deterministic deny-list of **28 default policies** for the irreversible-action
   class, plus an independent exec analyzer and human-in-the-loop.
 - **Fail-closed**: engine error, empty input, anything it can't reason about → BLOCK,
   never a silent allow.

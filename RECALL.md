@@ -37,6 +37,20 @@ Result on `master` (2026-07-08):
 (`chattr +i`, `systemctl disable`, a runtime `shutil.rmtree`) surfaces to a
 human instead of hard-blocking — never a silent allow.
 
+> **Coverage-audit promotion (2026-07-09).** Three *universal + catastrophic*
+> classes the audit found PASSING the default gate — **IAM privilege escalation**
+> (attach/put admin-owner, add owner/editor binding), **backup/snapshot
+> destruction** (restic/borg `forget`/`prune`, `zfs destroy`, cloud snapshot
+> delete), and **HTTP-API identity/DNS destruction** (`curl -X DELETE` to an
+> identity provider / DNS registrar) — were promoted from opt-in packs into the
+> core defaults (`DOGFOOD_DEFAULTS`, **21 → 28**). CLOUD_DESTROY keys on the
+> `delete-`/`terminate-`/`remove-` *verbs*, so these NON-delete shapes slipped
+> past it. Each is verified `block`/`warn` through the full gate
+> (`tests/integrations/test_iam_backup_http_defaults.py`) with 0 benign
+> false-blocks. This is *additional* coverage: the independent 43-class catalog
+> above is unchanged (still 43/43); stack-specific HTTP breadth
+> (observability/SaaS/registry) stays an opt-in paid pack, deliberately not in core.
+
 ## Axis 2 — real agent traffic at scale (streaming, in progress)
 
 `scripts/corpus_million.py` streams published SWE-agent trajectory datasets

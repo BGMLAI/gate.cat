@@ -159,6 +159,119 @@ SECRET_STORE_DELETE = Policy(
     description="Blocks Vault delete, az keyvault secret purge, doppler delete, secretsmanager force-delete.",
 )
 
+# --- Coverage-audit promotions (2026-07-09, COVERAGE_AUDIT_2026-07-09): three
+# UNIVERSAL + catastrophic classes the audit found PASSING the default gate,
+# promoted from opt-in packs into core per the binding business-model rule
+# (universal + catastrophic -> always free core; the same rule that sent KMS/Vault
+# above). CLOUD_DESTROY keys on the `delete-`/`terminate-`/`remove-` VERBS, so these
+# NON-delete shapes slip past it: IAM privilege escalation (attach/put/add-binding -
+# the enabler of every later irreversible action), backup destruction (restic/borg
+# forget|prune, zfs destroy - deleting the recovery point), and the HTTP-API modality
+# (curl -X DELETE to an identity/DNS/domain host - a delete the CLI-verb walls never
+# see). Patterns ported verbatim from the tested packs (packs/iam.py, packs/backup.py,
+# packs/http_api.py); each fires on its danger, not its benign twin (attach ReadOnly,
+# add roles/viewer binding, restic snapshots, curl -X GET all still PASS). Stack-
+# specific HTTP breadth (observability/SaaS/registry) stays a PAID pack - NOT here.
+
+IAM_PRIVILEGE_ESCALATION = Policy(
+    name="IAM_PRIVILEGE_ESCALATION",
+    patterns=(
+        r"\baws\s+iam\s+attach-(?:user|role|group)-policy\b[^\n]*(?:AdministratorAccess|PowerUserAccess|IAMFullAccess|:policy/Admin)",
+        r"\baws\s+iam\s+put-(?:user|role|group)-policy\b[^\n]*\"Action\"\s*:\s*\"\*\"",
+        r"\bgcloud\s+projects\s+add-iam-policy-binding\b[^\n]*roles/(?:owner|editor)",
+        r"\bgcloud\s+(?:projects|resource-manager)\s+set-iam-policy\b",
+        r"\baz\s+role\s+assignment\s+create\b[^\n]*--role\s+[\"']?(?:Owner|Contributor|User Access Administrator)",
+        r"\baz\s+rest\b[^\n]*directoryRoles[^\n]*members",
+        r"\bsetCustomUserClaims\b[^\n]*admin",
+    ),
+    reason="granting admin/owner privilege to a principal enables account-wide irreversible actions - requires a human",
+    description="Blocks IAM privilege escalation: attach admin/owner policy, put wildcard inline policy, add owner/editor binding, set-iam-policy overwrite, az Owner role, Firebase admin claim.",
+)
+
+IAM_IDENTITY_TAMPER = Policy(
+    name="IAM_IDENTITY_TAMPER",
+    # warn (ambiguous): a real admin does deactivate an MFA device or detach a
+    # policy; the failure mode is doing it to the WRONG principal (lock-out / prod
+    # break), so surface to a human rather than hard-block. (delete-login-profile
+    # is also caught by CLOUD_DESTROY's delete- verb, which pre-empts to block -
+    # that overlap is intentional, not a duplicate to remove.)
+    level="warn",
+    patterns=(
+        r"\baws\s+iam\s+deactivate-mfa-device\b",
+        r"\baws\s+iam\s+(?:detach-(?:user|role|group)-policy|delete-login-profile)\b",
+        r"\baz\s+ad\s+user\s+update\b[^\n]*--account-enabled\s+false",
+        r"\bgcloud\s+projects\s+remove-iam-policy-binding\b[^\n]*roles/(?:owner|admin)",
+    ),
+    reason="stripping permissions, deactivating MFA, or disabling an account can break prod or lock out admins - review before running",
+    description="Warns on detach-policy, deactivate-mfa-device, delete-login-profile, disable account, remove owner binding.",
+)
+
+BACKUP_DESTROY = Policy(
+    name="BACKUP_DESTROY",
+    # NON-delete-verb shapes CLOUD_DESTROY misses: dedicated backup tools
+    # (restic/borg/velero/wal-g/pgbackrest/proxmox), filesystem snapshot
+    # destruction (zfs destroy, btrfs subvolume delete), cloud snapshot/backup
+    # deletion, and recursive S3 delete of a *backup* path. A recursive delete of a
+    # build-cache/temp path still passes (the S3 rules require a backup keyword).
+    patterns=(
+        r"\brestic\b[^\n]*\b(?:forget|prune)\b",
+        r"\bborg\s+(?:delete|prune|compact)\b",
+        r"\bvelero\s+(?:backup|schedule)\s+delete\b",
+        r"\bwal-g\s+delete\b",
+        r"\bpgbackrest\b[^\n]*\bstanza-delete\b",
+        r"\bproxmox-backup-client\s+(?:snapshot\s+)?forget\b",
+        r"\bzfs\s+destroy\b",
+        r"\bbtrfs\s+subvolume\s+delete\b",
+        r"\baz\s+backup\s+(?:protection\s+disable|item\s+delete|recoverypoint)\b",
+        r"\baws\s+(?:backup\s+delete-|(?:ec2|rds)\s+delete-(?:snapshot|db-snapshot|db-cluster-snapshot))",
+        r"\bgcloud\s+(?:compute\s+snapshots\s+delete|sql\s+backups\s+delete)\b",
+        r"\baws\s+dynamodb\s+(?:delete-backup|update-continuous-backups\b[^\n]*[Ee]nabled=false)",
+        r"\baws\s+s3\s+rm\b[^\n]*--recursive[^\n]*(?:backup|snapshot|archive|/dr[-/]|disaster)",
+        r"\baws\s+s3\s+rm\b[^\n]*(?:backup|snapshot|archive)[^\n]*--recursive",
+    ),
+    reason="deleting a backup/snapshot removes the recovery point - irreversible, requires a human",
+    description="Blocks restic/borg/velero/wal-g/pgbackrest/proxmox backup deletion, zfs destroy, btrfs subvolume delete, cloud snapshot/backup deletion, and recursive S3 delete of a backup path.",
+)
+
+# HTTP-API modality: the audit's biggest structural gap - many irreversible ops act
+# via a raw REST call the CLI-verb walls never see. CORE subset only (universal:
+# identity providers okta/auth0/entra/firebase, DNS/registrar/domain, directory-role
+# priv-esc, token revoke-all) plus a generic external-DELETE WARN as a safety net.
+# HTTP_API_IDENTITY_DNS_DESTROY (block) MUST precede HTTP_API_DELETE_GENERIC (warn)
+# in DOGFOOD_DEFAULTS so a core-host DELETE resolves as a hard block, not a warn.
+_HTTP_CORE_HOSTS = (r"(?:\.okta\.com|auth0\.com|graph\.microsoft\.com|identitytoolkit\.googleapis|"
+                    r"admin\.googleapis\.com|api\.cloudflare\.com|api\.godaddy\.com|api\.gandi\.net|"
+                    r"api\.namecheap\.com|porkbun\.com|route53)")
+_HTTP_CORE_PATHS = (r"(?:accounts:batchDelete|updateNs|transfer-domain|deleteRecord|"
+                    r"Command=namecheap\.domains|tokens/revoke_all|/revoke_all)")
+_HTTP_DEL = r"(?:-X\s*|--request\s+|-[a-zA-Z]*X\s*)DELETE\b"
+
+HTTP_API_IDENTITY_DNS_DESTROY = Policy(
+    name="HTTP_API_IDENTITY_DNS_DESTROY",
+    patterns=(
+        rf"\b(?:curl|wget)\b[^\n]*{_HTTP_DEL}[^\n]*{_HTTP_CORE_HOSTS}",
+        rf"\b(?:curl|wget)\b[^\n]*{_HTTP_CORE_HOSTS}[^\n]*{_HTTP_DEL}",
+        rf"\b(?:curl|wget)\b[^\n]*(?:-X\s*|--request\s+)(?:POST|PUT|PATCH)\b[^\n]*{_HTTP_CORE_HOSTS}",
+        r"\baz\s+rest\b[^\n]*--method\s+POST[^\n]*directoryRoles[^\n]*members",
+        rf"\b(?:curl|wget)\b[^\n]*{_HTTP_CORE_PATHS}",
+    ),
+    reason="an HTTP API call that deletes/overwrites a cloud identity, DNS record, zone, or domain is irreversible and affects everyone - requires a human",
+    description="Blocks curl/wget/az-rest DELETE (and destructive POST/PUT/PATCH) to identity providers and DNS/registrar/domain APIs.",
+)
+
+HTTP_API_DELETE_GENERIC = Policy(
+    name="HTTP_API_DELETE_GENERIC",
+    # warn (universal safety net): an external HTTP DELETE removes a resource, but
+    # the target is unknown to the gate - surface it rather than hard-block. Local
+    # hosts (localhost/127.0.0.1/...) are excluded so dev loops are not warned.
+    level="warn",
+    patterns=(
+        r"\b(?:curl|wget)\b[^\n]*(?:-X\s*|--request\s+|-[a-zA-Z]*X\s*)DELETE\b[^\n]*(?:https?://(?!localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])|\$\w+/|/api/|/v\d)",
+    ),
+    reason="an HTTP DELETE to an external API removes a resource - unchecked, review before running",
+    description="Warns on curl/wget -X DELETE to any external host (universal safety net).",
+)
+
 # CSO recall-gaps 2026-07-05: git/gh/docker/registry front-ends were in the
 # ActionPipeline SAFE_VERBS allow-list, so their DESTRUCTIVE subcommands passed
 # as a SILENT allow (never even warn). These policies close that: a guardrail
@@ -600,6 +713,14 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     CLOUD_DESTROY,
     KMS_KEY_DESTROY,
     SECRET_STORE_DELETE,
+    # coverage-audit promotions (2026-07-09): universal + catastrophic classes the
+    # audit found passing the gate. NON-delete shapes CLOUD_DESTROY misses. The HTTP
+    # block MUST precede the HTTP warn so a core-host DELETE resolves as a hard block.
+    IAM_PRIVILEGE_ESCALATION,
+    IAM_IDENTITY_TAMPER,
+    BACKUP_DESTROY,
+    HTTP_API_IDENTITY_DNS_DESTROY,
+    HTTP_API_DELETE_GENERIC,
     GIT_FORCE_PUSH,
     RM_RF,
     # coverage-gap classes (added 2026-07-05 after an independent catalog
@@ -643,6 +764,11 @@ ALL_PRESETS: dict[str, Policy] = {
     "CLOUD_DESTROY": CLOUD_DESTROY,
     "KMS_KEY_DESTROY": KMS_KEY_DESTROY,
     "SECRET_STORE_DELETE": SECRET_STORE_DELETE,
+    "IAM_PRIVILEGE_ESCALATION": IAM_PRIVILEGE_ESCALATION,
+    "IAM_IDENTITY_TAMPER": IAM_IDENTITY_TAMPER,
+    "BACKUP_DESTROY": BACKUP_DESTROY,
+    "HTTP_API_IDENTITY_DNS_DESTROY": HTTP_API_IDENTITY_DNS_DESTROY,
+    "HTTP_API_DELETE_GENERIC": HTTP_API_DELETE_GENERIC,
     "PAYMENTS": PAYMENTS_DEFAULT,
     "GIT_FORCE_PUSH": GIT_FORCE_PUSH,
     "RM_RF": RM_RF,

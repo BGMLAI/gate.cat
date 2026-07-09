@@ -6,6 +6,25 @@ All notable changes to `gate.cat` will be documented in this file.
 
 ### Added
 
+- **Coverage-audit promotion (2026-07-09): 5 new core default policies**
+  (`DOGFOOD_DEFAULTS` **23 -> 28**, presets 25 -> 30). The 2026-07-09 coverage
+  audit found three *universal + catastrophic* classes PASSING the default gate
+  because `CLOUD_DESTROY` keys on the `delete-`/`terminate-`/`remove-` verbs and
+  these are NON-delete shapes: **`IAM_PRIVILEGE_ESCALATION`** (block) + 
+  **`IAM_IDENTITY_TAMPER`** (warn) -- attach/put admin-owner, add owner/editor
+  binding, deactivate MFA; **`BACKUP_DESTROY`** (block) -- restic/borg
+  `forget`/`prune`, `zfs destroy`, cloud snapshot delete, recursive S3 delete of a
+  backup path; **`HTTP_API_IDENTITY_DNS_DESTROY`** (block) +
+  **`HTTP_API_DELETE_GENERIC`** (warn) -- `curl -X DELETE` to an identity
+  provider / DNS registrar / domain API, plus a universal external-DELETE net.
+  Promoted from the opt-in packs per the binding business-model rule
+  (universal + catastrophic -> free core), exactly as KMS/Vault were. Patterns
+  ported verbatim from the tested packs; 0 benign false-blocks (attach ReadOnly,
+  add `roles/viewer`, `restic snapshots`, `curl -X GET`, build-cache recursive
+  delete all still pass). Bypass suite **65/65 -> 70/70** (`+5` block dangers,
+  `+8` benign twins). Regression: `tests/integrations/test_iam_backup_http_defaults.py`.
+  Stack-specific HTTP breadth (observability/SaaS/registry) stays an opt-in paid
+  pack -- deliberately NOT promoted to core.
 - **`gate.cat report [YYYY-MM]`** -- the free local monthly report promised in
   PRICING.md ("Local CLI dashboard + local reports"). Markdown, counts-only
   (no command text, so the output is safe to paste anywhere), four sections:
