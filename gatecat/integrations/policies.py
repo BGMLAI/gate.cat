@@ -129,6 +129,36 @@ CLOUD_DESTROY = Policy(
     description="Blocks delete/terminate calls to AWS/GCP/Azure/vast.ai/k8s/helm.",
 )
 
+# Cloud key/secret destruction (2026-07-09): CLOUD_DESTROY keys off the
+# `delete`/`terminate` verbs, so the `destroy`/`disable`/`purge` forms of
+# encryption-key and secret-store ops passed the gate (measured on 0.4.7).
+# Destroying a KMS key makes every byte encrypted under it unrecoverable - the
+# most catastrophic irreversible class there is. Promoted from the opt-in
+# cloud_secrets pack (each rule tested to fire on its danger, not its benign twin).
+KMS_KEY_DESTROY = Policy(
+    name="KMS_KEY_DESTROY",
+    patterns=(
+        r"\baws\s+kms\s+(schedule-key-deletion|disable-key)\b",
+        r"\bgcloud\s+kms\s+keys\s+versions\s+destroy\b",
+        r"\baz\s+keyvault\s+key\s+purge\b",
+    ),
+    reason="destroying/disabling an encryption key makes all data encrypted under it permanently unrecoverable - requires a human",
+    description="Blocks AWS KMS schedule-key-deletion/disable-key, gcloud KMS destroy, az keyvault key purge.",
+)
+
+SECRET_STORE_DELETE = Policy(
+    name="SECRET_STORE_DELETE",
+    patterns=(
+        r"\bvault\s+(kv\s+)?(delete|destroy)\b",
+        r"\bvault\s+kv\s+metadata\s+delete\b",
+        r"\baz\s+keyvault\s+secret\s+purge\b",
+        r"\bdoppler\s+secrets?\s+delete\b",
+        r"\baws\s+secretsmanager\s+delete-secret\b[^\n]*--force-delete-without-recovery\b",
+    ),
+    reason="deleting/purging a stored secret is irreversible (and can break running services) - requires a human",
+    description="Blocks Vault delete, az keyvault secret purge, doppler delete, secretsmanager force-delete.",
+)
+
 # CSO recall-gaps 2026-07-05: git/gh/docker/registry front-ends were in the
 # ActionPipeline SAFE_VERBS allow-list, so their DESTRUCTIVE subcommands passed
 # as a SILENT allow (never even warn). These policies close that: a guardrail
@@ -568,6 +598,8 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     TERRAFORM_PROD,
     DB_DESTRUCTIVE,
     CLOUD_DESTROY,
+    KMS_KEY_DESTROY,
+    SECRET_STORE_DELETE,
     GIT_FORCE_PUSH,
     RM_RF,
     # coverage-gap classes (added 2026-07-05 after an independent catalog
@@ -609,6 +641,8 @@ ALL_PRESETS: dict[str, Policy] = {
     "DB_DESTRUCTIVE": DB_DESTRUCTIVE,
     "EMAIL_SEND": EMAIL_SEND,
     "CLOUD_DESTROY": CLOUD_DESTROY,
+    "KMS_KEY_DESTROY": KMS_KEY_DESTROY,
+    "SECRET_STORE_DELETE": SECRET_STORE_DELETE,
     "PAYMENTS": PAYMENTS_DEFAULT,
     "GIT_FORCE_PUSH": GIT_FORCE_PUSH,
     "RM_RF": RM_RF,
