@@ -83,7 +83,7 @@ del _migrate_legacy_env
 # (`pip install gate.cat[cache]`) - see pyproject. A clear ImportError tells the
 # user to install the extra if they reach for a cache name without it.
 
-__version__ = "0.4.8"
+__version__ = "0.4.9"
 
 # name -> (submodule, is_cache_feature). is_cache_feature=True means the symbol
 # lives behind the heavy ML stack, so a missing-dep ImportError is rewritten to

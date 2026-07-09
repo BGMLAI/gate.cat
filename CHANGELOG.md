@@ -2,6 +2,31 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.9] -- two live-caught fixes: RM_RF filename FP; block outranks warn (2026-07-09)
+
+### Fixed
+
+- **RM_RF no longer false-blocks filenames that look like flags.** Caught live
+  during the 0.4.8 release: `rm /tmp/pypirc-fresh` was vetoed because the old
+  whole-rest-of-line lookahead matched `-fre` inside the FILENAME as an `-fr`
+  flag. Flags are now matched as TOKENS (`-` preceded by start/whitespace/quote
+  -- `rm "-rf" /` still blocks), and the match stays inside one command segment,
+  so `rm x && tar -rf a.tar y` is no longer blamed on `rm`. All dangerous
+  spellings stay caught: `-rf`, `-fr`, `-Rf`, `-rfv`, `-vrf`, `-Rfi`, split
+  `-r -f` / `-f -r`. Bypass suite gains the filename-substring benign class
+  (70/70 dangers, benign corpus 44 -> 52).
+- **Block-level policy outranks warn-level in attribution, order-independent.**
+  Caught live productizing the policy packs: hit attribution was
+  first-match-in-list-order, and `check_action` downgrades to a warn when the
+  attributed policy is level="warn" -- so the core generic net
+  `HTTP_API_DELETE_GENERIC` (warn), sitting earlier in the list, silently
+  DOWNGRADED a hard danger that an operator pack's block rule (appended by
+  `GATECAT_EXTRA_POLICIES` after the built-ins) also matched. Attribution is
+  now two-pass -- block-level policies first, then warn-level -- so a hard
+  match is never degraded by list order; a warn-only match still warns. This
+  also makes the core's own block-before-warn ordering redundant instead of
+  load-bearing.
+
 ## [0.4.8] -- policy packs plug into the hook; 28 core defaults (2026-07-09)
 
 ### Added
