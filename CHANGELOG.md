@@ -2,6 +2,25 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **`gate.cat report [YYYY-MM]`** -- the free local monthly report promised in
+  PRICING.md ("Local CLI dashboard + local reports"). Markdown, counts-only
+  (no command text, so the output is safe to paste anywhere), four sections:
+  the month in one line, verdicts, top policies that fired, timeline.
+  Generated entirely from the local `~/.gatecat/veto_log.jsonl`; nothing
+  leaves the machine.
+- **`gatecat/cloud_reporter.py`** -- the optional client that ships veto events
+  to gate.cat Cloud (`python -m gatecat.cloud_reporter`, cron-friendly;
+  stdlib-only, zero-dep core intact). The PRICING.md architecture contracts
+  are pinned by `tests/test_cloud_reporter.py` (10 tests, no network -- mock
+  endpoint): OFF unless `GATECAT_CLOUD_API_KEY` is set; hash-by-default (raw
+  command text only with explicit `GATECAT_CLOUD_SEND_RAW=1`); never in the
+  gate's execution path (fail-silent on any error); per-log-file cursor --
+  reruns idempotent, not advanced on failure, log rotation detected.
+
 ## [0.4.7] -- positioning fix: the veto is model-agnostic (2026-07-08)
 
 ### Changed
