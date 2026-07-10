@@ -53,9 +53,31 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 | Price | $0 forever | $9/mo · **$90/yr** (2 months free) | $199/mo · **$1,990/yr** (2 months free) | **$7,500/yr** · 2–3 slots per quarter | **$25,000/yr** |
 | | | [**Join the founding list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20founding%20—%20Solo) | [**Join the founding list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20founding%20—%20Team) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20audit-readiness%20pilot) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
 
-**Checkout is not open yet — deliberately.** We don't take money before fulfillment is fully automated (hosted history live, report generated and delivered without a human in the loop). That's days away, not months: the service is built and tested; it's being deployed. Joining the founding list costs nothing and locks the founding price for when checkout opens.
+**Cloud checkout is not open yet — deliberately.** We don't take money before fulfillment is fully automated (hosted history live, report generated and delivered without a human in the loop). That's days away, not months: the service is built and tested; it's being deployed. Joining the founding list costs nothing and locks the founding price for when checkout opens.
 
 Prices in USD. Cancel anytime once live. **30-day full refund, no questions asked.**
+
+## Policy Packs — $29 one-time (available now)
+
+The 28 core policies are free forever and cover the universal, catastrophic
+classes — that's the open-core rule: **safety everyone needs is never
+paywalled** (KMS/secret destroy, IAM escalation, backup destruction and the
+identity/DNS HTTP-API class were all *promoted into the free core* when audits
+found them). Packs are stack-specific breadth on top, sold as one-time
+products. Every rule is tested to fire on its danger and stay silent on the
+benign twin — the same bar as the core gate.
+
+| Pack | What it blocks | Buy |
+|---|---|---|
+| **Fintech** | refund creation, payouts/transfers, customer & billing-config deletion — Stripe CLI/SDK/REST, PayPal/Braintree/Adyen/Wise/Mercury (5 policies) | [**$29 →**](https://buy.stripe.com/3cI8wIbVH3iM9hugMe67S06) |
+| **PaaS** | `vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, `railway down`, `render/supabase delete` — deploy/list/info stay allowed | [**$29 →**](https://buy.stripe.com/5kQ9AMaRDf1u2T6eE667S07) |
+| **HTTP-API Breadth** | destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI, … — the modality CLI-verb walls never see (requires gate.cat ≥ 0.4.9) | [**$29 →**](https://buy.stripe.com/3cIdR24tfdXqgJW8fI67S08) |
+
+Delivery is fully automated: pay → instant download page (wheel + install
+instructions). Install = `pip install <wheel>` + one env var
+(`GATECAT_EXTRA_POLICIES`). VAT is calculated automatically at checkout.
+Packs load fail-closed: a pack that can't load blocks the gate rather than
+silently running without it.
 
 ## Which anchor applies to you
 
