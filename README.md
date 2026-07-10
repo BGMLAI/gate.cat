@@ -38,6 +38,10 @@ Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine u
 [![PyPI](https://img.shields.io/pypi/v/gate.cat)](https://pypi.org/project/gate.cat/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/gate.cat)](https://pypi.org/project/gate.cat/)
+[![Site](https://img.shields.io/badge/site-gate.cat-cbdd1a)](https://gate.cat)
+
+**Real catches, monthly:** [gate.cat](https://gate.cat) publishes *Veto Catches* — a real
+irreversible command an agent tried, and how the wall stopped it.
 
 An AI agent decides to run a README's install one-liner. The gate stops it before
 a single byte executes — a real terminal, `pip install gate-cat`, no montage:
@@ -525,3 +529,4 @@ Built-in embedders: `minilm` (text), `clip` (image, coming soon), `clap` (voice,
 Apache 2.0 — see [LICENSE](LICENSE).
 
 Built by [BGML.ai](https://bgml.ai) / [Fundacja BLOOM](https://bloom.foundation).
+Policy Packs → [gate.cat/#packs](https://gate.cat/#packs)
