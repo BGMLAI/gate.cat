@@ -8,7 +8,7 @@ requires-python = ">=3.10"
 authors = [
     {name = "Bogumił Jankiewicz", email = "bogumil@bgml.ai"},
 ]
-keywords = ["llm", "agent", "guardrail", "action-veto", "ai-safety", "agent-guardrail", "claude-code", "fail-closed", "local-llm", "ai"]
+keywords = ["ai-agent", "agent-safety", "guardrails", "claude-code", "hook", "fail-closed", "deny-list", "llm-security", "ollama", "mcp", "devsecops", "action-veto"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
