@@ -109,9 +109,22 @@ def ship(endpoint: str | None = None, api_key: str | None = None,
     return {"shipped": shipped, "reason": "ok (e2e-encrypted)"}
 
 
+def _user_agent() -> str:
+    """A named UA, NOT the stdlib default. gate.cat's own endpoint sits behind
+    Cloudflare, which 403s (error 1010) the `Python-urllib/x.y` signature -- so a
+    default-UA reporter would silently fail to ship for every subscriber. A named
+    UA passes and also tags the version server-side for debugging."""
+    try:
+        from gatecat import __version__ as v
+    except Exception:
+        v = "0"
+    return "gatecat-cloud/" + v
+
+
 def _post(endpoint: str, api_key: str, batch: list, timeout: float) -> int:
     req = urllib.request.Request(endpoint, data=json.dumps(batch).encode(),
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + api_key})
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + api_key,
+                 "User-Agent": _user_agent()})
     resp = json.load(urllib.request.urlopen(req, timeout=timeout))
     return int(resp.get("stored", 0))
 

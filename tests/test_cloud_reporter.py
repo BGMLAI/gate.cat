@@ -126,6 +126,26 @@ def test_raw_mode_is_explicit_opt_in(world, monkeypatch):
     assert e["redaction"] == "raw" and e["context"] == "rm -rf /srv/0"
 
 
+def test_ships_with_named_user_agent_not_stdlib_default(world):
+    """gate.cat's endpoint sits behind Cloudflare, which 403s the
+    `Python-urllib` UA (error 1010). The reporter MUST send a named UA or every
+    subscriber's cron silently fails to ship. Pin it."""
+    _, fake = world
+    seen = {}
+    orig = fake.__call__
+
+    def capture(req, timeout=None):
+        seen["ua"] = req.headers.get("User-agent", "")
+        return orig(req, timeout=timeout)
+
+    fake.__call__ = capture
+    import gatecat.cloud_reporter as cr
+    cr.urllib.request.urlopen = capture
+    cr.ship(api_key="k")
+    assert seen["ua"].startswith("gatecat-cloud/")
+    assert "urllib" not in seen["ua"].lower()
+
+
 def test_fail_silent_when_endpoint_down(world):
     _, fake = world
     fake.down = True

@@ -96,6 +96,39 @@ def test_account_id_cannot_traverse_out_of_events_dir(tmp_path):
     assert os.listdir(events_dir)                 # it still stored, just safely
 
 
+def test_iso_and_junk_timestamps_are_coerced_never_crash(tmp_path):
+    """Real veto logs carry ISO-8601 timestamps ('2026-07-11T00:00:00Z'). The
+    server used to `int()` them bare -> ValueError -> 502 on every real ship.
+    Every ts shape must store with a sane int ts, never raise."""
+    srv = _load_server(tmp_path)
+    srv.issue_key("acct", "solo")
+    batch = [
+        {"ts": 1720000000, "ct": "a"},               # epoch int
+        {"ts": "1720000001", "ct": "b"},             # numeric string
+        {"ts": "2026-07-11T00:00:00Z", "ct": "c"},   # ISO-8601 (the crash case)
+        {"ts": None, "ct": "d"},                     # missing
+        {"ts": "not-a-date", "ct": "e"},             # pure garbage
+    ]
+    assert srv._store("acct", batch) == 5            # all stored, none dropped/crashed
+    for r in srv._read("acct", since=0):
+        assert isinstance(r["ts"], int) and r["ts"] > 0
+
+
+def test_handler_returns_500_json_not_502_on_internal_error(tmp_path, monkeypatch):
+    """A request-thread crash must become a clean 500 JSON, not a dropped
+    connection (nginx 502 reads as 'whole service down')."""
+    srv = _load_server(tmp_path)
+
+    def boom():
+        raise RuntimeError("simulated internal fault")
+
+    h = srv.Handler.__new__(srv.Handler)
+    captured = {}
+    h._json = lambda code, obj: captured.update(code=code, obj=obj)
+    h._safely(boom)                                  # must swallow + emit 500, not raise
+    assert captured["code"] == 500
+
+
 def test_accounts_cache_refreshes_on_new_key(tmp_path):
     srv = _load_server(tmp_path)
     k1 = srv.issue_key("a", "solo")

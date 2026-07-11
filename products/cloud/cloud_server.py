@@ -85,6 +85,24 @@ def _rate_ok(ip: str, now: float) -> bool:
         return c <= IP_RATE_MAX
 
 
+def _coerce_ts(v) -> int:
+    """A client ts may be an epoch int, a numeric string, or an ISO-8601 string
+    (real veto logs carry `2026-07-11T00:00:00Z`). Never trust it into int() bare
+    -- `int("2026-...")` is a ValueError that would 500/502 the whole request.
+    Parse what we can, fall back to server receive-time (ts is only for ordering)."""
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        pass
+    if isinstance(v, str):
+        try:
+            from datetime import datetime
+            return int(datetime.fromisoformat(v.replace("Z", "+00:00")).timestamp())
+        except Exception:
+            pass
+    return int(time.time())
+
+
 def _ensure():
     os.makedirs(EVENTS_DIR, exist_ok=True)
     if not os.path.exists(ACCOUNTS):
@@ -157,7 +175,7 @@ def _store(account: str, batch: list) -> int:
                 if not isinstance(ct, str) or len(ct) > MAX_CT:
                     continue
                 seq += 1
-                f.write(json.dumps({"seq": seq, "ts": int(e.get("ts") or time.time()),
+                f.write(json.dumps({"seq": seq, "ts": _coerce_ts(e.get("ts")),
                                     "ct": ct}) + "\n")
                 n += 1
             f.flush()
@@ -197,7 +215,25 @@ class Handler(BaseHTTPRequestHandler):
             return True
         return False
 
+    def _safely(self, fn):
+        """Never let an unhandled exception drop the connection into a 502. A
+        crowd sends malformed input; a request-thread crash must become a clean
+        500 JSON, not a bad-gateway that looks like the whole service is down."""
+        try:
+            fn()
+        except Exception:
+            try:
+                self._json(500, {"error": "internal error"})
+            except Exception:
+                pass
+
     def do_GET(self):
+        self._safely(self._handle_get)
+
+    def do_POST(self):
+        self._safely(self._handle_post)
+
+    def _handle_get(self):
         if self._rate_limited():
             return
         u = urlparse(self.path)
@@ -209,15 +245,21 @@ class Handler(BaseHTTPRequestHandler):
         acct = _account_for(self._bearer())
         if not acct:
             return self._json(401, {"error": "bad api key"})
-        since = int((parse_qs(u.query).get("since", ["0"])[0]) or 0)
+        try:
+            since = int((parse_qs(u.query).get("since", ["0"])[0]) or 0)
+        except (TypeError, ValueError):
+            since = 0                        # a junk ?since= must not 500
         return self._json(200, {"events": _read(acct["account"], since)})
 
-    def do_POST(self):
+    def _handle_post(self):
         if self._rate_limited():
             return
         if urlparse(self.path).path != "/v1/events":
             return self._json(404, {"error": "not found"})
-        n = int(self.headers.get("Content-Length", 0) or 0)
+        try:
+            n = int(self.headers.get("Content-Length", 0) or 0)
+        except (TypeError, ValueError):
+            return self._json(400, {"error": "bad content-length"})
         if n > MAX_BODY:                     # RAM DoS guard: don't read a huge body
             return self._json(413, {"error": "payload too large"})
         acct = _account_for(self._bearer())
