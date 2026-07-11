@@ -353,6 +353,28 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             config.gate_mode,
         )
 
+        # ENFORCEMENT BANNER (0.4.10) — the proxy can only veto tool calls that
+        # actually flow THROUGH it. The #1 proxy failure mode is silent: an agent
+        # whose base_url points straight at the provider is never inspected, and
+        # a proxy that never sees traffic looks identical to one that is working.
+        # So we state the enforcement status loudly at startup, and if the veto is
+        # OFF we warn — a misconfigured (veto-disabled) proxy must not look healthy.
+        # Operators verify live via GET /health -> "action_veto".
+        if config.tool_veto == "off":
+            logger.warning(
+                "[proxy] ACTION-VETO IS OFF (GATECAT_PROXY_TOOL_VETO=off) — tool "
+                "calls are NOT inspected. The proxy is a passthrough. Point your "
+                "agent's base_url here AND set tool_veto=block for enforcement."
+            )
+        else:
+            logger.info(
+                "[proxy] ACTION-VETO active: mode=%s, %d deny-policies. Enforcement "
+                "only covers agents whose base_url actually points at this proxy "
+                "(%s); verify at GET /health.",
+                config.tool_veto, len(_VETO_POLICIES),
+                config.openai_base_url,
+            )
+
         yield
 
         # Cleanup
@@ -377,6 +399,16 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
             "status": "ok",
             "cache": stats,
             "synthesis": config.synthesis_mode,
+            # ENFORCEMENT STATUS (0.4.10) — lets an operator/agent confirm the veto
+            # is really on. `enforcing` is False when tool_veto=off (passthrough),
+            # so a health check can catch a misconfigured proxy instead of trusting
+            # that "200 OK" means "protected". Does NOT prove the agent routes
+            # through this proxy — that is the operator's base_url responsibility.
+            "action_veto": {
+                "mode": config.tool_veto,
+                "enforcing": config.tool_veto == "block",
+                "policies": len(_VETO_POLICIES),
+            },
         }
 
     # --- Cache stats ---

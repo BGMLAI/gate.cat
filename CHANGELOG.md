@@ -2,6 +2,50 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.10] -- two disclosed gaps closed from an outside review (2026-07-11)
+
+A user ran an independent multi-model gauntlet (GPT-4o + Grok + Gemini) against
+gate.cat before deploying it on their own infra and reported five findings.
+Verified each against the live code: two were already fixed (base64|sh and
+curl|sh are caught by ENCODED_EXEC since 2026-07-05 -- their #1 RPN-100 finding
+was stale), two are by-design honest limits ("unchecked != safe"; fail-closed
+is a feature, not a deadlock), and two were real. These are the two.
+
+### Fixed
+
+- **Terraform/OpenTofu interactive-prompt bypass now blocked.** A bare
+  `terraform destroy` stops for a human (`Enter a value: yes`), so it is left
+  allowed -- but an autonomous agent defeats that prompt by piping the
+  confirmation in (`yes | terraform destroy`, `echo yes | terraform destroy`,
+  `printf 'yes\n' | tofu destroy`). That is an irreversible teardown with no
+  human in the loop. `TERRAFORM_PROD` now blocks any pipe INTO a
+  `terraform/tofu ... destroy` (keyed on the pipe target -- robust to the
+  engine's quoted-data scrub, which inerts a source-side `'yes'`). Low
+  false-positive preserved: the bare interactive destroy, `terraform plan`,
+  `terraform destroy | tee log` (piping output onward), and `terraform plan |
+  grep destroy` all still pass. (`-auto-approve`/`prod` forms were already
+  blocked; the KNOWN_GAP note claiming the `-destroy` FLAG form "sidesteps the
+  verb lookahead" was itself wrong -- `\bdestroy\b` matches `-destroy` -- and is
+  corrected.)
+- **Proxy enforcement is now observable, so a misconfigured proxy is
+  detectable.** The #1 proxy failure is silent: an agent whose `base_url` points
+  straight at the provider is never inspected, and a proxy that sees no traffic
+  looks identical to one that works. `GET /health` now returns
+  `action_veto: {mode, enforcing, policies}`, and startup logs the enforcement
+  status loudly -- a WARNING when `tool_veto=off` (passthrough), an info banner
+  otherwise naming the upstream it fronts. Does not (cannot) prove the agent
+  routes through the proxy -- that stays the operator's `base_url`
+  responsibility, stated in the banner -- but "200 OK" no longer implies
+  "protected".
+
+### Notes
+
+- Bypass suite: `KNOWN_GAP` shrinks 2 -> 1 (the terraform pipe-yes gap closed;
+  the runtime-assembled binary name `$'\x72m' -rf` remains, disclosed). Suite
+  still 70/70 on claimed dangers, 1 disclosed false-block. Test floor lowered
+  to `known_gaps >= 1` (never a zero-gap claim).
+- Full suite: 1007 passed. New tests in `tests/test_v0410_gaps.py`.
+
 ## [0.4.9] -- two live-caught fixes: RM_RF filename FP; block outranks warn (2026-07-09)
 
 ### Fixed

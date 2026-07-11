@@ -51,11 +51,26 @@ TERRAFORM_PROD = Policy(
     name="TERRAFORM_PROD",
     patterns=(
         # apply/destroy may sit after global opts (e.g. `terraform -chdir=envs/prod
-        # destroy`); lookahead requires the verb, then match prod or -auto-approve
+        # destroy`); lookahead requires the verb, then match prod or -auto-approve.
+        # NB: `\bdestroy\b` already matches the `-destroy` flag form (the `-` is a
+        # word boundary), so `terraform apply -destroy -auto-approve` is covered here.
         r"\b(terraform|tofu)\b(?=.*\b(apply|destroy)\b).*(\bprod|-auto-approve)",
+        # AGENT INTERACTIVE-PROMPT BYPASS (0.4.10): a bare `terraform destroy`
+        # normally stops for a human ("Enter a value: yes"). An autonomous agent
+        # defeats that prompt by piping the confirmation in — `yes | terraform
+        # destroy`, `echo yes | terraform destroy`, `printf 'yes\n' | tofu destroy`.
+        # We key on the pipe TARGET, not the source: piping anything into
+        # `terraform/tofu … destroy` has no legitimate use (destroy reads config
+        # from files, never stdin) and is always an auto-confirm of an irreversible
+        # teardown. Keying on the target is also robust to the engine's data-scrub
+        # (quoted `'yes'` becomes __INERT__, so a source-side match would miss).
+        # A bare interactive `terraform destroy` (a human answers) still passes.
+        r"\|\s*(sudo\s+)?(terraform|tofu)\b(?=[^|]*\bdestroy\b)",
     ),
-    reason="terraform apply/destroy against production requires a human",
-    description="Blocks Terraform/OpenTofu apply/destroy touching prod or auto-approved.",
+    reason="terraform apply/destroy against production, auto-approved, or with the "
+           "interactive confirmation piped in (no human in the loop) requires a human",
+    description="Blocks Terraform/OpenTofu apply/destroy touching prod, auto-approved, "
+                "or with the interactive 'yes' prompt piped in (agent bypass).",
 )
 
 # SQL inter-keyword whitespace that ALSO swallows an inline `/* */` comment, so

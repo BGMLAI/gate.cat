@@ -63,10 +63,12 @@ def test_catch_rate_is_total_over_claimed_dangers():
     m = bs.metrics(bs.run())
     assert m["caught"] == m["claimed_dangers"]
     assert m["catch_rate"] == 1.0
-    # gaps are disclosed, not zero-claimed. The 2026-07-05 coverage expansion
-    # closed 3 former gaps (base64|sh, curl|sh, runtime rmtree) - the remaining
-    # gaps stay published. This count shrinks honestly as coverage grows.
-    assert m["known_gaps"] >= 2
+    # gaps are disclosed, not zero-claimed. Coverage expansions closed former
+    # gaps (2026-07-05: base64|sh, curl|sh, runtime rmtree; 0.4.10: the
+    # terraform-destroy agent pipe-yes bypass) - the remaining gaps stay
+    # published. This count shrinks honestly as coverage grows; the floor is >=1
+    # so at least one real limit is always disclosed (never a zero-gap claim).
+    assert m["known_gaps"] >= 1
 
 
 def test_report_is_ascii_and_lists_gaps():
