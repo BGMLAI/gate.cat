@@ -2,7 +2,33 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
-## [Unreleased]
+## [0.4.12] -- Cloud (E2EE), +34 more gaps closed, uppercase-flag audit (2026-07-12)
+
+### Added -- gate.cat Cloud (end-to-end encrypted off-machine veto history)
+
+The council red line for subscriptions, built and deployed: the off-machine copy
+of your veto history is stored by a server that **cannot read it**. Events are
+AES-256-GCM encrypted on your machine with a key we never receive; the server
+holds ciphertext + a timestamp. `gate.cat cloud verify` diffs the off-machine
+copy against your local log and catches an agent that rewrote local history after
+it shipped. `pip install gate-cat[cloud]`; the free gate never imports any of it.
+Full boundary in `THREAT_MODEL_CLOUD.md`. Subscription activation issues an API
+key on purchase (Stripe). Verified end-to-end over the wire.
+
+### Added -- 12 gap-closer classes (adversarial hunt round 2)
+
+34 more real irreversible shapes that still passed 0.4.11, now blocked/warned
+(0 false-positives; benign twins validated). Extends CLOUD_STORAGE_WIPE
+(gsutil `-a`/`rsync -d`, azcopy/mc/s3cmd wipes), STREAM_QUEUE_DESTROY (nats,
+kafka-storage format, rabbitmq forget-node), DB_DESTRUCTIVE_EXTRA (`UPDATE`
+without `WHERE`, flyway clean), DATASTORE_FLUSH_EXTRA (dropAllUsers, etcd restore
+from /dev/null), GIT_FORCE_PUSH (`+refspec`; `--force-with-lease` deliberately
+allowed as the safe form), GH_DESTRUCTIVE (glab), WINDOWS_DESTROY (vssadmin
+delete shadows, Clear-Disk -RemoveData, manage-bde -off, wmic shadowcopy),
+REGISTRY_IMAGE_DELETE (gem yank), SYSTEM_TAMPER (ip link/route, warn),
+CONTAINER_DESTROY (prune -af/swarm/podman reset, warn); plus two new classes
+CLOUD_PROTECTION_OFF (disable deletion-protection/backups) and IAC_STATE_DESTROY
+(pulumi/cdk destroy --force). Core: 38 -> 40 policies. Full suite 1218 passed.
 
 ### Fixed
 

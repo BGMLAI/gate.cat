@@ -338,6 +338,7 @@ GH_DESTRUCTIVE = Policy(
         # `gh api` DELETE via the short flag (-X DELETE) OR its long-form synonym
         # (--method DELETE) — the CLI accepts both, so matching only -X was a bypass.
         r"\bgh\s+api\b[^\n]*(?:-X\s*|--method\s+)(DELETE|delete)\b",
+        r"""\bglab\s+(?:repo|project)\s+delete\b|\bglab\s+api\s+-X\s*DELETE\b""",
     ),
     reason="permanent GitHub destruction (repo/release/secret delete) requires a human",
     description="Blocks gh repo/release/secret delete and gh api -X DELETE.",
@@ -356,6 +357,10 @@ CONTAINER_DESTROY = Policy(
         # (Codex round-4 under-block). Covers `docker compose` and `docker-compose`.
         r"\bdocker(?:\s+compose|-compose)\b[^\n]*\bdown\b[^\n]*(?:\s-[a-z]*v\b|\s--volumes\b)",
         r"\bpodman\b[^\n]*\b(rm\s+-[a-z]*f|rmi\b|volume\s+rm\b)",
+        r"""\bdocker\s+(?:image|network|builder|buildx|container)\s+prune\b(?=.*-[a-z]*f)""",
+        r"""\bdocker\s+(?:swarm\s+leave\b(?=.*--force)|stack\s+rm\b)""",
+        r"""\bpodman\s+(?:system\s+reset\b|volume\s+prune\b)""",
+        r"""\bdocker\s+buildx\s+rm\b(?=.*(?:--all-inactive|-f))""",
     ),
     reason="forced removal of a container/image/volume can lose data - review",
     description="Warns on docker/podman rm -f, rmi, volume rm/prune, system prune.",
@@ -602,6 +607,7 @@ RM_RF = Policy(
         # split flag tokens, either order: -r ... -f / -f ... -r (incl. -rv -f)
         r"\brm\b[^\n|;&]*(?<![^\s'\"])-[a-z]*r[a-z]*[^\n|;&]*(?<![^\s'\"])-[a-z]*f",
         r"\brm\b[^\n|;&]*(?<![^\s'\"])-[a-z]*f[a-z]*[^\n|;&]*(?<![^\s'\"])-[a-z]*r",
+        r"""\bgit\s+push\b[^\n]*\s\+[\w./-]+:[\w./-]+""",
     ),
     reason="recursive force delete requires a human",
     description="Blocks rm -rf and flag-order variants.",
@@ -675,6 +681,8 @@ SYSTEM_TAMPER = Policy(
         # -j DROP`) - a different flag entirely, not a firewall teardown.
         r"\bufw\s+(disable|reset)\b|\biptables\s+(?-i:-F)\b",  # firewall teardown
         r"\bkill\b[^\n]*\s-9?\s*1\b|\bkill\s+-(KILL|9)\s+1\b",  # kill init (pid 1)
+        r"""\bip\s+link\s+delete\b""",
+        r"""\bip\s+route\s+flush\b""",
     ),
     reason="disabling a service / removing a user / firewall teardown / crontab -r may be irreversible - review",
     description="Warns on userdel, systemctl disable/mask, chattr +i, crontab -r, firewall flush.",
@@ -763,6 +771,11 @@ CLOUD_STORAGE_WIPE = Policy(
         r"""\b(?:gsutil\b(?=.*\brm\b)(?=.*(?:-[a-z]*r\b|--recursive))|gcloud\s+storage\s+rm\b(?=.*(?:-r\b|--recursive)))(?=.*gs://)""",
         r"""\brclone\b(?=.*\b(?:purge|delete)\b|.*\bsync\b(?=.*--delete))(?=.*\w+:)(?!.*--dry-?run)""",
         r"""(?:\bazcopy\s+remove\b(?=.*--recursive)|\bmc\s+rm\b(?=.*--recursive)|\baz\s+storage\s+blob\s+delete-batch\b)""",
+        r"""\bgsutil\b(?=.*\brm\b)(?=.*\s-[a-z]*a\b)(?=.*gs://)""",
+        r"""\bgsutil\b(?=.*\brsync\b)(?=.*\s-[a-z]*d\b)(?=.*gs://)""",
+        r"""\bazcopy\s+sync\b(?=.*--delete-destination)""",
+        r"""\bmc\s+(?:rb\b(?=.*--force)|mirror\b(?=.*--remove))""",
+        r"""\bs3cmd\s+(?:del|rm)\b(?=.*--recursive)(?!.*(?:tmp|cache|scratch))""",
     ),
     reason="recursive/mirror deletion of cloud object storage (S3/GCS/Azure/rclone/minio) is irreversible on unversioned buckets",
     description="recursive/mirror deletion of cloud object storage (S3/GCS/Azure/rclone/minio) is irreversible on unversioned buckets",
@@ -775,6 +788,9 @@ STREAM_QUEUE_DESTROY = Policy(
         r"""\bkafka-consumer-groups\b(?=.*\s--reset-offsets\b)(?=.*\s--execute\b)""",
         r"""\bsqs\s+purge-queue\b|\bpubsub\s+(?:topics|subscriptions)\s+delete\b""",
         r"""\brabbitmqctl\s+(?:reset|delete_queue|purge_queue)\b""",
+        r"""\bnats\s+(?:stream|kv|consumer)\s+(?:rm|del|purge)\b""",
+        r"""\bkafka-storage\b[^\n]*\bformat\b""",
+        r"""\brabbitmqctl\s+forget_cluster_node\b""",
     ),
     reason="deleting/purging/resetting streaming topics, queues or consumer offsets drops in-flight and retained messages with no undo",
     description="deleting/purging/resetting streaming topics, queues or consumer offsets drops in-flight and retained messages with no un",
@@ -787,6 +803,10 @@ WINDOWS_DESTROY = Policy(
         r"""\b(?:rd|rmdir)\b[^\n]*?\s/s\b|\b(?:del|erase)\b(?=[^\n]*?\s/q\b)(?=[^\n]*?\s/[sf]\b)""",
         r"""(?:^|[;&|]\s*)format(?:\.com)?\s+[a-z]:|\bcipher\b[^\n]*?\s/w:""",
         r"""\breg\b[^\n]*?\sdelete\b[^\n]*?\s/f\b|\bbcdedit\b[^\n]*?\s/delete\b""",
+        r"""\bvssadmin\s+delete\s+shadows\b""",
+        r"""\bClear-Disk\b[^\n]*-RemoveData\b""",
+        r"""\bmanage-bde\b[^\n]*\s-off\b""",
+        r"""\bwmic\s+shadowcopy\s+delete\b""",
     ),
     reason="Windows/PowerShell/cmd catastrophic op (recursive force delete, volume format, cipher wipe, registry hive delete, boot-config delete)",
     description="Windows/PowerShell/cmd catastrophic op (recursive force delete, volume format, cipher wipe, registry hive delete, boot-c",
@@ -811,6 +831,8 @@ DB_DESTRUCTIVE_EXTRA = Policy(
         r"""\bDROP\s+(?:TABLESPACE|USER|DATABASE|SCHEMA|KEYSPACE|COLUMN|REPLICATION\s+SLOT)\b|\bALTER\s+TABLE\b(?:(?![;'"]).)*\bDROP\s+COLUMN\b""",
         r"""\bRESET\s+MASTER\b|\bpg_drop_replication_slot\b|\bDROP\s+REPLICATION\s+SLOT\b|\bTRUNCATE\s+(?:TABLE\s+)?["'`\w]""",
         r"""\bpg_ctl\b(?:(?![;&|]).)*\bstop\b(?:(?![;&|]).)*(?:-m\s+immediate|--mode[ =]immediate)|(?:-m\s+immediate|--mode[ =]immediate)(?:(?![;&|]).)*\bstop\b""",
+        r"""\bUPDATE\s+\S+\s+SET\b(?![^;]*\bWHERE\b)""",
+        r"""\bflyway\b[^\n]*\bclean\b""",
     ),
     reason="database-destroying op beyond DROP TABLE (dropdb, mysqladmin drop, DROP USER/COLUMN/TABLESPACE/KEYSPACE, RESET MASTER, TRUNCATE, immediate stop, drop replication slot)",
     description="database-destroying op beyond DROP TABLE (dropdb, mysqladmin drop, DROP USER/COLUMN/TABLESPACE/KEYSPACE, RESET MASTER, T",
@@ -823,6 +845,8 @@ DATASTORE_FLUSH_EXTRA = Policy(
         r"""(?:-X\s*(?:POST|DELETE)|--request\s*(?:POST|DELETE))[^\n]*://[^\n]*(?:/_delete_by_query\b|:9200/[A-Za-z0-9_.*-]+(?:/_doc)?\s*(?:['"]?\s*$|['"]?\s*[|;&]))""",
         r"""\bnodetool\b[^\n]*\bclearsnapshot\b""",
         r"""\bmongo(?:sh)?\b[^\n]*--eval\b[^\n]*\.(?:drop|dropDatabase)\s*\(|\bmongo(?:sh)?\b[^\n]*--eval\b[^\n]*\.deleteMany\s*\(\s*\{\s*\}\s*\)|\bredis-cli\b[^\n]*(?:--scan|\bscan\b|\bkeys\b)[^\n]*\|[^\n]*\bredis-cli\b[^\n]*\b(?:del|unlink|flushall|flushdb)\b""",
+        r"""\bdropAllUsersFromDatabase\b""",
+        r"""\betcdctl\b[^\n]*\bsnapshot\s+restore\b[^\n]*(?:/dev/null|/dev/zero)""",
     ),
     reason="datastore/search/etcd destruction (etcd prefix delete, ES delete-by-query/index, cassandra clearsnapshot, mongosh eval drop, redis scan+DEL)",
     description="datastore/search/etcd destruction (etcd prefix delete, ES delete-by-query/index, cassandra clearsnapshot, mongosh eval d",
@@ -859,6 +883,7 @@ REGISTRY_IMAGE_DELETE = Policy(
         r"""\boras\s+(?:manifest|blob|repo)\s+(?:delete|rm)\b""",
         r"""\baws\s+ecr\s+(?:batch-delete-image|delete-repository)\b""",
         r"""\bnpm\s+dist-tag\s+rm\b""",
+        r"""\bgem\s+yank\b""",
     ),
     reason="deleting a published container image / release asset / dist-tag makes a deployed artifact un-pullable",
     description="deleting a published container image / release asset / dist-tag makes a deployed artifact un-pullable",
@@ -873,6 +898,26 @@ SECRET_STORE_DELETE_EXTRA = Policy(
     ),
     reason="secret/identity store destruction (vault secrets disable / lease revoke -prefix / kv metadata delete / token revoke path, gcloud secrets delete)",
     description="secret/identity store destruction (vault secrets disable / lease revoke -prefix / kv metadata delete / token revoke path, gcloud secrets delete)",
+)
+
+CLOUD_PROTECTION_OFF = Policy(
+    name="CLOUD_PROTECTION_OFF",
+    patterns=(
+        r"""\bgcloud\s+sql\s+instances\s+patch\b(?=.*(?:--no-deletion-protection|--no-backup))""",
+        r"""\baws\s+rds\s+modify-db-instance\b(?=.*--no-deletion-protection)""",
+    ),
+    reason="disabling deletion-protection or backups on a prod database sets it up for silent, irreversible destruction",
+    description="disabling deletion-protection or backups on a prod database sets it up for silent, irreversible destruction",
+)
+
+IAC_STATE_DESTROY = Policy(
+    name="IAC_STATE_DESTROY",
+    patterns=(
+        r"""\bpulumi\s+(?:stack\s+rm|destroy)\b(?=.*(?:--yes|-y|--force))""",
+        r"""\bcdk\s+destroy\b(?=.*--force)""",
+    ),
+    reason="pulumi stack rm/destroy or cdk destroy --force tears down managed infrastructure and its state",
+    description="pulumi stack rm/destroy or cdk destroy --force tears down managed infrastructure and its state",
 )
 
 DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
@@ -926,6 +971,8 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     K8S_DESTROY_EXTRA,
     REGISTRY_IMAGE_DELETE,
     SECRET_STORE_DELETE_EXTRA,
+    CLOUD_PROTECTION_OFF,
+    IAC_STATE_DESTROY,
 )
 
 # Default payment policy instance (blocks every payment-shaped action).
@@ -976,4 +1023,6 @@ ALL_PRESETS: dict[str, Policy] = {
     "K8S_DESTROY_EXTRA": K8S_DESTROY_EXTRA,
     "REGISTRY_IMAGE_DELETE": REGISTRY_IMAGE_DELETE,
     "SECRET_STORE_DELETE_EXTRA": SECRET_STORE_DELETE_EXTRA,
+    "CLOUD_PROTECTION_OFF": CLOUD_PROTECTION_OFF,
+    "IAC_STATE_DESTROY": IAC_STATE_DESTROY,
 }
