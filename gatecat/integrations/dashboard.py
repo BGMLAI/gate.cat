@@ -258,6 +258,12 @@ def main(argv: list[str] | None = None) -> int:
     cmd = args[0] if args else "status"
     color = _use_color()
 
+    # `gate.cat cloud <init|report|verify|key>` -- the E2EE off-machine history CLI
+    if cmd == "cloud":
+        from gatecat import cloud_cli
+        cloud_cli.main(args[1:])
+        return 0
+
     if cmd in ("status", "", "-h", "--help") and cmd != "why":
         if cmd in ("-h", "--help"):
             print("gate.cat [status|stats|log|report [YYYY-MM]|why <command>]")

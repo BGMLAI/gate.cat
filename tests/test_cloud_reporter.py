@@ -24,6 +24,15 @@ import pytest
 
 from gatecat import cloud_reporter
 
+pytest.importorskip("cryptography")  # ship() now encrypts client-side
+
+
+def _decrypt(fake):
+    """Reverse the E2EE the reporter applied, to inspect what was redacted."""
+    from gatecat import cloud_crypto
+    key = cloud_crypto.load_or_create_key()
+    return [cloud_crypto.decrypt_event(key, e["ct"]) for e in fake.events]
+
 
 class FakeEndpoint:
     """In-memory stand-in for cloud.gate.cat -- records every batch sent to it."""
@@ -60,6 +69,8 @@ def world(tmp_path, monkeypatch):
     log = tmp_path / "veto_log.jsonl"
     log.write_text("\n".join(json.dumps(e) for e in EVENTS) + "\n", encoding="ascii")
     monkeypatch.setenv("GATECAT_VETO_LOG", str(log))
+    monkeypatch.setenv("GATECAT_CLOUD_KEY_FILE", str(tmp_path / "cloud.key"))
+    monkeypatch.delenv("GATECAT_CLOUD_PASSPHRASE", raising=False)
     monkeypatch.delenv("GATECAT_CLOUD_API_KEY", raising=False)
     monkeypatch.delenv("GATECAT_CLOUD_SEND_RAW", raising=False)
     monkeypatch.delenv("GATECAT_CLOUD_ENDPOINT", raising=False)
@@ -80,7 +91,7 @@ def test_ships_the_whole_log_in_batches(world, monkeypatch):
     _, fake = world
     monkeypatch.setattr(cloud_reporter, "BATCH", 25)
     r = cloud_reporter.ship(api_key="k")
-    assert r == {"shipped": 60, "reason": "ok"}
+    assert r["shipped"] == 60 and "ok" in r["reason"]
     assert [len(b) for b in fake.batches] == [25, 25, 10]
     assert all(a == "Bearer k" for a in fake.auth)
 
@@ -88,8 +99,10 @@ def test_ships_the_whole_log_in_batches(world, monkeypatch):
 def test_hash_mode_sends_no_raw_command_text(world):
     _, fake = world
     cloud_reporter.ship(api_key="k")
-    assert "rm -rf" not in json.dumps(fake.events)   # command text stayed home
-    e = fake.events[0]
+    # wire is ciphertext: neither the command nor its hash is readable off-machine
+    assert "rm -rf" not in json.dumps(fake.events)
+    assert all(set(e.keys()) == {"ts", "ct"} for e in fake.events)
+    e = _decrypt(fake)[0]
     assert e["ctx_sha256"] == hashlib.sha256(b"rm -rf /srv/0").hexdigest()
     assert e["redaction"] == "hash" and "context" not in e
 
@@ -108,7 +121,8 @@ def test_raw_mode_is_explicit_opt_in(world, monkeypatch):
     _, fake = world
     monkeypatch.setenv("GATECAT_CLOUD_SEND_RAW", "1")
     cloud_reporter.ship(api_key="k")
-    e = fake.events[0]
+    assert "rm -rf" not in json.dumps(fake.events)   # raw goes INSIDE the ciphertext
+    e = _decrypt(fake)[0]
     assert e["redaction"] == "raw" and e["context"] == "rm -rf /srv/0"
 
 
@@ -141,7 +155,7 @@ def test_malformed_lines_are_skipped_not_fatal(world):
     with log.open("a") as f:
         f.write("not json\n{broken\n")
     r = cloud_reporter.ship(api_key="k")
-    assert r == {"shipped": 60, "reason": "ok"}
+    assert r["shipped"] == 60 and "ok" in r["reason"]
 
 
 def test_module_entrypoint_reports_cloud_off(tmp_path):

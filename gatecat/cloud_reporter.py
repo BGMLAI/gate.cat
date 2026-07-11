@@ -23,7 +23,7 @@ import json
 import os
 import urllib.request
 
-DEFAULT_ENDPOINT = "https://cloud.gate.cat/v1/events"   # overridable for self-hosted
+DEFAULT_ENDPOINT = "https://gate.cat/cloud/v1/events"   # overridable for self-hosted
 STATE_SUFFIX = ".cloud_cursor"
 BATCH = 200
 
@@ -58,13 +58,23 @@ def _redact(event: dict, send_raw: bool) -> dict:
 
 def ship(endpoint: str | None = None, api_key: str | None = None,
          send_raw: bool | None = None, timeout: float = 10.0) -> dict:
-    """Ship new veto events. Returns a small stats dict; raises nothing."""
+    """Ship new veto events, END-TO-END ENCRYPTED. Returns stats; raises nothing.
+
+    Each event is encrypted on this machine (gatecat.cloud_crypto) with the local
+    account key before it is posted. The server stores an opaque blob plus a
+    cleartext timestamp (needed for ordering/retention) and nothing else — it
+    cannot read the policy, the reason, or the command. ``send_raw`` controls
+    only what goes INSIDE the encrypted blob (hash vs raw command); either way
+    the wire and the server see ciphertext.
+    """
     api_key = api_key or os.environ.get("GATECAT_CLOUD_API_KEY")
     if not api_key:
         return {"shipped": 0, "reason": "no api key (cloud off -- this is the default)"}
     endpoint = endpoint or os.environ.get("GATECAT_CLOUD_ENDPOINT", DEFAULT_ENDPOINT)
     if send_raw is None:
         send_raw = os.environ.get("GATECAT_CLOUD_SEND_RAW") == "1"
+    from gatecat import cloud_crypto  # [cloud] extra; only imported on the ship path
+    key = cloud_crypto.load_or_create_key()
     shipped = 0
     for path in _log_paths():
         cursor_file = path + STATE_SUFFIX
@@ -81,7 +91,9 @@ def ship(endpoint: str | None = None, api_key: str | None = None,
                 batch = []
                 for line in f:
                     try:
-                        batch.append(_redact(json.loads(line), send_raw))
+                        ev = _redact(json.loads(line), send_raw)
+                        batch.append({"ts": ev.get("ts"),
+                                      "ct": cloud_crypto.encrypt_event(key, ev)})
                     except Exception:
                         continue
                     if len(batch) >= BATCH:
@@ -94,7 +106,7 @@ def ship(endpoint: str | None = None, api_key: str | None = None,
                 cf.write(str(new_offset))
         except Exception as e:                       # fail-silent: never disturb the gate
             return {"shipped": shipped, "reason": f"stopped: {type(e).__name__}"}
-    return {"shipped": shipped, "reason": "ok"}
+    return {"shipped": shipped, "reason": "ok (e2e-encrypted)"}
 
 
 def _post(endpoint: str, api_key: str, batch: list, timeout: float) -> int:
