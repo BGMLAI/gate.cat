@@ -302,7 +302,16 @@ GIT_DESTRUCTIVE = Policy(
         # remote branch/tag not present locally (Codex round-4 under-block).
         r"\bgit\b[^\n]*\bpush\b[^\n]*\s(--mirror|--prune)\b",
         r"\bgit\s+tag\s+-d\b|\bgit\s+tag\s+--delete\b",
-        r"\bgit\s+branch\s+-D\b|\bgit\s+branch\s+(-d|--delete)\s+[^\n]*--force",
+        # Only the CAPITAL `-D` force-deletes a branch unconditionally. The
+        # lowercase `-d` is the BENIGN TWIN: git itself refuses to delete a
+        # branch not fully merged, so `git branch -d merged-branch` is safe and
+        # must PASS (project rule: benign twin passes). The walls run under
+        # re.IGNORECASE, so a plain `-D` would also match `-d`; pin the flag
+        # case-sensitively with `(?-i:-D)` (same precedent as GIT_FORCE_PUSH's
+        # `(?-i:-f)` below). The dangerous `-d --force` variant is still caught
+        # by the second alternative, which matches -d OR --delete followed by
+        # --force regardless of case.
+        r"\bgit\s+branch\s+(?-i:-D)\b|\bgit\s+branch\s+(-d|--delete)\s+[^\n]*--force",
         r"\bgit\s+update-ref\s+-d\b",
         # batch ref DELETE via `update-ref --stdin` (round-7 free-hand:
         # `git for-each-ref --format='delete %(refname)' | git update-ref --stdin`
@@ -394,10 +403,14 @@ DISK_DESTROY = Policy(
         # /dev/ (a space before the path is not a word boundary, which let
         # "blkdiscard /dev/sda" slip through) - match like the mkfs line.
         r"\bblkdiscard\b[^\n|;&]*/dev/",
-        # GPT/MBR partition-table nuke: sgdisk -Z/--zap-all, -o/--clear (new
-        # empty GPT), -g/--mbrtogpt. Read-only forms (-p print, -i info) have
-        # no Z/o/g flag and stay allowed.
-        r"\bsgdisk\b[^\n|;&]*(?:--zap-all|--clear|--mbrtogpt|\s-[a-zA-Z]*[Zog])[^\n|;&]*/dev/",
+        # GPT/MBR partition-table nuke: sgdisk -Z/--zap-all (both -z zap and -Z
+        # zap-all are destructive), -o/--clear (new empty GPT), -g/--mbrtogpt.
+        # The final class is case-PINNED to [Zzog] (?-i:...) because sgdisk flag
+        # case is significant and the walls run IGNORECASE: a plain [Zog] would
+        # also match the READ-ONLY -O/--print-mbr (benign twin - just dumps the
+        # MBR) and -G/--randomize-guids, false-blocking a print. Read-only forms
+        # (-p print, -i info, -l list, -O print-mbr) carry no z/Z/o/g and pass.
+        r"\bsgdisk\b[^\n|;&]*(?:--zap-all|--clear|--mbrtogpt|\s-[a-zA-Z]*(?-i:[Zzog]))[^\n|;&]*/dev/",
         # NVMe secure-format erases the whole namespace ("nvme format /dev/..").
         # Read-only nvme (list, id-ctrl, smart-log) has no "format" verb.
         r"\bnvme\s+format\b[^\n|;&]*/dev/",
@@ -432,6 +445,11 @@ PERMISSION_LOCKOUT = Policy(
         # recursive chmod to a no-access or world-writable mode on a real tree
         # (000/700-style lockout, 777 world-open); the -R makes it a tree-wide
         # irreversible access change. One-file chmod is not matched.
+        # -R is left case-INSENSITIVE on purpose (unlike git branch -D/sgdisk -Z):
+        # chmod/chown have no benign lowercase -r flag (lowercase r is a symbolic
+        # MODE bit like a+r, never a flag token here - the pattern also requires
+        # a following octal mode / system path), so both cases are equally the
+        # recursive lockout. Deliberate, not a case-sensitivity gap.
         r"\bchmod\b[^\n|;&]*\s-\w*R\w*\s[^\n|;&]*\b(000|00[0-7]|777|666)\b",
         # recursive chown of a home/system tree away from the owner
         r"\bchown\b[^\n|;&]*\s-\w*R\w*\s[^\n|;&]*(/home/|/etc\b|/usr\b|/var\b|~|\$HOME)",
@@ -651,7 +669,11 @@ SYSTEM_TAMPER = Policy(
         r"\bsystemctl\s+(disable|mask)\b",
         r"\bchattr\s+[-+][^\n]*i\b",       # +i locks a file, -i near a system path
         r"\bcrontab\s+-r\b",               # removes ALL cron jobs, no confirm
-        r"\bufw\s+(disable|reset)\b|\biptables\s+-F\b",  # firewall teardown
+        # firewall teardown. iptables -F (uppercase) = flush ALL rules. Pin the
+        # flag case-sensitively (?-i:-F): the walls run IGNORECASE, and lowercase
+        # -f/--fragment is a BENIGN rule-matching option (`iptables -A INPUT -f
+        # -j DROP`) - a different flag entirely, not a firewall teardown.
+        r"\bufw\s+(disable|reset)\b|\biptables\s+(?-i:-F)\b",  # firewall teardown
         r"\bkill\b[^\n]*\s-9?\s*1\b|\bkill\s+-(KILL|9)\s+1\b",  # kill init (pid 1)
     ),
     reason="disabling a service / removing a user / firewall teardown / crontab -r may be irreversible - review",
@@ -670,8 +692,11 @@ SECRET_READ = Policy(
         r"\b(cat|less|more|head|tail|strings|xxd|od|base64|nc|ncat)\b[^\n|;&]*"
         r"(id_rsa|id_ed25519|id_ecdsa|\.ssh/[^\n]*key|\.aws/credentials|\.gnupg|"
         r"/etc/shadow|\.pem\b|\.p12\b|\.pfx\b|\.netrc|\.pgpass|/etc/passwd\b)",
-        # piping ANY file to the network as a data body (curl -d @file, wget POST)
-        r"\bcurl\b[^\n]*(-d\s*@|--data(-binary|-raw)?\s*@|-T\s|--upload-file\s)",
+        # piping ANY file to the network as a data body (curl -d @file, wget POST).
+        # -T/--upload-file (uppercase) uploads a file. Pin (?-i:-T) - the walls run
+        # IGNORECASE and lowercase -t/--telnet-option is a BENIGN twin (a different
+        # curl flag), so a plain -T would false-warn on `curl -t ... telnet://`.
+        r"\bcurl\b[^\n]*(-d\s*@|--data(-binary|-raw)?\s*@|(?-i:-T)\s|--upload-file\s)",
         # exfil of a secret-looking file over a raw socket / to a remote host
         r"\b(scp|rsync)\b[^\n]*(id_rsa|\.aws/credentials|\.env\b|\.pem\b)[^\n]*@",
     ),

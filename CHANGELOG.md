@@ -2,6 +2,39 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- `GIT_DESTRUCTIVE` false-blocked the benign `git branch -d merged-branch`. The
+  walls run case-insensitively, so the `-D` (force-delete) pattern also matched
+  the lowercase `-d` -- but git itself REFUSES `-d` on a branch that is not fully
+  merged, making it the safe benign twin that the project rule says must pass.
+  The `-D` is now pinned case-sensitively with `(?-i:-D)` (same precedent as
+  `GIT_FORCE_PUSH`'s `(?-i:-f)`); the dangerous `-d --force` form is still caught
+  by the second alternative.
+
+### Fixed (audit of other uppercase short flags)
+
+A full sweep of every uppercase short flag in the deny-list for the same
+IGNORECASE-vs-benign-twin class turned up three more, now case-pinned:
+
+- `DISK_DESTROY` -- `sgdisk` flag class narrowed to `(?-i:[Zzog])`. A plain
+  `[Zog]` under IGNORECASE also matched the READ-ONLY `-O/--print-mbr` (and
+  `-G/--randomize-guids`), false-blocking a partition-table print. The destructive
+  `-Z/-z` (zap), `-o` (clear), `-g` (mbrtogpt) all still block -- this also makes
+  the previously-incidental lowercase `-z` match explicit.
+- `SYSTEM_TAMPER` -- `iptables (?-i:-F)`. Lowercase `-f/--fragment` is a benign
+  rule matcher, not a firewall flush.
+- `SECRET_READ` -- `curl (?-i:-T)`. Lowercase `-t/--telnet-option` is a different,
+  benign flag, not a file upload.
+
+Left case-insensitive on purpose (documented in-line): `PERMISSION_LOCKOUT`'s
+`chmod/chown -R` (no benign lowercase `-r` flag -- lowercase `r` is a symbolic
+mode bit, and the pattern also requires an octal mode / system path), and the
+`-X DELETE` walls (`GH_DESTRUCTIVE`, `HTTP_API_*`, ES) -- those anchor on the
+literal `DELETE` method token, which the benign `-x/--proxy` flag never takes.
+
 ## [0.4.11] -- +10 coverage classes, 67 real gaps closed (2026-07-11)
 
 An adversarial fan-out generated 444 concrete irreversible commands across 16

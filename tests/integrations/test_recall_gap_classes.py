@@ -52,6 +52,11 @@ CSO_WARN = [
 CSO_ALLOW = [
     "git push origin main",
     "git branch feature",
+    # benign twin of `git branch -D`: lowercase -d makes git REFUSE to delete a
+    # branch that is not fully merged, so it is safe and must pass (the walls run
+    # IGNORECASE, so -D is pinned case-sensitively to keep -d out of the block).
+    "git branch -d merged-branch",
+    "git branch --delete merged-branch",
     "git tag v1.0",
     "git reset --soft HEAD~1",
     "git checkout main",
