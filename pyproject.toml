@@ -80,6 +80,10 @@ gatecat = "gatecat.integrations.dashboard:main"
 # F8 (eng review E1): ship the Claude Code veto hook as a console script so
 # `pip install gate.cat` delivers it — no repo checkout, no sys.path hack.
 gatecat-hook = "gatecat.hooks.claude_code:_entry"
+# gated shell (0.4.12): the third enforcement point beside hook + proxy. A
+# drop-in `sh -c` gate for any agent that shells out (Codex/Gemini CLI/aider/
+# OpenClaw/...): block -> exit 2 (no exec), allow/warn -> exec the real shell.
+gatecat-shell = "gatecat.shell:_entry"
 # F3 (D1=A purge): the old `cacheback` / `cacheback-proxy` script names are
 # dropped, not repointed — no `cacheback` command survives the rename.
 gatecat-cli = "gatecat.cli:main"

@@ -2,7 +2,29 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
-## [0.4.12] -- Cloud (E2EE), +34 more gaps closed, uppercase-flag audit (2026-07-12)
+## [0.4.12] -- Cloud (E2EE), gated shell, +34 more gaps closed, uppercase-flag audit (2026-07-12)
+
+### Added -- `gatecat-shell`, a third enforcement point for any agent that shells out
+
+The hook only fires in Claude Code and the proxy only sees what an OpenAI-API
+model layer emits, but almost every agent (Codex, Gemini CLI, aider, OpenClaw,
+Hermes, Antigravity, a plain `subprocess`/`os.system` script) ultimately runs
+`sh -c "<command>"`. `gatecat-shell` is a drop-in gate at that exec point: it
+runs the same deterministic engine as the hook on the command, then **blocks
+(exit 2, the real shell never runs it) or `execv`s the real shell** with the
+byte-for-byte command. Modes: `-c "<cmd>"` (gate + exec, tolerates combined
+flags like `-lc`), `--check "<cmd>"` (gate only, exit 0/2 — the primitive for
+git hooks / CI wrappers / other agents, command via arg or stdin), and
+`--install-bash` (an `extdebug` DEBUG-trap snippet to source into a bash
+session). Fail-closed with hook parity: engine-import failure, a
+`GATECAT_EXTRA_POLICIES` fault, an evaluation error, a hung engine (watchdog,
+`GATECAT_SHELL_DEADLINE_S`), or a malformed `-c` all exit 2 without exec'ing;
+`GATECAT_VETO_SHADOW=1` proceeds except on those config faults. Real shell is
+`/bin/sh` (`GATECAT_SHELL_REAL` overrides). Honest trust class: as the agent's
+shell binary it is out-of-band enforcement (hook class); the DEBUG trap is
+weaker (a command can `trap - DEBUG`); either way it is a string gate, not a
+sandbox. New `gatecat-shell` console script; 30 e2e/contract tests
+(`tests/integrations/test_gatecat_shell.py`); full suite green.
 
 ### Added -- gate.cat Cloud (end-to-end encrypted off-machine veto history)
 
@@ -13,7 +35,13 @@ holds ciphertext + a timestamp. `gate.cat cloud verify` diffs the off-machine
 copy against your local log and catches an agent that rewrote local history after
 it shipped. `pip install gate-cat[cloud]`; the free gate never imports any of it.
 Full boundary in `THREAT_MODEL_CLOUD.md`. Subscription activation issues an API
-key on purchase (Stripe). Verified end-to-end over the wire.
+key on purchase (Stripe). Verified end-to-end over the wire. The store is
+crowd-hardened for launch day: a per-account append lock (concurrent POSTs never
+collide on `seq`), an 8 MB body cap (413 before the body is read — RAM-DoS
+guard), an app-layer per-IP rate limit (429 on a flood; nginx does not front the
+box with `limit_req`), a path-traversal-safe account id, and a `(mtime, size)`
+accounts cache that stays O(1) per request yet shows a brand-new subscriber's key
+immediately. 5 hardening contracts in `tests/test_cloud_server_hardening.py`.
 
 ### Added -- 12 gap-closer classes (adversarial hunt round 2)
 

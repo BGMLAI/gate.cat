@@ -96,6 +96,42 @@ in-process convention — a prompt injection can route around them. Only the hoo
 is enforcement the agent cannot skip. See
 [`examples/veto_integrations/`](examples/veto_integrations/) for adapter usage.
 
+## The gated shell — enforcement for any agent that shells out
+
+Not on Claude Code? The hook only fires there, and the proxy only sees what an
+OpenAI-API model layer emits. But **almost every agent ultimately runs a command
+through a shell** — `sh -c "<command>"`. `gatecat-shell` sits at that exec point:
+point the agent's shell at it and every command is vetted by the same
+deterministic engine the hook uses, *before* the real shell runs it.
+
+```bash
+# gate one command, then run it — block => exit 2, the real shell never sees it
+gatecat-shell -c "rm -rf ~/project"     # VETO [DELETE_ANALYZER] ... exit 2
+gatecat-shell -c "git status"           # allowed -> execs /bin/sh -c "git status"
+
+# gate only, no exec (the primitive for git hooks, CI wrappers, other agents)
+gatecat-shell --check "terraform destroy -auto-approve"   # exit 2
+echo "DROP TABLE users" | gatecat-shell --check           # exit 2
+
+# for any agent that drives a bash session you can seed: a DEBUG-trap gate
+eval "$(gatecat-shell --install-bash)"
+```
+
+Point an agent's execution at it wherever the tool lets you set the shell
+command (many honor `$SHELL` or a config exec setting). The real shell is
+`/bin/sh`; set `GATECAT_SHELL_REAL=/bin/bash` to change it. The gated command is
+passed through byte-for-byte — the gate saw the exact string it runs, so there
+is no re-parse gap.
+
+**Trust class, labeled honestly.** Set as the agent's *shell binary* (`-c`
+mode), this is enforcement outside the model's control — the same class as the
+hook. The `--install-bash` DEBUG trap is *weaker*: a command inside the session
+can `trap - DEBUG` to disarm it, so prefer setting the shell binary where you
+can. Either way it is a **string gate, not a sandbox** — it reads the command,
+it does not contain the process; run the agent in an OS sandbox *and* keep the
+gate in front. Fail-closed: an engine fault, an unparseable `-c`, or an
+evaluation error exits 2 rather than running the command.
+
 ## Truth Pipeline (koryto → gate → veto)
 
 One entry point that composes the SDK's verification blocks into a truth +
