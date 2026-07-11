@@ -731,6 +731,125 @@ AUTOEXEC_WRITE = Policy(
                 "systemd units, .claude/settings*.json, crontab-from-file.",
 )
 
+CLOUD_STORAGE_WIPE = Policy(
+    name="CLOUD_STORAGE_WIPE",
+    patterns=(
+        r"""\baws\s+s3\s+rm\b(?=.*(?:s3://|<))(?=.*--recursive)(?!.*(?:tmp|cache|scratch|/build\b|node_modules))(?!.*--dry-?run)""",
+        r"""\b(?:gsutil\b(?=.*\brm\b)(?=.*(?:-[a-z]*r\b|--recursive))|gcloud\s+storage\s+rm\b(?=.*(?:-r\b|--recursive)))(?=.*gs://)""",
+        r"""\brclone\b(?=.*\b(?:purge|delete)\b|.*\bsync\b(?=.*--delete))(?=.*\w+:)(?!.*--dry-?run)""",
+        r"""(?:\bazcopy\s+remove\b(?=.*--recursive)|\bmc\s+rm\b(?=.*--recursive)|\baz\s+storage\s+blob\s+delete-batch\b)""",
+    ),
+    reason="recursive/mirror deletion of cloud object storage (S3/GCS/Azure/rclone/minio) is irreversible on unversioned buckets",
+    description="recursive/mirror deletion of cloud object storage (S3/GCS/Azure/rclone/minio) is irreversible on unversioned buckets",
+)
+
+STREAM_QUEUE_DESTROY = Policy(
+    name="STREAM_QUEUE_DESTROY",
+    patterns=(
+        r"""\bkafka-topics\b(?=.*\s--delete\b)|\bkafka-delete-records\b""",
+        r"""\bkafka-consumer-groups\b(?=.*\s--reset-offsets\b)(?=.*\s--execute\b)""",
+        r"""\bsqs\s+purge-queue\b|\bpubsub\s+(?:topics|subscriptions)\s+delete\b""",
+        r"""\brabbitmqctl\s+(?:reset|delete_queue|purge_queue)\b""",
+    ),
+    reason="deleting/purging/resetting streaming topics, queues or consumer offsets drops in-flight and retained messages with no undo",
+    description="deleting/purging/resetting streaming topics, queues or consumer offsets drops in-flight and retained messages with no un",
+)
+
+WINDOWS_DESTROY = Policy(
+    name="WINDOWS_DESTROY",
+    patterns=(
+        r"""\b(?:remove-item|ri)\b(?=[^|\n]*?\s-f(?:o(?:rce)?)?\b)(?=[^|\n]*?\s-r(?:ec(?:urse)?)?\b)|\bclear-content\b(?=[^\n]*?\s-force\b)""",
+        r"""\b(?:rd|rmdir)\b[^\n]*?\s/s\b|\b(?:del|erase)\b(?=[^\n]*?\s/q\b)(?=[^\n]*?\s/[sf]\b)""",
+        r"""(?:^|[;&|]\s*)format(?:\.com)?\s+[a-z]:|\bcipher\b[^\n]*?\s/w:""",
+        r"""\breg\b[^\n]*?\sdelete\b[^\n]*?\s/f\b|\bbcdedit\b[^\n]*?\s/delete\b""",
+    ),
+    reason="Windows/PowerShell/cmd catastrophic op (recursive force delete, volume format, cipher wipe, registry hive delete, boot-config delete)",
+    description="Windows/PowerShell/cmd catastrophic op (recursive force delete, volume format, cipher wipe, registry hive delete, boot-c",
+)
+
+MACOS_DISK_DESTROY = Policy(
+    name="MACOS_DISK_DESTROY",
+    patterns=(
+        r"""\bdiskutil\s+(?:(?:ap)?fs\s+)?(?:erasedisk|erasevolume|erasecontainer|deletecontainer|deletevolume|secureerase|reformat|zerodisk|randomdisk)\b""",
+        r"""\btmutil\s+deletelocalsnapshots\b""",
+        r"""\bsecurity\s+delete-keychain\b""",
+        r"""\bsrm\b(?=(?:.*\s)?-\S*[rf])""",
+    ),
+    reason="macOS disk/keychain/snapshot destruction (diskutil erase/deleteContainer/secureErase, tmutil snapshot delete, keychain delete)",
+    description="macOS disk/keychain/snapshot destruction (diskutil erase/deleteContainer/secureErase, tmutil snapshot delete, keychain d",
+)
+
+DB_DESTRUCTIVE_EXTRA = Policy(
+    name="DB_DESTRUCTIVE_EXTRA",
+    patterns=(
+        r"""(?:^|[;&|]\s*|\s)(?:dropdb|dropuser)\b|\bmysqladmin\b(?:(?![;&|#]).)*\bdrop\s+\S""",
+        r"""\bDROP\s+(?:TABLESPACE|USER|DATABASE|SCHEMA|KEYSPACE|COLUMN|REPLICATION\s+SLOT)\b|\bALTER\s+TABLE\b(?:(?![;'"]).)*\bDROP\s+COLUMN\b""",
+        r"""\bRESET\s+MASTER\b|\bpg_drop_replication_slot\b|\bDROP\s+REPLICATION\s+SLOT\b|\bTRUNCATE\s+(?:TABLE\s+)?["'`\w]""",
+        r"""\bpg_ctl\b(?:(?![;&|]).)*\bstop\b(?:(?![;&|]).)*(?:-m\s+immediate|--mode[ =]immediate)|(?:-m\s+immediate|--mode[ =]immediate)(?:(?![;&|]).)*\bstop\b""",
+    ),
+    reason="database-destroying op beyond DROP TABLE (dropdb, mysqladmin drop, DROP USER/COLUMN/TABLESPACE/KEYSPACE, RESET MASTER, TRUNCATE, immediate stop, drop replication slot)",
+    description="database-destroying op beyond DROP TABLE (dropdb, mysqladmin drop, DROP USER/COLUMN/TABLESPACE/KEYSPACE, RESET MASTER, T",
+)
+
+DATASTORE_FLUSH_EXTRA = Policy(
+    name="DATASTORE_FLUSH_EXTRA",
+    patterns=(
+        r"""\betcdctl\b(?=[^\n]*\bdel(?:ete)?(?:-range)?\b)(?=[^\n]*--prefix\b)""",
+        r"""(?:-X\s*(?:POST|DELETE)|--request\s*(?:POST|DELETE))[^\n]*://[^\n]*(?:/_delete_by_query\b|:9200/[A-Za-z0-9_.*-]+(?:/_doc)?\s*(?:['"]?\s*$|['"]?\s*[|;&]))""",
+        r"""\bnodetool\b[^\n]*\bclearsnapshot\b""",
+        r"""\bmongo(?:sh)?\b[^\n]*--eval\b[^\n]*\.(?:drop|dropDatabase)\s*\(|\bmongo(?:sh)?\b[^\n]*--eval\b[^\n]*\.deleteMany\s*\(\s*\{\s*\}\s*\)|\bredis-cli\b[^\n]*(?:--scan|\bscan\b|\bkeys\b)[^\n]*\|[^\n]*\bredis-cli\b[^\n]*\b(?:del|unlink|flushall|flushdb)\b""",
+    ),
+    reason="datastore/search/etcd destruction (etcd prefix delete, ES delete-by-query/index, cassandra clearsnapshot, mongosh eval drop, redis scan+DEL)",
+    description="datastore/search/etcd destruction (etcd prefix delete, ES delete-by-query/index, cassandra clearsnapshot, mongosh eval d",
+)
+
+DISK_DESTROY_EXTRA = Policy(
+    name="DISK_DESTROY_EXTRA",
+    patterns=(
+        r"""\bsfdisk\b[^\n|;&]*\s--delete\b""",
+        r"""\bcryptsetup\b[^\n|;&]*(?:luksremovekey|lukskillslot|lukserase|\berase\b)""",
+        r"""\b(?:fdisk|cfdisk|gdisk)\b(?![^\n|;&]*\s(?:-l\b|--list\b|-u\b))[^\n|;&]*\s/dev/""",
+        r"""\bwipe\b[^\n|;&]*\s-[a-zA-Z]*[rf][a-zA-Z]*\b""",
+    ),
+    reason="disk/partition/crypto destruction (sfdisk --delete, cryptsetup luksRemoveKey/luksErase/erase, fdisk/gdisk on a device, wipe -rf)",
+    description="disk/partition/crypto destruction (sfdisk --delete, cryptsetup luksRemoveKey/luksErase/erase, fdisk/gdisk on a device, w",
+)
+
+K8S_DESTROY_EXTRA = Policy(
+    name="K8S_DESTROY_EXTRA",
+    patterns=(
+        r"""\bkubectl\b(?:\s+(?!--dry-run)\S+)*?\s+delete\b(?:\s+(?!--dry-run)\S+)*?\s+-[fk]\b(?:\s+(?!--dry-run)\S+)*$""",
+        r"""\bkubectl\b(?:\s+(?!--dry-run)\S+)*?\s+drain\b(?:\s+(?!--dry-run)\S+)*$""",
+        r"""\bkubectl\b(?:\s+(?!--dry-run)\S+)*?\s+delete\s+(?:nodes?|no)\b(?:\s+(?!--dry-run)\S+)+$""",
+        r"""\bkubectl\b(?:\s+(?!--dry-run)\S+)*?\s+delete\s+(?:pvc|pv|persistentvolumeclaims?|persistentvolumes?)\b(?:\s+(?!--dry-run)\S+)*?\s+--all\b(?:\s+(?!--dry-run)\S+)*$""",
+    ),
+    reason="kubectl destruction beyond a namespace (delete -f/-k manifests, drain, delete node, delete pvc/pv)",
+    description="kubectl destruction beyond a namespace (delete -f/-k manifests, drain, delete node, delete pvc/pv)",
+)
+
+REGISTRY_IMAGE_DELETE = Policy(
+    name="REGISTRY_IMAGE_DELETE",
+    patterns=(
+        r"""\b(?:crane|skopeo)\s+(?:[^\n]*\s)?delete\b""",
+        r"""\boras\s+(?:manifest|blob|repo)\s+(?:delete|rm)\b""",
+        r"""\baws\s+ecr\s+(?:batch-delete-image|delete-repository)\b""",
+        r"""\bnpm\s+dist-tag\s+rm\b""",
+    ),
+    reason="deleting a published container image / release asset / dist-tag makes a deployed artifact un-pullable",
+    description="deleting a published container image / release asset / dist-tag makes a deployed artifact un-pullable",
+)
+
+SECRET_STORE_DELETE_EXTRA = Policy(
+    name="SECRET_STORE_DELETE_EXTRA",
+    patterns=(
+        r"""\bvault\s+secrets\s+disable\b""",
+        r"""\bvault\s+(?:lease\s+revoke\b[^\n]*?-prefix\b|kv\s+metadata\s+delete\b|token\s+revoke\b[^\n]*?-mode[=\s]*path\b)""",
+        r"""\bgcloud\s+secrets\s+delete\b""",
+    ),
+    reason="secret/identity store destruction (vault secrets disable / lease revoke -prefix / kv metadata delete / token revoke path, gcloud secrets delete)",
+    description="secret/identity store destruction (vault secrets disable / lease revoke -prefix / kv metadata delete / token revoke path, gcloud secrets delete)",
+)
+
 DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     TERRAFORM_PROD,
     DB_DESTRUCTIVE,
@@ -772,6 +891,16 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     # content-vs-command (0.4.0): Write/Edit content is data; the residual risk
     # is the TARGET PATH being auto-executed later. Warn on both pathways.
     AUTOEXEC_WRITE,
+    CLOUD_STORAGE_WIPE,
+    STREAM_QUEUE_DESTROY,
+    WINDOWS_DESTROY,
+    MACOS_DISK_DESTROY,
+    DB_DESTRUCTIVE_EXTRA,
+    DATASTORE_FLUSH_EXTRA,
+    DISK_DESTROY_EXTRA,
+    K8S_DESTROY_EXTRA,
+    REGISTRY_IMAGE_DELETE,
+    SECRET_STORE_DELETE_EXTRA,
 )
 
 # Default payment policy instance (blocks every payment-shaped action).
@@ -812,4 +941,14 @@ ALL_PRESETS: dict[str, Policy] = {
     "CONTAINER_DESTROY": CONTAINER_DESTROY,
     "REGISTRY_PUBLISH": REGISTRY_PUBLISH,
     "AUTOEXEC_WRITE": AUTOEXEC_WRITE,
+    "CLOUD_STORAGE_WIPE": CLOUD_STORAGE_WIPE,
+    "STREAM_QUEUE_DESTROY": STREAM_QUEUE_DESTROY,
+    "WINDOWS_DESTROY": WINDOWS_DESTROY,
+    "MACOS_DISK_DESTROY": MACOS_DISK_DESTROY,
+    "DB_DESTRUCTIVE_EXTRA": DB_DESTRUCTIVE_EXTRA,
+    "DATASTORE_FLUSH_EXTRA": DATASTORE_FLUSH_EXTRA,
+    "DISK_DESTROY_EXTRA": DISK_DESTROY_EXTRA,
+    "K8S_DESTROY_EXTRA": K8S_DESTROY_EXTRA,
+    "REGISTRY_IMAGE_DELETE": REGISTRY_IMAGE_DELETE,
+    "SECRET_STORE_DELETE_EXTRA": SECRET_STORE_DELETE_EXTRA,
 }

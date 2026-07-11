@@ -2,6 +2,57 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.11] -- +10 coverage classes, 67 real gaps closed (2026-07-11)
+
+An adversarial fan-out generated 444 concrete irreversible commands across 16
+surfaces (AWS/GCP/Azure/k8s/databases/streaming/disk/secrets/registries/
+macOS/Windows/...) and replayed every one through the live 0.4.10 gate. 153
+dangerous shapes passed. This release closes 67 of them with 10 new deny-list
+classes, taking the core from 28 to 38 default policies. The remaining ~86 are
+either obfuscation (runtime-assembled/env-indirection -- the honest deny-list
+limit), paid-pack surfaces (Stripe/Vercel/etc.), or disposable-artifact cleanups
+the gate deliberately allows.
+
+### Added (10 policies, all block-level, benign-twin validated)
+
+- `CLOUD_STORAGE_WIPE` -- recursive/forced object-storage deletion
+  (`aws s3 rm --recursive`, `gsutil/gcloud storage rm -r`, `rclone purge/delete`,
+  `azcopy remove --recursive`, `mc rm --recursive`). Spares disposable prefixes
+  (tmp/cache/scratch/build) and additive sync, so CI cache cleanup still passes.
+- `STREAM_QUEUE_DESTROY` -- `kafka-topics --delete`, `kafka-delete-records`,
+  consumer-group offset reset `--execute`, `sqs purge-queue`, `pubsub … delete`,
+  `rabbitmqctl reset/delete_queue/purge_queue`.
+- `WINDOWS_DESTROY` -- PowerShell `Remove-Item -Recurse -Force` / `Clear-Content
+  -Force`, cmd `rd /s`, `del /q /s`, `format X:`, `cipher /w:`, `reg delete /f`,
+  `bcdedit /delete`. (Plain `rm` stays with `RM_RF` + the delete-analyzer so
+  disposable-temp cleanup keeps passing.)
+- `MACOS_DISK_DESTROY` -- `diskutil eraseDisk/deleteContainer/secureErase`,
+  `tmutil deletelocalsnapshots`, `security delete-keychain`, `srm -rf`.
+- `DB_DESTRUCTIVE_EXTRA` -- `dropdb`, `mysqladmin drop`, `DROP
+  TABLESPACE/USER/COLUMN/KEYSPACE`, `RESET MASTER`, `TRUNCATE`, `pg_ctl stop -m
+  immediate`, drop replication slot. (SQL in `-e/-c` args is matched; the engine
+  does not scrub command-bearing quoted args.)
+- `DATASTORE_FLUSH_EXTRA` -- `etcdctl del --prefix`, ES delete-by-query / delete
+  index, `nodetool clearsnapshot`, `mongosh … .drop()/.dropDatabase()/
+  .deleteMany({})`, redis scan-and-DEL. (Filtered `deleteMany({…})` still passes.)
+- `DISK_DESTROY_EXTRA` -- `sfdisk --delete`, `cryptsetup
+  luksRemoveKey/luksErase/erase`, `fdisk/gdisk` on a device, `wipe -rf`.
+- `K8S_DESTROY_EXTRA` -- `kubectl delete -f/-k`, `drain`, `delete node`, `delete
+  pvc --all` (dry-run spared).
+- `REGISTRY_IMAGE_DELETE` -- `crane/skopeo delete`, `oras manifest delete`,
+  `aws ecr batch-delete-image/delete-repository`, `npm dist-tag rm`.
+- `SECRET_STORE_DELETE_EXTRA` -- `vault secrets disable`, `vault lease revoke
+  -prefix`, `vault kv metadata delete`, `vault token revoke -mode=path`,
+  `gcloud secrets delete`.
+
+### Notes
+
+- Every new pattern is structure-keyed (verb + flag + resource), validated to
+  block the dangerous shapes AND pass a curated benign-twin corpus -- 0
+  false-positives introduced (the low-false-positive contract is what keeps the
+  gate installed). Full suite: 1194 passed. Tests: `tests/test_v0411_coverage.py`.
+- Not a safety proof: the ~86 still-passing shapes stay disclosed. `pip install -U gate-cat`.
+
 ## [0.4.10] -- two disclosed gaps closed from an outside review (2026-07-11)
 
 A user ran an independent multi-model gauntlet (GPT-4o + Grok + Gemini) against
