@@ -27,8 +27,8 @@ cloud_server = _il.module_from_spec(_spec); _spec.loader.exec_module(cloud_serve
 STRIPE_KEY = os.environ.get("STRIPE_KEY", "")
 ISSUED = os.environ.get("CLOUD_ISSUED_LOG", "/opt/bgml/gatecat-cloud/issued.jsonl")
 PRICE_TIER = {
-    "price_1Tr0na2Va7XV3fWYCU40u4ZT": "solo",
-    "price_1Tr0nc2Va7XV3fWYnUa29lL1": "team",
+    "price_1TsB84IesWcqqZ2OyrkmEFVQ": "solo",   # gate.cat Cloud Solo $9/mo
+    "price_1TsB84IesWcqqZ2OWn8HrgYR": "team",   # gate.cat Cloud Team $199/mo
 }
 try:
     PRICE_TIER.update(json.loads(os.environ.get("CLOUD_PRICE_TIER", "{}")))
