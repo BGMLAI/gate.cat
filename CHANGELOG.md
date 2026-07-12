@@ -2,6 +2,25 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+
+## [0.4.15] -- free-core agent-control layer (2026-07-12)
+
+Ships the local, free features built alongside 0.4.14 (held back from that
+release; now published). All local, all free -- safety and the ability to
+run/override your own command are never paywalled.
+
+### Added
+- Local on/off toggle (`gate.cat on` / `gate.cat off`, `~/.gatecat/protection.json`)
+  with a signed local audit; `_NEVER_DISARM` catastrophic classes stay blocked
+  even when protection is off.
+- Per-command manual override -- a human approves one blocked command (single-use,
+  TTL, hash-chained local audit); cannot approve `_NEVER_DISARM`.
+- Stagnation / loop detection wired into the gated shell -- visible stderr warning
+  on repeated no-progress commands (`GATECAT_STAGNATION_HALT=1` soft-halts).
+- State-file gate-watch -- the agent cannot flip its own guard or self-approve.
+- Local proxy budget-cap + loop-guard (halts by denying the next action) and a
+  client-decrypted cross-machine dashboard (`gate.cat dashboard`).
+
 ## [0.4.14] -- second adversarial gap-hunt + guard self-defense (2026-07-12)
 
 Two more adversarial fan-outs against the live 0.4.13 engine, every finding
