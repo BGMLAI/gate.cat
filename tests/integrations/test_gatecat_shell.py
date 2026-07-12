@@ -23,7 +23,7 @@ import sys
 
 import pytest
 
-from gatecat.shell import parse_dash_c
+from gatecat.shell import ShellParse, parse_dash_c
 
 MODULE = "gatecat.shell"
 DEV = "/dev/sda"
@@ -208,18 +208,115 @@ def test_script_file_passthrough_execs(tmp_path):
     assert marker.exists()
 
 
+# ---------- adversarial-review regressions: stream bypass + long-option parse ----------
+
+def test_dash_s_stdin_stream_is_gated(tmp_path):
+    # REGRESSION: `gatecat-shell -s` used to exec `sh -s` verbatim and run the
+    # whole piped command stream UNGATED. It must now gate the stream: a
+    # dangerous line blocks (exit 2) and its chained marker is never created.
+    marker = tmp_path / "s_ran"
+    code, _out, err = _run(["-s"], stdin=f"wipefs -af {DEV}\ntouch {marker}\n")
+    assert code == 2
+    assert "VETO" in err
+    assert not marker.exists()
+
+
+def test_dash_s_benign_stream_runs(tmp_path):
+    marker = tmp_path / "s_ok"
+    code, _out, _err = _run(["-s"], stdin=f"echo hi >/dev/null\ntouch {marker}\n")
+    assert code == 0
+    assert marker.exists()
+
+
+def test_piped_stdin_without_flags_is_gated(tmp_path):
+    # `gatecat-shell < script` (piped stdin, no -c, no -s, no script arg) is a
+    # command stream too and must be gated, not passed through ungated.
+    marker = tmp_path / "piped_ran"
+    code, _out, _err = _run([], stdin=f"rm -rf ~/projects/app\ntouch {marker}\n")
+    assert code == 2
+    assert not marker.exists()
+
+
+def test_script_file_with_danger_is_blocked(tmp_path):
+    # a script FILE whose contents contain a hard-block must be blocked before
+    # the real shell runs it.
+    marker = tmp_path / "script_ran"
+    script = tmp_path / "bad.sh"
+    script.write_text(f"wipefs -af {DEV}\ntouch {marker}\n")
+    code, _out, err = _run([str(script)])
+    assert code == 2
+    assert not marker.exists()
+
+
+def test_long_option_containing_c_is_not_a_dash_c_cluster():
+    # REGRESSION: `--norc` / `--rcfile` must NOT be parsed as a `-c` cluster
+    # (the old substring test misparsed them and gated a decoy string).
+    assert parse_dash_c(["--norc"]).mode == "passthrough"
+    # a real -c after a long option is still found correctly
+    assert parse_dash_c(["--norc", "-c", "echo hi"]) == ShellParse("gate", ["--norc"], "echo hi", [])
+    # a long option that CONSUMES an arg (--rcfile FILE) must not let a later -c
+    # slip past: its command is still parsed and gated.
+    assert parse_dash_c(["--rcfile", "/tmp/x", "-c", "echo hi"]) == ShellParse(
+        "gate", ["--rcfile", "/tmp/x"], "echo hi", [])
+
+
+def test_rcfile_then_dash_c_danger_is_blocked(tmp_path):
+    # end-to-end: `--rcfile F -c "<danger>"` must block, not exec ungated.
+    marker = tmp_path / "rc_ran"
+    rc = tmp_path / "rc"
+    rc.write_text("# empty rc\n")
+    code, _out, err = _run(["--rcfile", str(rc), "-c", f"wipefs -af {DEV}; touch {marker}"])
+    assert code == 2
+    assert not marker.exists()
+
+
+def test_short_arg_option_before_dash_c_is_gated(tmp_path):
+    # CRITICAL REGRESSION (review): `-o pipefail -c "<danger>"` used to reach the
+    # ungated passthrough (the `pipefail` arg looked like a script name and the
+    # scan stopped before -c). `-o` now consumes its argument, so -c is gated.
+    assert parse_dash_c(["-o", "pipefail", "-c", "echo hi"]) == ShellParse(
+        "gate", ["-o", "pipefail"], "echo hi", [])
+    marker = tmp_path / "o_ran"
+    code, _out, _err = _run(["-o", "pipefail", "-c", f"wipefs -af {DEV}; touch {marker}"])
+    assert code == 2
+    assert not marker.exists()
+
+
+def test_plus_flag_before_dash_c_is_gated(tmp_path):
+    # `+x -c "<danger>"` (bash set-flag form) must also be gated, not passed through.
+    assert parse_dash_c(["+x", "-c", "echo hi"]) == ShellParse("gate", ["+x"], "echo hi", [])
+    marker = tmp_path / "plus_ran"
+    code, _out, _err = _run(["+x", "-c", f"wipefs -af {DEV}; touch {marker}"])
+    assert code == 2
+    assert not marker.exists()
+
+
+def test_unclassifiable_prefix_before_dash_c_fails_closed(tmp_path):
+    # An unknown arg-taking option leaves a bare operand before -c that we cannot
+    # classify. Rather than exec ungated, fail closed (SHELL_AMBIGUOUS, exit 2).
+    assert parse_dash_c(["weirdname", "-c", "echo hi"]).mode == "ambiguous"
+    marker = tmp_path / "amb_ran"
+    code, _out, err = _run(["weirdname", "-c", f"echo x; touch {marker}"])
+    assert code == 2
+    assert "AMBIGUOUS" in err
+    assert not marker.exists()
+
+
 # ---------- parse_dash_c unit edges (pure function, no subprocess) ----------
 
 @pytest.mark.parametrize("argv,expected", [
-    (["-c", "echo hi"],            ([], "echo hi", [])),
-    (["-lc", "echo hi"],           (["-l"], "echo hi", [])),
-    (["-ic", "echo hi"],           (["-i"], "echo hi", [])),
-    (["-c", "cmd", "n", "a"],      ([], "cmd", ["n", "a"])),
-    (["-c"],                       ([], None, [])),
-    (["-l", "-c", "cmd"],          (["-l"], "cmd", [])),
+    (["-c", "echo hi"],            ShellParse("gate", [], "echo hi", [])),
+    (["-lc", "echo hi"],           ShellParse("gate", ["-l"], "echo hi", [])),
+    (["-ic", "echo hi"],           ShellParse("gate", ["-i"], "echo hi", [])),
+    (["-c", "cmd", "n", "a"],      ShellParse("gate", [], "cmd", ["n", "a"])),
+    (["-l", "-c", "cmd"],          ShellParse("gate", ["-l"], "cmd", [])),
 ])
 def test_parse_dash_c_forms(argv, expected):
     assert parse_dash_c(argv) == expected
+
+
+def test_parse_dash_c_malformed():
+    assert parse_dash_c(["-c"]).mode == "malformed"
 
 
 @pytest.mark.parametrize("argv", [
@@ -228,6 +325,7 @@ def test_parse_dash_c_forms(argv, expected):
     ["--"],                # end of options
     ["-l"],                # options only, no -c
     ["-"],                 # stdin marker
+    ["-o", "pipefail"],    # arg-consuming option, no -c
 ])
-def test_parse_dash_c_non_c_returns_none(argv):
-    assert parse_dash_c(argv) is None
+def test_parse_dash_c_non_c_is_passthrough(argv):
+    assert parse_dash_c(argv).mode == "passthrough"

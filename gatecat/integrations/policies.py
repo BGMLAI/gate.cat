@@ -121,7 +121,7 @@ CLOUD_DESTROY = Policy(
         # AWS destructive ops are `<verb>-<noun>` subcommands (terminate-instances,
         # delete-bucket) or `s3 rb`; the negative lookbehind keeps benign `--delete`
         # flags and `.../delete-after/` path segments from false-blocking
-        r"\baws\b.*(?<![\w/-])(delete-|terminate-|remove-)\w+",
+        r"\baws\b.*(?<![\w/-])(delete-|terminate-|remove-|deregister-)\w+",
         r"\baws\s+s3\s+rb\b",
         # gcloud/az: bare positional `delete` verb; excluded when it is part of a
         # filter (~delete, :delete), a flag (--delete), or a hyphenated value
@@ -135,13 +135,39 @@ CLOUD_DESTROY = Policy(
         # prod delete pvc x`) — the old form required the kind immediately after
         # `delete` and silently ALLOWed the flagged idiom. Require the `delete` verb
         # and a resource kind anywhere after it on the line.
-        r"\bkubectl\b(?=[^\n]*\bdelete\b)[^\n]*\b(ns|namespace|deploy|deployment|"
+        # kubectl OR the near-universal `k` alias. `\b(?:kubectl|k)\b` keeps the
+        # word boundary so `awk`/`take`/`k9s` do not trip it; the `delete` lookahead
+        # and a resource-kind token are still both required (a bare `k get` PASSES).
+        # crd/customresourcedefinition added: deleting a CRD cascade-deletes every
+        # custom resource of that type cluster-wide (finalizer teardown of the
+        # backing infra) - same tier as a namespace delete.
+        r"\b(?:kubectl|k)\b(?=[^\n]*\bdelete\b)[^\n]*\b(ns|namespace|deploy|deployment|"
         r"pvc|pv|pod|pods|secret|secrets|statefulset|sts|configmap|cm|job|cronjob|"
-        r"service|svc|replicaset|rs|ingress|daemonset|ds|all)\b",
+        r"service|svc|replicaset|rs|ingress|daemonset|ds|crd|crds|"
+        r"customresourcedefinitions?|all)\b",
         r"\bhelm\s+(uninstall|delete)\b",
+        # managed-cluster teardown wrappers: eksctl (AWS EKS) and doctl (DO managed
+        # k8s) are the most common real-world way to destroy a managed cluster - the
+        # native aws eks delete-cluster / az aks delete are already blocked, so these
+        # wrappers must be too. `delete cluster` (verb+resource) so create/get/upgrade
+        # cluster PASS. Local-dev clusters (kind/minikube/k3d) are deliberately NOT
+        # here - they are trivially recreatable, blocking them would be a false-block.
+        r"\beksctl\s+delete\s+cluster\b",
+        r"\bdoctl\s+kubernetes\s+cluster\s+delete\b",
+        # kubeadm reset reverts a node from kubeadm-initialized state (wipes
+        # /etc/kubernetes certs/config, tears down static-pod manifests, removes the
+        # local etcd member on a control-plane node -> on a single-CP cluster this
+        # destroys all cluster state). `reset` is the only destructive kubeadm verb;
+        # init/token/config/version/upgrade carry no `reset` and PASS.
+        r"\bkubeadm\b[^\n]*\breset\b",
+        # Argo CD `app delete ... --cascade` (the DEFAULT) deletes the Application
+        # plus every live k8s resource it manages (Deployments/PVCs/Services). The
+        # metadata-only `--cascade=false` (keeps the live resources) is the benign
+        # twin and is EXCLUDED; app get/list/sync carry no `delete` and PASS.
+        r"\bargocd\s+app\s+delete\b(?![^\n]*--cascade=false\b)",
     ),
     reason="cloud resource deletion requires a human",
-    description="Blocks delete/terminate calls to AWS/GCP/Azure/vast.ai/k8s/helm.",
+    description="Blocks delete/terminate calls to AWS/GCP/Azure/vast.ai/k8s/helm/eksctl/doctl/kubeadm/argocd.",
 )
 
 # Cloud key/secret destruction (2026-07-09): CLOUD_DESTROY keys off the
@@ -159,6 +185,28 @@ KMS_KEY_DESTROY = Policy(
     ),
     reason="destroying/disabling an encryption key makes all data encrypted under it permanently unrecoverable - requires a human",
     description="Blocks AWS KMS schedule-key-deletion/disable-key, gcloud KMS destroy, az keyvault key purge.",
+)
+
+# Audit-trail blinding (2026-07-12): disabling or deleting cloud audit logging
+# is the canonical first move of a covert intrusion (MITRE T1562.008, Impair
+# Defenses / Disable Cloud Logs). CLOUD_DESTROY keys on the delete-/terminate-/
+# remove- VERBS, so `stop-logging` and the cloudwatch/logs/config delete-* verbs
+# slip past it. Not always strictly irreversible (start-logging re-enables), but
+# every event during the blind window is lost forever and the whole point is to
+# act unobserved - there is no high-frequency benign counterpart, so a hard block
+# (not warn) is correct. Each rule fires on its danger, not its start-/describe-/
+# get- twin (aws cloudtrail start-logging / describe-trails / get-trail-status,
+# aws logs describe-log-groups all PASS - they carry no stop/delete verb).
+AUDIT_LOG_TAMPER = Policy(
+    name="AUDIT_LOG_TAMPER",
+    patterns=(
+        r"\baws\s+cloudtrail\s+(?:stop-logging|delete-trail|put-event-selectors)\b",
+        r"\baws\s+(?:cloudwatch|logs)\s+delete-(?:log-group|log-stream|alarms)\b",
+        r"\baws\s+config\s+(?:delete-\w+|stop-configuration-recorder)\b",
+        r"\baws\s+guardduty\s+delete-detector\b",
+    ),
+    reason="disabling or deleting cloud audit logging (CloudTrail/CloudWatch/Config/GuardDuty) blinds the audit trail - requires a human",
+    description="Blocks aws cloudtrail stop-logging/delete-trail, cloudwatch/logs delete-log-group/stream/alarms, config delete-*/stop-configuration-recorder, guardduty delete-detector.",
 )
 
 SECRET_STORE_DELETE = Policy(
@@ -825,6 +873,17 @@ WINDOWS_DESTROY = Policy(
         r"""\bClear-Disk\b[^\n]*-RemoveData\b""",
         r"""\bmanage-bde\b[^\n]*\s-off\b""",
         r"""\bwmic\s+shadowcopy\s+delete\b""",
+        # .NET recursive directory delete: [System.IO.Directory]::Delete(path, $true)
+        # - the $true 2nd arg is RECURSIVE, wiping the whole tree (semantically
+        # identical to Remove-Item -Recurse -Force, already blocked above). Anchored
+        # on the `, $true` recursive arg so the benign non-recursive single-arg form
+        # [System.IO.Directory]::Delete("C:\temp\build") stays ALLOW.
+        r"""\[(?:System\.)?IO\.Directory\]::Delete\s*\([^)]*,\s*\$?true\b""",
+        # wbadmin delete backup/systemstatebackup/catalog wipes Windows Server Backup
+        # recovery points (Inhibit System Recovery, MITRE T1490) - the Windows analogue
+        # of restic forget --prune / zfs destroy. get versions/status (read) and start
+        # backup (create) carry no `delete <backup>` verb and PASS.
+        r"""\bwbadmin\s+delete\s+(?:backup|systemstatebackup|catalog)\b""",
     ),
     reason="Windows/PowerShell/cmd catastrophic op (recursive force delete, volume format, cipher wipe, registry hive delete, boot-config delete)",
     description="Windows/PowerShell/cmd catastrophic op (recursive force delete, volume format, cipher wipe, registry hive delete, boot-c",
@@ -845,10 +904,19 @@ MACOS_DISK_DESTROY = Policy(
 DB_DESTRUCTIVE_EXTRA = Policy(
     name="DB_DESTRUCTIVE_EXTRA",
     patterns=(
-        r"""(?:^|[;&|]\s*|\s)(?:dropdb|dropuser)\b|\bmysqladmin\b(?:(?![;&|#]).)*\bdrop\s+\S""",
+        # mysqladmin OR the MariaDB fork binary `mariadb-admin` (the default admin
+        # client on modern MariaDB; mysqladmin is now a legacy symlink) running the
+        # destructive `drop <db>` verb. status/ping/create/reload/flush-logs PASS.
+        r"""(?:^|[;&|]\s*|\s)(?:dropdb|dropuser)\b|\b(?:mysqladmin|mariadb-admin)\b(?:(?![;&|#]).)*\bdrop\s+\S""",
         r"""\bDROP\s+(?:TABLESPACE|USER|DATABASE|SCHEMA|KEYSPACE|COLUMN|REPLICATION\s+SLOT)\b|\bALTER\s+TABLE\b(?:(?![;'"]).)*\bDROP\s+COLUMN\b""",
         r"""\bRESET\s+MASTER\b|\bpg_drop_replication_slot\b|\bDROP\s+REPLICATION\s+SLOT\b|\bTRUNCATE\s+(?:TABLE\s+)?["'`\w]""",
         r"""\bpg_ctl\b(?:(?![;&|]).)*\bstop\b(?:(?![;&|]).)*(?:-m\s+immediate|--mode[ =]immediate)|(?:-m\s+immediate|--mode[ =]immediate)(?:(?![;&|]).)*\bstop\b""",
+        # pg_resetwal/pg_resetxlog forcibly rewrites the WAL, discarding committed
+        # transactions and often leaving the cluster logically corrupt (a last-resort
+        # tool requiring a subsequent dump/reload) - strictly more destructive than
+        # the immediate-stop above. The read-only dry-run (-n / --dry-run, which just
+        # prints control values) is the benign twin and is EXCLUDED.
+        r"""\b(?:pg_resetwal|pg_resetxlog)\b(?![^\n|;&]*\s(?:-n\b|--dry-run\b))""",
         r"""\bUPDATE\s+\S+\s+SET\b(?![^;]*\bWHERE\b)""",
         r"""\bflyway\b[^\n]*\bclean\b""",
     ),
@@ -860,6 +928,12 @@ DATASTORE_FLUSH_EXTRA = Policy(
     name="DATASTORE_FLUSH_EXTRA",
     patterns=(
         r"""\betcdctl\b(?=[^\n]*\bdel(?:ete)?(?:-range)?\b)(?=[^\n]*--prefix\b)""",
+        # `etcdctl del "" --from-key` deletes the entire keyspace from the empty key
+        # onward (for a k8s cluster, the whole control-plane state) - the same full
+        # wipe as `--prefix ""` but via the `--from-key` range flag the --prefix rule
+        # missed. A single-key delete (`etcdctl del /myapp/config/flag`, no range
+        # flag) is the benign twin and PASSES.
+        r"""\betcdctl\b(?=[^\n]*\bdel(?:ete)?(?:-range)?\b)(?=[^\n]*--from-key\b)""",
         r"""(?:-X\s*(?:POST|DELETE)|--request\s*(?:POST|DELETE))[^\n]*://[^\n]*(?:/_delete_by_query\b|:9200/[A-Za-z0-9_.*-]+(?:/_doc)?\s*(?:['"]?\s*$|['"]?\s*[|;&]))""",
         r"""\bnodetool\b[^\n]*\bclearsnapshot\b""",
         r"""\bmongo(?:sh)?\b[^\n]*--eval\b[^\n]*\.(?:drop|dropDatabase)\s*\(|\bmongo(?:sh)?\b[^\n]*--eval\b[^\n]*\.deleteMany\s*\(\s*\{\s*\}\s*\)|\bredis-cli\b[^\n]*(?:--scan|\bscan\b|\bkeys\b)[^\n]*\|[^\n]*\bredis-cli\b[^\n]*\b(?:del|unlink|flushall|flushdb)\b""",
@@ -932,6 +1006,15 @@ CLOUD_PROTECTION_OFF = Policy(
         r"""\baws\s+s3api\s+put-bucket-versioning\b(?=.*Status=Suspended)""",
         # gcloud compute instance deletion-protection off (arms a later delete).
         r"""\bgcloud\s+compute\s+instances\s+update\b(?=.*--no-deletion-protection)""",
+        # 0.4.13 round-2: the CLUSTER form (asymmetric gap - the instance form was
+        # covered). rds/docdb/neptune modify-db-cluster / modify-global-cluster off.
+        r"""\baws\s+(?:rds|docdb|neptune)\s+modify-(?:db-cluster|global-cluster)\b(?=.*--no-deletion-protection)""",
+        # CloudFormation stack termination-protection off arms a later delete-stack.
+        r"""\baws\s+cloudformation\s+update-termination-protection\b(?=.*--no-enable-termination-protection)""",
+        # Redshift auto-snapshot retention 0 deletes all automated snapshots.
+        r"""\baws\s+redshift\s+modify-cluster\b(?=.*--automated-snapshot-retention-period\s+0\b)""",
+        # Azure Key Vault purge-protection off allows a hard delete of the vault/secrets.
+        r"""\baz\s+keyvault\s+update\b(?=.*--enable-purge-protection\s+false\b)""",
     ),
     reason="disabling deletion-protection or backups on a prod database sets it up for silent, irreversible destruction",
     description="disabling deletion-protection or backups on a prod database sets it up for silent, irreversible destruction",
@@ -1153,15 +1236,25 @@ DISK_ERASE_EXTRA = Policy(
         # dd writing to the mounted-root device alias /dev/root destroys the live
         # root filesystem (DISK_DESTROY's dd device family omitted `root`).
         r"\bdd\b[^\n|;&]*\bof=/dev/root\b",
-        # dd zero/random-filling a persistent DATA/secret file irreversibly destroys
-        # it. A copy `dd if=<real> of=x` and a scratch `of=/tmp/..`/`of=*.img` are
-        # benign twins and PASS.
-        r"\bdd\b[^\n|;&]*\bif=/dev/(?:zero|u?random)\b[^\n|;&]*"
-        r"\bof=(?:[^\n|;&]*(?:/root/|/home/|/etc/|/srv/|/opt/)"
-        r"|[^\n|;&]*\.(?:db|sqlite3?|sql|env|pem|key|kdbx|gpg|jks|keystore)\b)",
+        # dd zero/null/random-filling a persistent DATA/secret file irreversibly
+        # destroys it. Order-INDEPENDENT (if= before or after of=, round-2 edge) via
+        # lookaheads. A copy `dd if=<real> of=x` and a scratch `of=/tmp/..`/`of=*.img`
+        # are benign twins and PASS.
+        # of= path branch: persistent dirs (added /var/lib/ + /var/ so the default
+        # DB datadirs - /var/lib/mysql/ibdata1, /var/lib/postgresql/.../pg_control,
+        # base relfiles - are covered; ~ and $HOME for the tilde/home form), OR a
+        # secret/data-file by extension, OR an extensionless private-key BASENAME
+        # (id_rsa/id_ed25519/id_ecdsa) so `dd if=/dev/zero of=~/.ssh/id_rsa`
+        # (irreversible key loss) is caught. A copy `dd if=<real> of=x`, a scratch
+        # `of=/tmp/..`/`of=*.img`, and a device backup `dd if=/dev/sda of=~/x.img`
+        # (real-device source, excluded by the if=/dev/zero|random|null guard) PASS.
+        r"\bdd\b(?=[^\n|;&]*\bif=/dev/(?:zero|u?random|null)\b)"
+        r"(?=[^\n|;&]*\bof=(?:[^\n|;&]*(?:/root/|/home/|/etc/|/srv/|/opt/|/var/lib/|/var/|~/|\$HOME/)"
+        r"|[^\n|;&]*(?:\.(?:db|sqlite3?|sql|env|pem|key|kdbx|gpg|jks|keystore)\b"
+        r"|\bid_rsa\b|\bid_ed25519\b|\bid_ecdsa\b)))",
     ),
-    reason="whole-disk/namespace erase or zero-filling a persistent data file destroys all data - requires a human",
-    description="Blocks badblocks -w, mke2fs/mkntfs/mkswap on a device, nvme sanitize/write-zeroes, sg_format, dd of=/dev/root, dd zero-fill of a data file.",
+    reason="whole-disk/namespace erase or zero-filling a persistent data/DB/secret file destroys all data - requires a human",
+    description="Blocks badblocks -w, mke2fs/mkntfs/mkswap on a device, nvme sanitize/write-zeroes, sg_format, dd of=/dev/root, dd zero-fill of a data/DB-datadir/private-key file.",
 )
 
 OVERWRITE_DESTROY_EXTRA = Policy(
@@ -1173,11 +1266,18 @@ OVERWRITE_DESTROY_EXTRA = Policy(
         # `echo x > out.txt`) PASSES.
         r"(?:cat\s+/dev/null|:|echo(?:\s+-n)?\s*(?:''|\"\")?|printf\s*(?:''|\"\")?)\s*>\s*"
         r"[^\n|;&]*(?:/root/|~/|\.db\b|\.sqlite3?\b|\.kdbx\b)",
-        # cp /dev/null over a key/secret file (or into /etc/ssl/private) empties it.
-        r"\bcp\b[^\n|;&]*\s/dev/null\s+[^\n|;&]*(?:/etc/ssl/private/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.kdbx\b)",
-        # find -exec (truncate -s0 | unlink | dd of=) mass-empties/deletes matched
-        # files - the analyzer's find branch only sees -delete/-exec rm/shred.
-        r"\bfind\b[^\n]*-exec(?:dir)?\s+(?:truncate\b[^\n]*-s\s*0|unlink\b|dd\b[^\n]*\bof=)",
+        # cp /dev/null OR /dev/zero over a key/secret/data file empties (or zero-fills)
+        # it. round-2: added /dev/zero source and .db/.sqlite data extensions.
+        r"\bcp\b[^\n|;&]*\s/dev/(?:null|zero)\s+[^\n|;&]*"
+        r"(?:/etc/ssl/private/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.kdbx\b|\.db\b|\.sqlite3?\b)",
+        # find -exec (truncate -s0/--size 0 | unlink | dd of= | cp /dev/null|zero |
+        # tee) mass-empties/deletes matched files. round-2: added the truncate
+        # long-form flag, cp, and tee to the earlier truncate/unlink/dd set.
+        r"\bfind\b[^\n]*-exec(?:dir)?\s+(?:truncate\b[^\n]*(?:-s\s*0|--size[=\s]+0)"
+        r"|unlink\b|dd\b[^\n]*\bof=|cp\s+/dev/(?:null|zero)|tee\b)",
+        # a BARE `>` / `true >` redirect (no cat/:/echo/printf prefix) truncating a
+        # persistent data file. round-2: OVERWRITE_DESTROY needed a command prefix.
+        r"(?:^|[;&|]\s*|\btrue\s*)>\s*[^\n|;&]*(?:/root/|/home/|~/|\.db\b|\.sqlite3?\b|\.kdbx\b)",
         # rsync mirror-wipe: the --del ALIAS of --delete, and the /root protected
         # root, both missed by OVERWRITE_DESTROY. A --delete into a non-protected
         # backup mount (/mnt//media/) stays allowed (common backup idiom).
@@ -1205,8 +1305,14 @@ CLOUD_DESTROY_EXTRA = Policy(
 IAC_STATE_DESTROY_EXTRA = Policy(
     name="IAC_STATE_DESTROY_EXTRA",
     patterns=(
-        # terraform state surgery orphans real infra from its state. state list/show PASS.
-        r"\bterraform\s+state\s+rm\b",
+        # terraform/tofu state surgery orphans real infra from its state. state
+        # list/show/pull (read/export) PASS.
+        r"\b(?:terraform|tofu)\s+state\s+rm\b",
+        # `state push` OVERWRITES the authoritative remote state; a garbage/empty
+        # state orphans every managed resource so the next apply destroys+recreates
+        # the whole estate. -force just skips the lineage/serial safety check. Keyed
+        # on the WRITE subcommand only, so read/inspect (state pull/list/show/mv) PASS.
+        r"\b(?:terraform|tofu)\s+state\s+push\b",
         r"\bterraform\s+workspace\s+delete\b(?=[^\n]*(?:-force|--force))",
         r"\bpulumi\s+(?:down|state\s+delete)\b",
         # terragrunt run-all destroy (every module) or a NON-INTERACTIVE/auto-approve
@@ -1300,6 +1406,28 @@ K8S_NODE_DELETE_EXTRA = Policy(
     description="Blocks kubectl/k delete node (slash form and the k alias).",
 )
 
+K8S_CRI_DESTROY = Policy(
+    name="K8S_CRI_DESTROY",
+    # The containerd/CRI-O runtime CLIs (crictl/ctr/nerdctl) operate BENEATH the
+    # kubectl-anchored walls: `crictl rmp -a -f` force-removes every pod at the
+    # runtime layer with no k8s-level record - same severity class as
+    # `kubectl delete pod --all`. Anchored on the remove SUBCOMMANDS (rmp/rmi/rm),
+    # so read verbs (crictl ps/pods/images/inspect/logs/stats/info,
+    # ctr containers/images list, nerdctl ps) carry none and PASS.
+    patterns=(
+        # crictl remove-pod / remove-image (any flags), and crictl rm with a mass
+        # -a/--all flag. `crictl ps -a` is a READ (ps subcommand) and does NOT match.
+        r"\bcrictl\b[^\n]*\b(?:rmp|rmi)\b",
+        r"\bcrictl\b[^\n]*\brm\b[^\n]*(?:-[a-zA-Z]*a[a-zA-Z]*|--all)\b",
+        # nerdctl force/mass remove of containers or images.
+        r"\bnerdctl\b[^\n]*\b(?:rm|rmi)\b[^\n]*(?:-[a-zA-Z]*[af][a-zA-Z]*|--all|--force)\b",
+        # containerd `ctr` container/image/task destruction.
+        r"\bctr\b[^\n]*\b(?:containers?|images?|task|snapshots?)\b[^\n]*\b(?:rm|delete|del|kill)\b",
+    ),
+    reason="removing pods/containers/images at the container-runtime layer (crictl/ctr/nerdctl) destroys live workloads beneath the control plane - requires a human",
+    description="Blocks crictl rmp/rmi and mass rm, nerdctl rm/rmi -f/-a, ctr containers/images/task rm.",
+)
+
 SECRET_STORE_DELETE_EXTRA2 = Policy(
     name="SECRET_STORE_DELETE_EXTRA2",
     patterns=(
@@ -1330,6 +1458,53 @@ SECRET_FILE_DELETE = Policy(
     description="Warns on rm/shred of *.pem/*.key/*.p12/*.pfx/*.kdbx/.env.production files.",
 )
 
+# A persistent SECRET/credential destination path: a private-key basename, an
+# .ssh/ file, a home/root credential store (.aws/credentials, .netrc, .pgpass,
+# .kube/config, .gnupg), or a key/cert file by extension. Shared by the overwrite
+# rules below so they all agree on WHAT counts as a protected secret target. NOT
+# a whole-dir match (so `~/.ssh/known_hosts` / `~/.ssh/config`, regenerable, are
+# NOT protected - only the key basenames and the named credential stores are).
+_SECRET_DEST = (
+    r"(?:\bid_rsa\b|\bid_ed25519\b|\bid_ecdsa\b|\bidentity\b"
+    r"|/\.ssh/[^\n|;&/]*(?:_key|id_[a-z0-9]+)\b"
+    r"|\.aws/credentials\b|\.netrc\b|\.pgpass\b|\.kube/config\b|\.gnupg\b"
+    r"|/etc/ssl/private/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.kdbx\b|\.gpg\b|\.jks\b|\.keystore\b)"
+)
+
+SECRET_FILE_OVERWRITE = Policy(
+    name="SECRET_FILE_OVERWRITE",
+    # In-place OVERWRITE of a persistent private key / credential file with an
+    # empty or random source - irreversible identity/access loss (no trash, no VCS
+    # for a dotfile secret). SECRET_DELETE covers rm/shred/mv of these paths;
+    # KEY_DELETE-class walls miss the CONTENT-overwrite verbs (cp/install/tee/
+    # openssl). Each rule keys on the empty/zero/random SOURCE + a secret DEST, so
+    # the benign twins stay ALLOW: `cp /dev/null ~/scratch/empty.txt` (non-secret
+    # dest), `echo '[default]' | tee ~/.aws/credentials` (REAL content, not
+    # </dev/null), `openssl rand -out /tmp/nonce.bin` (non-secret dest),
+    # `install -m 0755 build/mybin /usr/local/bin/mybin` (real source),
+    # `install -d ~/.ssh` (dir create), appending to authorized_keys (>>).
+    patterns=(
+        # cp /dev/null | /dev/zero  ->  a secret file (empties/zero-fills it).
+        r"\bcp\b[^\n|;&]*\s/dev/(?:null|zero)\s+[^\n|;&]*" + _SECRET_DEST,
+        # install /dev/null | /dev/zero  ->  a secret file (0-byte copy over key).
+        # `install -d` (dir create, no source file) is excluded.
+        r"\binstall\b(?![^\n|;&]*\s-d\b)[^\n|;&]*\s/dev/(?:null|zero)\s+[^\n|;&]*" + _SECRET_DEST,
+        # tee <secret> < /dev/null  (O_TRUNC + empty stdin = blank the file), and
+        # the `cat /dev/null | tee <secret>` pipe form. The `< /dev/null` / `cat
+        # /dev/null |` empty-input signature is REQUIRED, so a real-content
+        # `echo ... | tee <secret>` (writing actual creds) is NOT matched. -a
+        # (append) tee is also not this truncating form.
+        r"\btee\b(?![^\n|;&]*\s-a\b)[^\n|;&]*" + _SECRET_DEST + r"[^\n|;&]*<\s*/dev/null\b",
+        r"\bcat\s+/dev/null\s*\|\s*tee\b(?![^\n|;&]*\s-a\b)[^\n|;&]*" + _SECRET_DEST,
+        # openssl rand -out <secret>  truncates the file and writes random bytes,
+        # clobbering the key with garbage. -out to a non-secret path (a nonce/token
+        # file) is the benign twin and PASSES.
+        r"\bopenssl\s+rand\b[^\n|;&]*\s-out\s+[^\n|;&]*" + _SECRET_DEST,
+    ),
+    reason="overwriting a private key / credential file in place with an empty or random source is irreversible identity/access loss - requires a human",
+    description="Blocks cp/install /dev/null over a key, tee <key> </dev/null, cat /dev/null | tee <key>, openssl rand -out <key>.",
+)
+
 WINDOWS_DESTROY_EXTRA = Policy(
     name="WINDOWS_DESTROY_EXTRA",
     patterns=(
@@ -1351,11 +1526,199 @@ WINDOWS_DESTROY_EXTRA = Policy(
     description="Blocks Format-Volume, Remove-Partition, Win32_ShadowCopy|Remove-CimInstance, diskpart clean, Clear-Content on a data file.",
 )
 
+# System-path token (case-insensitive) for the ownership/ACL lockout rules below.
+_WIN_SYSTEM_PATH = (
+    r"(?:C:\\Windows|C:\\Program\s?Files|%SystemRoot%|%WinDir%|\\Windows\\System32|\\System32)"
+)
+
+WINDOWS_PERMISSION_LOCKOUT = Policy(
+    name="WINDOWS_PERMISSION_LOCKOUT",
+    # Recursively seizing ownership of / rewriting ACLs on a SYSTEM tree
+    # (C:\Windows, Program Files, System32) strips SYSTEM/TrustedInstaller/
+    # Administrators access across the OS - offline-repair territory, the Windows
+    # analogue of `chmod -R 000 /etc` / `chown -R nobody /` (PERMISSION_LOCKOUT).
+    # SCOPED TO SYSTEM PATHS so the benign twin - takeown/icacls on the user's OWN
+    # project folder (`takeown /f C:\Users\me\myproject /r`) - stays ALLOW.
+    patterns=(
+        # recursive takeown (/r or /R) of a system tree.
+        r"\btakeown\b(?=[^\n]*\s/[rR]\b)(?=[^\n]*" + _WIN_SYSTEM_PATH + r")",
+        # icacls ACL rewrite (grant/deny/inheritance:r/setowner/reset) on a system
+        # tree with the recurse flag (/t or /T) - the actually-irreversible lockout.
+        r"\bicacls\b[^\n]*" + _WIN_SYSTEM_PATH + r"[^\n]*"
+        r"(?:/grant|/deny|/inheritance:r|/setowner|/reset)[^\n]*\s/[tT]\b",
+        r"\bicacls\b[^\n]*(?:/grant|/deny|/inheritance:r|/setowner|/reset)[^\n]*"
+        + _WIN_SYSTEM_PATH + r"[^\n]*\s/[tT]\b",
+    ),
+    reason="recursively seizing ownership or rewriting ACLs on a Windows system tree (C:\\Windows/System32/Program Files) locks the OS out of servicing/boot - requires a human",
+    description="Blocks recursive takeown and icacls grant/deny/inheritance:r/setowner/reset /t on system paths; own-project takeown/icacls PASS.",
+)
+
+# ---------------------------------------------------------------------------
+# FREE-CORE self-defense family (2026-07-12): the guard must not be killable /
+# removable / disarmable by the very agent it guards, and the agent must not be
+# able to blind the HOST's own security controls (MAC, firewall, audit, EDR).
+# ADD-ONLY. Two policies:
+#   GUARD_TAMPER              - attacks on gate.cat itself (its process, its
+#                               package/entrypoint, its enforcement env-toggles).
+#   SECURITY_CONTROL_DISABLE  - disabling host MAC/firewall/audit/EDR/log agents
+#                               and shell-session track-hiding / gate disarm.
+# Design: tight NAME allowlists, never broad verbs. A benign twin that reuses
+# the same verb on a DIFFERENT name (pkill node, systemctl stop myapp, pip
+# uninstall requests, iptables -L) matches NOTHING here (0-FP is the product).
+#
+# The guard-name token below matches the two product spellings (gatecat /
+# gate.cat) with the optional component suffixes (-hook / -shell / -proxy), and
+# tolerates the bracket-regex obfuscation g[a]tecat. Variable-indirection
+# (N=gate; pkill -f ${N}cat) is handled UPSTREAM by the engine's de-obfuscation
+# escalation, which resolves ${N}cat -> gatecat before these walls run - so the
+# base `pkill -f gatecat` pattern covers it too.
+_GUARD_NAME = r"g\[?a\]?t\[?e\]?[.\[\]]*c\[?a\]?t"          # gatecat | gate.cat | g[a]tecat
+_GUARD = r"(?:%s)(?:-(?:hook|shell|proxy))?" % _GUARD_NAME  # + optional component suffix
+
+# Security-critical unit / process NAMES a host relies on for confinement,
+# perimeter, forensics, and EDR. ONLY these names are protected; stopping/killing
+# any OTHER unit or process (myapp, nginx, postgresql, gunicorn) is untouched.
+_SECURITY_UNIT = (
+    r"(?:apparmor|firewalld|auditd|ufw|nftables|osqueryd|osquery|"
+    r"falcon-sensor|falcon|crowdstrike|clamav|clamd|wazuh-agent|wazuh|"
+    r"amazon-ssm-agent|google-cloud-ops-agent|azuremonitoragent|filebeat|"
+    r"rsyslog|sshd|gatecat)"
+)
+
+GUARD_TAMPER = Policy(
+    name="GUARD_TAMPER",
+    # BLOCK, not warn: an agent killing/removing/disarming the guard that gates
+    # it is never a legitimate action for the guarded agent to take. The name
+    # allowlist makes it unambiguous - the developer's own `pkill node` / `pip
+    # uninstall requests` / `rm ~/.venv/bin/mytool` reuse the same verbs on a
+    # DIFFERENT name and are not matched.
+    patterns=(
+        # 1) kill the guard PROCESS by name: pkill/killall (any signal/-f/--signal).
+        r"\b(?:pkill|killall)\b[^\n]*" + _GUARD,
+        # kill chains that resolve the guard PID indirectly then SIGKILL it -
+        # the guard name is in the pgrep/pidof/ps pattern or a *.pid path, not the
+        # kill argv. Match `kill` co-occurring with the guard name via any of them.
+        r"\bkill\b[^\n]*(?:pgrep|pidof|ps\b|" + _GUARD_NAME + r"[^\n]*\.pid)[^\n]*" + _GUARD,
+        r"\bkill\b[^\n]*" + _GUARD_NAME + r"[^\n]*\.pid",
+        # pgrep/ps ... gatecat ... | ... kill  (pipe form; guard name at pgrep stage)
+        r"\b(?:pgrep|pidof|ps)\b[^\n]*" + _GUARD + r"[^\n]*\|[^\n]*\bkill\b",
+        # 2) uninstall the guard PACKAGE (pip / uv / python -m pip).
+        r"\b(?:pip\d?|uv)\b[^\n]*\buninstall\b[^\n]*" + _GUARD,
+        r"\bpython\d?\b[^\n]*\bpip\b[^\n]*\buninstall\b[^\n]*" + _GUARD,
+        # 3) delete / move / strip-exec the guard console-script or package dir.
+        r"\b(?:rm|unlink)\b[^\n]*" + _GUARD + r"\b",
+        r"\bmv\b[^\n]*" + _GUARD + r"\b",
+        r"\bchmod\b[^\n]*(?:which\s+)?" + _GUARD + r"\b",
+        # 4) GATECAT_* enforcement toggles: export/unset/inline-prefix/plain assign.
+        #    Any manipulation of a GATECAT_* var (disable, enforce=0, blanking or
+        #    unsetting GATECAT_EXTRA_POLICIES, repointing GATECAT_REAL_SHELL) can
+        #    silently weaken or bypass the gate for the session.
+        r"\b(?:export|unset)\s+GATECAT_\w*",
+        r"(?:^|[\s;&|])GATECAT_\w+\s*=",
+        # 5) disarm the Claude Code hook REGISTRATION: deleting or surgically
+        #    editing .claude/settings(.local).json removes the pre-action hook so
+        #    the next run is unguarded. (AUTOEXEC_WRITE already WARNs on WRITES to
+        #    this file; rm/sed-delete of it is the hard self-defense case.) The
+        #    path is pinned to .claude/settings*.json - deleting any OTHER config
+        #    (~/.config/myapp/config.json) is untouched.
+        r"\b(?:rm|unlink|shred)\b[^\n]*\.claude[/\\]settings(?:\.local)?\.json\b",
+        r"\bsed\b[^\n]*-i[^\n]*\.claude[/\\]settings(?:\.local)?\.json\b",
+        # 6) delete the guard's extra-policy state file (~/.gatecat/*): rm slips
+        #    past the truncation walls that cover `echo '' >`/`:>` on the same file.
+        #    (The _GUARD rm pattern above already covers ~/.gatecat/ via the name,
+        #    this is kept explicit for the policies.yaml / state case.)
+        r"\b(?:rm|unlink|shred)\b[^\n]*[/\\]\.gatecat[/\\]",
+    ),
+    reason="killing/removing/disarming the gate.cat guard (its process, package, "
+           "entrypoint, or GATECAT_* enforcement env) disables the veto that guards "
+           "this agent - requires a human",
+    description="Blocks pkill/killall/kill of gatecat|gate.cat|gatecat-hook/shell/proxy, "
+                "pip/uv uninstall of the guard, rm/mv/chmod of its entrypoint, and "
+                "GATECAT_* enforcement toggles. Benign same-verb ops on other names PASS.",
+)
+
+SECURITY_CONTROL_DISABLE = Policy(
+    name="SECURITY_CONTROL_DISABLE",
+    # BLOCK: turning off the host's mandatory-access-control (SELinux/AppArmor),
+    # firewall, audit daemon, EDR sensor, or log-shipping agent blinds the primary
+    # host defenses. The unit/name allowlist keeps `systemctl stop myapp`,
+    # `systemctl restart nginx`, `iptables -L`, `ufw status` fully allowed.
+    patterns=(
+        # -- SELinux --
+        #    Only DISABLING enforcement is dangerous. Writing 0/Permissive/disabled
+        #    to the enforce node (or `setenforce 0`) turns MAC off; writing
+        #    1/Enforcing HARDENS the host and MUST pass, mirroring setenforce 0 vs 1.
+        #    The value sits BEFORE the redirect/pipe (`echo 0 > node`,
+        #    `echo 0 | tee node`), so match the off-value up to the `>`/`| tee`.
+        r"\bsetenforce\b\s+(?:0|Permissive)\b",           # permissive mode NOW
+        # redirect form: echo/printf <off-value> > /sys/fs/selinux/enforce
+        r"\b(?:0|Permissive|disabled)\b[^\n>]*>\s*/sys/fs/selinux/enforce\b",
+        # tee, value BEFORE the pipe: echo <off-value> | [sudo] tee <node>
+        r"\b(?:0|Permissive|disabled)\b[^\n|]*\|[^\n|]*\btee\b[^\n]*/sys/fs/selinux/enforce\b",
+        # tee, value AFTER the node via herestring: tee <node> <<< 0
+        r"\btee\b[^\n]*/sys/fs/selinux/enforce\b[^\n]*<<<\s*(?:0|Permissive|disabled)\b",
+        r"SELINUX\s*=\s*disabled",                        # persistent config rewrite
+        # -- AppArmor --
+        r"\baa-teardown\b",                               # unload ALL profiles
+        r"\baa-complain\b[^\n]*/etc/apparmor\.d",         # all profiles -> complain
+        r"\baa-disable\b",
+        # -- systemctl / service stop|kill|disable|mask of a SECURITY unit --
+        #    (covers --user / --now and the mask/disable variants uniformly).
+        r"\bsystemctl\b(?:\s+--\S+)*\s+(?:stop|kill|disable|mask)\b[^\n]*\b"
+        + _SECURITY_UNIT + r"\b",
+        r"\bservice\b\s+" + _SECURITY_UNIT + r"\s+stop\b",
+        # -- firewall teardown (long-flag & trust-all forms SYSTEM_TAMPER misses) --
+        r"\bufw\s+disable\b",
+        r"\bfirewall-cmd\b[^\n]*--set-default-zone=trusted\b",
+        r"\biptables\b[^\n]*(?:--flush\b|-P\s+\w+\s+ACCEPT)",
+        r"\bnft\b[^\n]*\bflush\s+ruleset\b",
+        # -- audit daemon disable --
+        r"\bauditctl\b[^\n]*(?:-e\s*0\b|--enable\s*0\b|-D\b)",
+        # -- EDR control binary --
+        r"\bfalconctl\b[^\n]*\s-d\b",
+        # -- kill a security daemon by NAME (pkill/killall or pgrep/pidof->kill) --
+        r"\b(?:pkill|killall)\b[^\n]*\b" + _SECURITY_UNIT + r"\b",
+        r"\bkill\b[^\n]*(?:pgrep|pidof)[^\n]*\b" + _SECURITY_UNIT + r"\b",
+        # -- systemd journal purge (erases the host's primary log/audit trail) --
+        r"\bjournalctl\b[^\n]*(?:--vacuum-\w+|--rotate)\b",
+        # -- shell-session track-hiding the HISTORY_WIPE wall misses (env/rm forms) --
+        r"\bunset\s+HISTFILE\b",
+        r"(?:^|[\s;&|])(?:export\s+)?HISTFILE\s*=\s*/dev/null\b",
+        r"\bset\s+\+o\s+history\b",
+        r"(?:^|[\s;&|])(?:export\s+)?HISTSIZE\s*=\s*0\b",
+        r"\brm\b[^\n]*(?:~|/\.)?/?\.bash_history\b",
+        # -- in-session gate disarm: the --install-bash DEBUG trap / precmd / extdebug --
+        r"\btrap\b\s+-\s+DEBUG\b",
+        r"\bunset\s+-f\s+__gatecat\w*",
+        r"\bshopt\s+-u\s+extdebug\b",
+        # -- clear immutable/append-only flags on the audit/log trail so it can be
+        #    rewritten (chattr -ia /var/log/audit/audit.log). The combined -ia and
+        #    single -i/-a forms are covered on a /var/log target; SYSTEM_TAMPER only
+        #    reaches WARN and misses the combined flag form. A benign `chattr +i
+        #    ./myfile` (adding protection to a project file) is NOT matched.
+        r"\bchattr\b[^\n]*-\w*[ia]\w*\b[^\n]*(?:/var/log/audit|audit\.log|/var/log/)",
+        # -- kill the wrapper PARENT shell to escape the gate: kill $PPID / $$.
+        #    Killing a specific numeric PID or a child stays allowed - only the
+        #    self/parent escape (which drops the enforcing wrapper) is blocked.
+        r"\bkill\b[^\n]*(?:\$PPID\b|\$\$(?!\w))",
+    ),
+    reason="disabling a host security control (SELinux/AppArmor MAC, firewall, "
+           "auditd, EDR/CrowdStrike/osquery, log shipping) or hiding shell/session "
+           "tracks blinds the host's defenses - requires a human",
+    description="Blocks setenforce 0 / selinux enforce-node write / SELINUX=disabled, "
+                "apparmor teardown, systemctl|service stop/kill/disable/mask of "
+                "apparmor|firewalld|auditd|ufw|osquery|falcon|crowdstrike|clamav|sshd, "
+                "ufw disable, iptables/nft flush, killing security daemons, journal "
+                "purge, and HISTFILE/trap-DEBUG track-hiding. Benign stop of a "
+                "non-security app / iptables -L / ufw status PASS.",
+)
+
 DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     TERRAFORM_PROD,
     DB_DESTRUCTIVE,
     CLOUD_DESTROY,
     KMS_KEY_DESTROY,
+    AUDIT_LOG_TAMPER,
     SECRET_STORE_DELETE,
     # coverage-audit promotions (2026-07-09): universal + catastrophic classes the
     # audit found passing the gate. NON-delete shapes CLOUD_DESTROY misses. The HTTP
@@ -1433,9 +1796,17 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     DB_FRAMEWORK_RESET,
     GIT_DESTRUCTIVE_EXTRA,
     K8S_NODE_DELETE_EXTRA,
+    K8S_CRI_DESTROY,
     SECRET_STORE_DELETE_EXTRA2,
     SECRET_FILE_DELETE,
+    SECRET_FILE_OVERWRITE,
     WINDOWS_DESTROY_EXTRA,
+    WINDOWS_PERMISSION_LOCKOUT,
+    # FREE-CORE self-defense (2026-07-12): the guard protects its OWN process/
+    # package/entrypoint/env and the HOST's security controls. Block-tier, tight
+    # name allowlists; benign same-verb ops on other names PASS (test_self_defense.py).
+    GUARD_TAMPER,
+    SECURITY_CONTROL_DISABLE,
 )
 
 # Default payment policy instance (blocks every payment-shaped action).
@@ -1451,6 +1822,7 @@ ALL_PRESETS: dict[str, Policy] = {
     "EMAIL_SEND": EMAIL_SEND,
     "CLOUD_DESTROY": CLOUD_DESTROY,
     "KMS_KEY_DESTROY": KMS_KEY_DESTROY,
+    "AUDIT_LOG_TAMPER": AUDIT_LOG_TAMPER,
     "SECRET_STORE_DELETE": SECRET_STORE_DELETE,
     "IAM_PRIVILEGE_ESCALATION": IAM_PRIVILEGE_ESCALATION,
     "IAM_IDENTITY_TAMPER": IAM_IDENTITY_TAMPER,
@@ -1508,7 +1880,12 @@ ALL_PRESETS: dict[str, Policy] = {
     "DB_FRAMEWORK_RESET": DB_FRAMEWORK_RESET,
     "GIT_DESTRUCTIVE_EXTRA": GIT_DESTRUCTIVE_EXTRA,
     "K8S_NODE_DELETE_EXTRA": K8S_NODE_DELETE_EXTRA,
+    "K8S_CRI_DESTROY": K8S_CRI_DESTROY,
     "SECRET_STORE_DELETE_EXTRA2": SECRET_STORE_DELETE_EXTRA2,
     "SECRET_FILE_DELETE": SECRET_FILE_DELETE,
+    "SECRET_FILE_OVERWRITE": SECRET_FILE_OVERWRITE,
     "WINDOWS_DESTROY_EXTRA": WINDOWS_DESTROY_EXTRA,
+    "WINDOWS_PERMISSION_LOCKOUT": WINDOWS_PERMISSION_LOCKOUT,
+    "GUARD_TAMPER": GUARD_TAMPER,
+    "SECURITY_CONTROL_DISABLE": SECURITY_CONTROL_DISABLE,
 }

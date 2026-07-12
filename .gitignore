@@ -11,3 +11,5 @@ build/
 *.bin
 *.db
 .cacheback/
+scratchpad_fpguard/
+scratchpad/

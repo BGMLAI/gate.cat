@@ -25,7 +25,10 @@ MODES
     gatecat-shell --check "<cmd>"               gate only: exit 0/2, no exec
     (cmd via stdin also accepted for --check)   e.g. echo "<cmd>" | gatecat-shell --check
     gatecat-shell --install-bash                print a DEBUG-trap snippet to source
-    gatecat-shell                               interactive: exec real shell (see note)
+    gatecat-shell -s / gatecat-shell < script   command STREAM: gated, then run
+    gatecat-shell <scriptfile> [args]           script file: contents gated, then run
+    gatecat-shell                               interactive TTY: exec real shell (a
+                                                human session is not statically gated)
 
 EXIT CODES (parity with the hook)
     0   allow (or warn — surfaced on stderr, then run) — proceed / exec
@@ -97,46 +100,113 @@ def _real_shell() -> str:
     return os.environ.get(_REAL_SHELL_ENV, "").strip() or _DEFAULT_REAL_SHELL
 
 
-def parse_dash_c(argv: list[str]) -> "tuple[list[str], str | None, list[str]] | None":
+# Options that consume a SEPARATE next-token argument. If the parser does not
+# skip the argument, that argument (e.g. `pipefail` after `-o`, the file after
+# `--rcfile`) looks like the command-name and the scan stops BEFORE a later `-c`
+# — the exact hole the adversarial review used (`-o pipefail -c "<danger>"` ran
+# ungated). Cover the bash short set-flags (`-o/-O/+o/+O`) and the arg-taking
+# long options.
+_SHORT_ARG_OPTS = frozenset({"-o", "-O", "+o", "+O"})
+_LONG_ARG_OPTS = frozenset({"--rcfile", "--init-file"})
+
+
+class ShellParse:
+    """Result of ``parse_dash_c``. ``mode`` is one of:
+
+      * ``"gate"``       — a `-c` command was cleanly isolated; gate ``command``
+                           then exec ``[real, *flags, "-c", command, *positional]``.
+      * ``"malformed"``  — `-c` present but no command string follows (fail-closed).
+      * ``"ambiguous"``  — a `-c` cluster exists but is preceded by a token the
+                           parser cannot classify as flag-or-operand; the string
+                           that would run cannot be proven identical to the string
+                           gated, so the caller FAILS CLOSED (exit 2). Better to
+                           refuse a weird invocation than exec it ungated.
+      * ``"passthrough"``— provably NO `-c` anywhere: a script file / interactive /
+                           stream invocation, handled by the gated stream path.
+    """
+    __slots__ = ("mode", "flags", "command", "positional")
+
+    def __init__(self, mode, flags=None, command=None, positional=None):
+        self.mode = mode
+        self.flags = flags or []
+        self.command = command
+        self.positional = positional or []
+
+    def __eq__(self, other):  # ergonomics for tests
+        if isinstance(other, ShellParse):
+            return (self.mode, self.flags, self.command, self.positional) == \
+                   (other.mode, other.flags, other.command, other.positional)
+        return NotImplemented
+
+    def __repr__(self):  # pragma: no cover
+        return f"ShellParse({self.mode!r}, {self.flags!r}, {self.command!r}, {self.positional!r})"
+
+
+def _has_short_c_cluster(tokens: list[str]) -> bool:
+    """True if any token is a SHORT (single-dash) cluster containing 'c' — i.e. a
+    shell `-c` in some position. Used to decide whether a bare-operand prefix is a
+    safe passthrough (no `-c` anywhere) or ambiguous (a `-c` hides behind it)."""
+    for t in tokens:
+        if t.startswith("-") and not t.startswith("--") and t != "-" and "c" in t[1:]:
+            return True
+    return False
+
+
+def parse_dash_c(argv: list[str]) -> ShellParse:
     """Parse a POSIX-ish ``sh [opts] -c cmd [name [args...]]`` invocation.
 
-    Returns ``(other_flags, command, positional)`` where:
-      * ``other_flags`` are option tokens to hand back to the real shell with the
-        ``c`` removed from any combined cluster (``-lc`` -> keep ``-l``),
-      * ``command`` is the command string (``None`` if ``-c`` present but no
-        string follows — a malformed invocation the caller fail-closes on),
-      * ``positional`` are the ``$0 $1 ...`` args after the command string.
-
-    Returns ``None`` when there is no ``-c`` at all (interactive / script-file
-    invocation — the caller passes those straight through to the real shell).
+    Core invariant (adversarial-review hardening): this NEVER classifies an argv
+    that contains a `-c` cluster as ``passthrough``. Either the `-c` command is
+    cleanly isolated (``gate``) or, if a token before it cannot be classified, the
+    result is ``ambiguous`` and the caller fails closed. The string handed to the
+    gate is always byte-identical to the string handed to the real shell.
     """
     other_flags: list[str] = []
     i = 0
     n = len(argv)
     while i < n:
         tok = argv[i]
-        # a lone "--" ends option parsing; whatever's next is not a -c form
+        # "--" ends option parsing: everything after is operands, so there is no
+        # shell `-c` beyond this point (a `-c` after `--` is a script name).
         if tok == "--":
-            return None
-        if tok.startswith("-") and tok != "-" and "c" in tok[1:]:
-            # a short-flag cluster containing 'c' (e.g. -c, -lc, -ic). The command
-            # string is the NEXT argv token; the rest of the cluster stays a flag.
+            return ShellParse("passthrough")
+        # options that consume the next token as their argument — skip both, so a
+        # later `-c` is still reachable and the argument is not mistaken for a name.
+        if tok in _SHORT_ARG_OPTS or tok in _LONG_ARG_OPTS:
+            if i + 1 < n:
+                other_flags.extend([tok, argv[i + 1]])
+                i += 2
+                continue
+            other_flags.append(tok)
+            i += 1
+            continue
+        # `--opt=value` long option (single token, no separate arg): keep, continue.
+        if tok.startswith("--"):
+            other_flags.append(tok)
+            i += 1
+            continue
+        # short cluster (single dash) containing 'c' => the `-c` form.
+        is_short = tok.startswith("-") and tok != "-"
+        if is_short and "c" in tok[1:]:
             rest = tok[1:].replace("c", "", 1)
             if rest:
                 other_flags.append("-" + rest)
             if i + 1 >= n:
-                return (other_flags, None, [])  # -c with no command string
-            command = argv[i + 1]
-            positional = argv[i + 2:]
-            return (other_flags, command, positional)
-        if tok.startswith("-") and tok != "-":
-            other_flags.append(tok)  # some other option, keep it, keep scanning
+                return ShellParse("malformed", other_flags)  # -c with no command
+            return ShellParse("gate", other_flags, argv[i + 1], argv[i + 2:])
+        # any other option-shaped token (`-x`, `+x`, ...): keep, keep scanning.
+        if (tok.startswith("-") or tok.startswith("+")) and tok != "-":
+            other_flags.append(tok)
             i += 1
             continue
-        # first non-option token and no -c seen yet: this is a script file /
-        # interactive form — not our gated path.
-        return None
-    return None  # only options, no -c
+        # first bare operand (a command-name / script). POSIX ends options here, so
+        # a `-c` from here on is an OPERAND, not a shell flag. If a `-c` cluster does
+        # appear in the remainder we cannot prove which string would run => ambiguous
+        # (fail closed). Otherwise it is a genuine no-`-c` passthrough.
+        if _has_short_c_cluster(argv[i:]):
+            return ShellParse("ambiguous", other_flags)
+        return ShellParse("passthrough")
+    return ShellParse("passthrough")  # only options consumed, no -c
 
 
 def _read_check_command(argv_after_flag: list[str]) -> str:
@@ -230,6 +300,11 @@ def _exec_real(other_flags: list[str], command: str, positional: list[str]) -> "
     Returns an exit code only if exec itself fails (then we fail closed)."""
     real = _real_shell()
     argv = [real, *other_flags, "-c", command, *positional]
+    return _exec_argv(real, argv)
+
+
+def _exec_argv(real: str, argv: list[str]) -> int:
+    """os.execv wrapper that fails closed if exec itself fails."""
     try:
         os.execv(real, argv)
     except OSError as exc:
@@ -238,6 +313,75 @@ def _exec_real(other_flags: list[str], command: str, positional: list[str]) -> "
             f"{real!r} (fail-closed): {exc}\n"))
         return BLOCK
     return BLOCK  # unreachable if execv succeeds
+
+
+def _stdin_is_tty() -> bool:
+    try:
+        return sys.stdin.isatty()
+    except (ValueError, OSError):
+        return False  # no usable stdin handle -> treat as a stream, not a human
+
+
+def _no_dash_c_path(argv: list[str]) -> int:
+    """The no-`-c` invocation. A command STREAM here must NOT be exec'd ungated
+    (adversarial-review bypass: `gatecat-shell -s` read a whole command stream
+    from stdin and ran it with the gate never firing). So we gate what we can:
+
+      * a script FILE argument -> read + gate its contents, then exec the file
+      * a command STREAM (`-s`, or piped non-tty stdin) -> read + gate, then run
+        the vetted text as `-c`
+      * a genuine interactive TTY (a human is typing) -> pass through untouched
+        (documented: an interactive human session is not statically gateable)
+    """
+    real = _real_shell()
+
+    # split leading option flags from the first non-option token (+ the rest)
+    flags: list[str] = []
+    rest: list[str] = []
+    seen_nonopt = False
+    for tok in argv:
+        if not seen_nonopt and tok.startswith("-") and tok != "-":
+            flags.append(tok)
+        else:
+            seen_nonopt = True
+            rest.append(tok)
+    has_s = any(not f.startswith("--") and "s" in f[1:] for f in flags)
+    script = rest[0] if rest else None
+    tty = _stdin_is_tty()
+
+    # 1. script file: gate its contents, then exec the file verbatim (the real
+    #    shell reads it). Only when it is an actual readable file and not -s.
+    if script and not has_s:
+        if os.path.isfile(script):
+            try:
+                text = open(script, "r", errors="replace").read()
+            except OSError:
+                text = None
+            if text is not None and text.strip():
+                if _decide(text) == BLOCK:
+                    return BLOCK
+            return _exec_argv(real, [real, *argv])
+        # a non-file positional (e.g. a typo): let the real shell report it —
+        # it is not a command stream, so there is nothing to gate/bypass.
+        return _exec_argv(real, [real, *argv])
+
+    # 2. command stream from stdin: `-s`, or piped (non-tty) stdin with no script.
+    #    Read it, gate it as one action, then run the vetted text via -c.
+    if (has_s or not script) and not tty:
+        try:
+            data = sys.stdin.read()
+        except (OSError, ValueError):
+            data = ""
+        if not data.strip():
+            return ALLOW  # nothing to run == nothing to block
+        if _decide(data) == BLOCK:
+            return BLOCK
+        # preserve $1.. positionals ($0 name is conventional); drop the original
+        # input-source flags (-s etc.) — they conflict with the -c form we run.
+        return _exec_argv(real, [real, "-c", data, "gatecat-shell", *rest])
+
+    # 3. genuine interactive TTY (a human) -> passthrough, documented limitation.
+    return _exec_argv(real, [real, *argv])
 
 
 def main(argv: "list[str] | None" = None) -> int:
@@ -259,32 +403,33 @@ def main(argv: "list[str] | None" = None) -> int:
         return _decide(command)
 
     parsed = parse_dash_c(argv)
-    if parsed is None:
-        # No -c: interactive shell or a script-file invocation. We cannot vet an
-        # arbitrary interactive session statically, so we pass through to the real
-        # shell. Honest limitation (documented): per-command gating is the -c path
-        # and the --install-bash DEBUG trap.
-        real = _real_shell()
-        try:
-            os.execv(real, [real, *argv])
-        except OSError as exc:
-            sys.stderr.write(_ascii(
-                f"gate.cat VETO [SHELL_EXEC_FAILED]: cannot exec real shell "
-                f"{real!r} (fail-closed): {exc}\n"))
-            return BLOCK
-        return BLOCK  # unreachable
 
-    other_flags, command, positional = parsed
-    if command is None:
+    if parsed.mode == "passthrough":
+        # Provably no -c: a script file, a command stream (`-s`/piped stdin), or a
+        # genuine interactive session. Gate the stream/script; only a real TTY
+        # passes through ungated (a human is driving). See _no_dash_c_path.
+        return _no_dash_c_path(argv)
+
+    if parsed.mode == "ambiguous":
+        # A -c exists but sits behind a token we cannot classify as flag-or-operand,
+        # so the string that would run cannot be proven identical to what we would
+        # gate. Fail closed rather than exec it ungated (review hardening).
+        sys.stderr.write(_ascii(
+            "gate.cat VETO [SHELL_AMBIGUOUS]: cannot isolate the -c command from "
+            "the surrounding arguments (fail-closed); use a plain `-c \"<cmd>\"` "
+            "form or set GATECAT_SHELL_REAL and invoke without exotic pre-flags\n"))
+        return BLOCK
+
+    if parsed.mode == "malformed":
         sys.stderr.write(_ascii(
             "gate.cat VETO [SHELL_MALFORMED]: -c given with no command string "
             "(fail-closed)\n"))
         return BLOCK
 
-    verdict = _decide(command)
-    if verdict == BLOCK:
+    # mode == "gate"
+    if _decide(parsed.command) == BLOCK:
         return BLOCK
-    return _exec_real(other_flags, command, positional)
+    return _exec_real(parsed.flags, parsed.command, parsed.positional)
 
 
 def _entry() -> None:

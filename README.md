@@ -132,6 +132,33 @@ it does not contain the process; run the agent in an OS sandbox *and* keep the
 gate in front. Fail-closed: an engine fault, an unparseable `-c`, or an
 evaluation error exits 2 rather than running the command.
 
+## Stagnation — catch an agent that is busy but going nowhere
+
+The deny-list stops one dangerous command; it says nothing about a loop of
+*safe* commands that never makes progress — the agent re-running a failing
+build, or re-proposing the same broken fix. `StateStagnationDetector` watches
+the agent's STATE across steps and stops it when the state stops moving:
+
+```python
+from gatecat.state_stagnation import StateStagnationDetector
+
+det = StateStagnationDetector(max_repeat_action=2, max_no_change=2)
+for step in agent_loop():
+    reason = det.update(action=step.tool_call, state_repr=step.diff,
+                        error=step.error, cost=step.cost, progress=step.tests_passing)
+    if reason:
+        pause_and_report(reason); break     # the loop isn't moving — turn back / escalate
+```
+
+`update()` returns the reason of the first tripped signal (`repeat_action`,
+`no_state_change`, `repeat_error`, `cost_without_progress`) or `None`. It is
+**deterministic** — the point is that a coding error is often *confident-wrong*:
+the model re-proposes the same bad fix with zero scatter, so a probabilistic
+disagreement gate is blind to it, while a state comparison catches the loop
+regardless of confidence. Advisory (a runaway agent is wasted budget, not an
+irreversible action). Distinct from the koryto `StagnationMonitor`, which watches
+the retrieval channel rather than the agent.
+
 ## Truth Pipeline (koryto → gate → veto)
 
 One entry point that composes the SDK's verification blocks into a truth +

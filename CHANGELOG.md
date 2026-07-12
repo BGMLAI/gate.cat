@@ -2,6 +2,51 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+## [0.4.14] -- second adversarial gap-hunt + guard self-defense (2026-07-12)
+
+Two more adversarial fan-outs against the live 0.4.13 engine, every finding
+independently re-confirmed and paired with a passing benign twin for **zero new
+false positives**. Full suite green (1749 passed); default set now **69 policies
+(49 block + 20 warn)**, up from 63.
+
+### Added -- 80 more engine-confirmed misses closed
+
+- **Round-2/3 destructive-command gaps (28, verified 0-FP):**
+  - Deobfuscator now expands bash default/alternate parameter expansion
+    `${VAR:-WORD}` / `${VAR-WORD}` / `${VAR:=WORD}` / `${VAR:+WORD}` inline (even
+    with no leading `VAR=`), closing `vastai ${OP:-destroy}`, `aws ec2
+    ${OP:-terminate-instances}`, `dd if=/dev/zero of=${D:-/dev/sda}`,
+    `wipefs ${F:--af}`, `zfs ${OP:-destroy}`; plus adjacent-quote concatenation
+    (`psql -c 'DR''OP TABLE'`).
+  - **AUDIT_LOG_TAMPER** (new) -- `aws cloudtrail stop-logging`/`delete-trail`,
+    cloudwatch/logs/config/guardduty `delete-*`.
+  - **CLOUD_DESTROY** extended -- `deregister-image`, the `k` kubectl alias,
+    `crd`/`customresourcedefinition`, `eksctl`/`doctl` cluster delete,
+    `kubeadm reset`, `argocd app delete` (excl. `--cascade=false`).
+  - **K8S_CRI_DESTROY** (new) -- `crictl`/`ctr`/`nerdctl` remove; `etcdctl del
+    --from-key`; `terraform`/`tofu state push`.
+  - DB -- `mariadb-admin`, `pg_resetwal`/`pg_resetxlog` (excl. `-n`/`--dry-run`),
+    `dd` zero-fill of a datafile.
+  - **SECRET_FILE_OVERWRITE**/**SECRET_FILE_DELETE** (new) -- empty/zero-source
+    overwrite of a key/credential path via `cp /dev/null`, `tee </dev/null`,
+    `install /dev/null`, `openssl rand -out`, `dd of=~/.ssh/id_rsa`,
+    `echo '' >` into a protected/secret path.
+  - **WINDOWS_DESTROY**/**WINDOWS_PERMISSION_LOCKOUT** (new) -- `.NET`
+    `[IO.Directory]::Delete(...,$true)`, `wbadmin delete backup`, recursive
+    `takeown`/`icacls` on system paths.
+- **Guard self-defense (52, verified 0-FP) -- GUARD_TAMPER + SECURITY_CONTROL_DISABLE (new):**
+  a guarded agent must not be able to kill or blind the guard. Blocks
+  `pkill`/`killall`/`kill` of `gatecat`/`gate.cat`/`gatecat-hook`/`-shell`/`-proxy`
+  (incl. `$(pgrep ...)`, `pgrep | xargs kill`, `ps|grep|awk|xargs kill`, pidfile,
+  bracket/variable obfuscation); `pip`/`uv` uninstall of the guard; `rm`/`chmod` of
+  its console-script; `GATECAT_*` enforcement toggles; disabling host security
+  controls -- `setenforce 0` (value-aware: `setenforce 1` / `echo 1 > .../enforce`
+  stay ALLOW), AppArmor teardown, `systemctl|service stop/disable/mask` of
+  apparmor/firewalld/auditd/ufw/osquery/falcon/crowdstrike/clamav/sshd, `ufw
+  disable`, iptables/nft flush, security-daemon kills, journal purge, `chattr -ia`
+  on audit logs, history-tamper. Tight NAME allowlists throughout -- killing your
+  own app, `systemctl restart nginx`, `pip uninstall <other pkg>` all stay ALLOW.
+
 ## [0.4.13] -- adversarial gap-hunt: 70 of 77 engine-confirmed misses closed (2026-07-12)
 
 ### Added -- 11 policy classes + a deobfuscator step, from a 9-category adversarial hunt

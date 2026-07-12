@@ -152,6 +152,48 @@ _RIGHT_FUSE = re.compile(r"[A-Za-z0-9_./:+=-]")  # a word char to the RIGHT ('='
 _BARE_WORD = re.compile(r"^[A-Za-z0-9_./:@=+-]+$")
 
 
+# ==========================================================================
+# Step 2a: adjacent quoted-string concatenation  'DR''OP TABLE users' -> DROP TABLE users
+# ==========================================================================
+# When a CLOSING quote is IMMEDIATELY followed by an OPENING quote (no space
+# between), the shell concatenates the two quoted strings into one argument:
+# ``'DR''OP TABLE users'`` is the single argument ``DROP TABLE users``. An
+# attacker uses this to split a SQL verb (``DR`` + ``OP TABLE``) so the ``DROP
+# TABLE`` regex never sees the contiguous token. ``_step_unsplit_quotes`` below
+# only glues fragments whose content has NO whitespace, so a fragment with a
+# space (``'OP TABLE users'``) defeats it - this step handles the whitespace case
+# by concatenating ADJACENT quote pairs into a single reconstructed literal.
+#
+# Conservative: we only join when a close-quote is directly touching an
+# open-quote (the exact shell concatenation trigger). A space between them means
+# two separate arguments and we do NOT join (never merges genuinely-separate
+# args). Variant-only / add-only, like every other step.
+_ADJ_QUOTE = re.compile(r"(?P<a>'(?:[^']*)'|\"(?:[^\"]*)\")(?P<b>'(?:[^']*)'|\"(?:[^\"]*)\")")
+
+
+def _step_concat_adjacent_quotes(action: str) -> str:
+    if "'" not in action and '"' not in action:
+        return action
+
+    def _repl(m: "re.Match") -> str:
+        a = m.group("a")
+        b = m.group("b")
+        # strip the quotes off each fragment and re-quote the joined content in a
+        # single single-quoted string so downstream steps/walls see one literal.
+        inner_a = a[1:-1]
+        inner_b = b[1:-1]
+        joined = inner_a + inner_b
+        return "'" + joined + "'"
+
+    text = action
+    for _ in range(6):  # bounded: collapse a chain 'a''b''c' left-to-right
+        new = _ADJ_QUOTE.sub(_repl, text)
+        if new == text:
+            break
+        text = new
+    return text
+
+
 def _step_unsplit_quotes(action: str) -> str:
     if "'" not in action and '"' not in action:
         return action
@@ -291,6 +333,61 @@ def _step_var_indirection(action: str) -> str:
     # substitute in the remainder; keep it bounded (single pass is enough for the
     # flat VAR=value forms in scope - no recursive expansion of a var into a var).
     return _substitute_vars(rest, env)
+
+
+# A ${NAME:-word} / ${NAME-word} / ${NAME:=word} default-word expansion whose
+# NAME is NOT set by a leading inline VAR= assignment. In bash, an UNSET variable
+# makes ``${OP:-destroy}`` expand to the default word ``destroy`` - so a line like
+# ``vastai ${OP:-destroy} 12345`` literally runs ``vastai destroy 12345`` at
+# runtime (unset is the realistic default state). ``_step_var_indirection`` above
+# only expands vars that a leading assignment defined; with NO leading assignment
+# it early-returns, so an inline unset default word was never revealed to the
+# walls. This step closes that: it emits a variant where every default/alternate
+# word is substituted INLINE (unset -> default), regardless of any assignment.
+# We DO run it even when an assignment exists (a mix of set + unset vars), so the
+# unset ones still resolve to their default. Only the WORD is inlined; a benign
+# default (``git ${OP:-status}``, ``dd of=${OUT:-/tmp/disk.img}``) expands to a
+# benign token and stays ALLOW - the fix keys on WHAT the default word is, never
+# on the mere presence of parameter expansion. Variant-only / add-only: the raw
+# form is still evaluated, so this can only ADD a catch.
+_PARAM_DEFAULT = re.compile(
+    r"\$\{(?P<name>[A-Za-z_][A-Za-z0-9_]*)"
+    r"(?P<op>:?-|:?=|:?\+)(?P<word>[^}]*)\}"
+)
+
+
+def _step_param_default(action: str) -> str:
+    """Inline the default/alternate WORD of every ``${NAME:-word}`` /
+    ``${NAME-word}`` / ``${NAME:=word}`` / ``${NAME:+word}`` expansion, treating
+    the variable as UNSET (the realistic runtime path for an inline default).
+
+    For the ``:-`` / ``-`` / ``:=`` operators an unset var expands to the default
+    WORD, so we substitute the word. For the ``:+`` / ``+`` (alternate) operator
+    an unset var expands to the empty string, so we substitute nothing. This runs
+    independently of any leading ``VAR=`` assignment (that path is
+    ``_step_var_indirection``), so a bare inline ``${OP:-destroy}`` is normalized
+    even with no assignment in front of it."""
+    if "${" not in action:
+        return action
+
+    def _repl(m: "re.Match") -> str:
+        op = m.group("op")
+        word = m.group("word") or ""
+        # ``+``/``:+`` = alternate word only when SET; unset -> empty string.
+        if op in ("+", ":+"):
+            return ""
+        # ``-``/``:-``/``=``/``:=`` = default word when unset -> the word.
+        return word
+
+    # bounded passes so a default word that itself contains another expansion
+    # (``${A:-${B:-rm}}``) still resolves; capped like _substitute_vars.
+    text = action
+    for _ in range(4):
+        new = _PARAM_DEFAULT.sub(_repl, text)
+        if new == text:
+            break
+        text = new
+    return text
 
 
 # ==========================================================================
@@ -578,13 +675,14 @@ def _step_strip_word_backslash(action: str) -> str:
 
 
 _ORDER_A = (
-    _step_var_indirection, _step_alias, _step_cmdsub,
-    _step_ansi_c, _step_powershell, _step_unsplit_quotes,
+    _step_var_indirection, _step_param_default, _step_alias, _step_cmdsub,
+    _step_ansi_c, _step_powershell, _step_concat_adjacent_quotes, _step_unsplit_quotes,
     _step_strip_word_backslash, _step_base64,
 )
 _ORDER_B = (
-    _step_ansi_c, _step_powershell, _step_unsplit_quotes, _step_strip_word_backslash,
-    _step_var_indirection, _step_cmdsub, _step_alias, _step_base64,
+    _step_ansi_c, _step_powershell, _step_concat_adjacent_quotes, _step_unsplit_quotes,
+    _step_strip_word_backslash,
+    _step_var_indirection, _step_param_default, _step_cmdsub, _step_alias, _step_base64,
 )
 
 
