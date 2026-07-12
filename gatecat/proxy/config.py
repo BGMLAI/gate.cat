@@ -1,6 +1,7 @@
 """Proxy configuration via environment variables."""
 
 import ipaddress
+import json
 import os
 import socket
 from dataclasses import dataclass, field
@@ -135,6 +136,29 @@ class ProxyConfig:
     koryto_exec_timeout: float = 5.0
     koryto_exec_mem_mb: int = 512
 
+    # LOCAL BUDGET-CAP + LOCAL STAGNATION HALT (2026-07-12) — both FREE, both run
+    # in-process on THIS proxy. Per session key (X-Gatecat-Session header, else the
+    # client API key) we accumulate completion_tokens * per-model price into a
+    # running USD cost; over `budget_usd` the proxy VETOES the next action (halts
+    # by denying, it does NOT kill an external process). Stagnation feeds each
+    # request's flattened tool-call / assistant-message hash to a per-session
+    # StateStagnationDetector; a trip vetoes (or warns, per stagnation_action).
+    #
+    # RED LINE: these are the LOCAL kill/cap — never tier-gated. 0 disables each.
+    budget_usd: float = 0.0                 # 0 == off (no local budget cap)
+    budget_action: str = "block"            # block | warn
+    # per-model USD price PER 1K completion tokens; "default" is the fallback.
+    model_prices: dict = field(default_factory=lambda: {
+        "default": 0.0,
+        "gpt-4o": 0.010, "gpt-4o-mini": 0.0006, "gpt-4.1": 0.008,
+        "o3": 0.040, "o4-mini": 0.0044,
+        "claude-3-5-sonnet": 0.015, "claude-3-5-haiku": 0.004,
+        "claude-sonnet-4": 0.015, "claude-opus-4": 0.075,
+        "deepseek-chat": 0.0011, "deepseek-reasoner": 0.0022,
+    })
+    stagnation_local: str = "off"           # off | warn | block (local loop-guard)
+    stagnation_local_repeat: int = 2        # identical actions before it trips (3rd)
+
     # Upstream security (audit 2026-06-27 #3): by default do NOT forward the
     # client's Authorization header upstream (an attacker could inject their own key).
     # Deliberate enablement (multi-tenant proxy where the client supplies their own key):
@@ -146,10 +170,33 @@ class ProxyConfig:
     port: int = 8080
     log_level: str = "info"
 
+    @staticmethod
+    def _model_prices_from_env(default_prices: dict) -> dict:
+        """Merge the built-in per-model price table with an optional JSON override
+        (GATECAT_PROXY_MODEL_PRICES = {"model": usd_per_1k, ...}). A broken value
+        is ignored (the local cap must never fail to start on a typo)."""
+        prices = dict(default_prices)
+        raw = os.environ.get("GATECAT_PROXY_MODEL_PRICES", "").strip()
+        if raw:
+            try:
+                override = json.loads(raw)
+                if isinstance(override, dict):
+                    for k, v in override.items():
+                        prices[str(k)] = float(v)
+            except (ValueError, TypeError):
+                pass
+        return prices
+
     @classmethod
     def from_env(cls) -> "ProxyConfig":
         """Load config from environment variables (GATECAT_ prefix)."""
+        _default_prices = cls.__dataclass_fields__["model_prices"].default_factory()
         return cls(
+            budget_usd=float(os.environ.get("GATECAT_PROXY_BUDGET_USD", "0") or 0),
+            budget_action=os.environ.get("GATECAT_PROXY_BUDGET_ACTION", "block"),
+            model_prices=cls._model_prices_from_env(_default_prices),
+            stagnation_local=os.environ.get("GATECAT_PROXY_STAGNATION", "off"),
+            stagnation_local_repeat=int(os.environ.get("GATECAT_PROXY_STAGNATION_REPEAT", "2")),
             gate_mode=os.environ.get("GATECAT_GATE_MODE", "off"),
             gate_n_samples=int(os.environ.get("GATECAT_GATE_N_SAMPLES", "5")),
             gate_threshold=float(os.environ.get("GATECAT_GATE_THRESHOLD", "0.30")),

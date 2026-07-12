@@ -275,11 +275,19 @@ def main(argv: list[str] | None = None) -> int:
     cmd = args[0] if args else "status"
     color = _use_color()
 
-    # `gate.cat cloud <init|report|verify|key>` -- the E2EE off-machine history CLI
+    # `gate.cat cloud <init|report|verify|ledger|key>` -- E2EE off-machine CLI
     if cmd == "cloud":
         from gatecat import cloud_cli
         cloud_cli.main(args[1:])
         return 0
+
+    # `gate.cat dashboard [--html [file]]` -- the richer view built from BOTH the
+    # local log AND (if a cloud key is present) the cross-machine ciphertext
+    # fetched + decrypted locally. Free local render always works; the paid part
+    # is the cross-machine aggregation.
+    if cmd == "dashboard":
+        from gatecat.integrations import rich_dashboard
+        return rich_dashboard.main(args[1:])
 
     # --- FREE-CORE local control verbs (protection.py): on / off / allow ------
     # All LOCAL, all FREE - no cloud key, no entitlement. These write the state
@@ -319,7 +327,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if cmd in ("status", "", "-h", "--help") and cmd != "why":
         if cmd in ("-h", "--help"):
-            print("gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|why <command>]")
+            print("gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
             return 0
         print(render_status(_read(), color))
         return 0
@@ -345,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
         print(explain(" ".join(args[1:]), color))
         return 0
     print(f"unknown command: {cmd}\n"
-          "gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|why <command>]")
+          "gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
     return 2
 
 

@@ -21,11 +21,29 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import urllib.request
 
 DEFAULT_ENDPOINT = "https://gate.cat/cloud/v1/events"   # overridable for self-hosted
 STATE_SUFFIX = ".cloud_cursor"
 BATCH = 200
+
+# The free-core (protection.py) writes tamper-evident, HASH-CHAINED audit records
+# to the same veto log for every on/off flip and every override grant/allow. Those
+# decisions form the OFF-MACHINE LEDGER. We detect them by decision type and lift
+# the chain hashes out of the reason (`... [chain prev=<hex16> self=<hex16>]`) so
+# the CLIENT can verify the chain after decrypting -- the server never sees it.
+LEDGER_DECISIONS = frozenset({
+    "armed", "disarmed", "disarmed_off",
+    "override_grant", "override_allow", "override_deny",
+})
+_CHAIN_RE = re.compile(r"\[chain prev=(GENESIS|[0-9a-fA-F]+) self=([0-9a-fA-F]+)\]")
+
+
+def _chain_fields(reason: str):
+    """(prev, self) 16-hex chain tips embedded in a ledger reason, else (None, None)."""
+    m = _CHAIN_RE.search(reason or "")
+    return (m.group(1), m.group(2)) if m else (None, None)
 
 
 def _log_paths():
@@ -43,14 +61,24 @@ def _log_paths():
 
 def _redact(event: dict, send_raw: bool) -> dict:
     ctx = event.get("context") or ""
+    decision = event.get("decision")
+    reason = (event.get("reason") or "")
     out = {
         "ts": event.get("ts"), "source": event.get("source"),
-        "policy": event.get("policy"), "decision": event.get("decision"),
-        "reason": (event.get("reason") or "")[:256],
+        "policy": event.get("policy"), "decision": decision,
+        "reason": reason[:256],
         "ctx_sha256": hashlib.sha256(ctx.encode()).hexdigest() if ctx else None,
         "gate_version": event.get("gate_version"),
         "redaction": "raw" if send_raw else "hash",
     }
+    # LEDGER events carry their hash-chain tips structured inside the (encrypted)
+    # payload so the client can verify the chain locally without string-parsing.
+    if decision in LEDGER_DECISIONS:
+        prev, self_ = _chain_fields(reason)
+        if self_ is not None:
+            out["ledger"] = True
+            out["chain_prev"] = prev
+            out["chain_self"] = self_
     if send_raw:
         out["context"] = ctx[:4096]
     return out
@@ -92,8 +120,14 @@ def ship(endpoint: str | None = None, api_key: str | None = None,
                 for line in f:
                     try:
                         ev = _redact(json.loads(line), send_raw)
-                        batch.append({"ts": ev.get("ts"),
-                                      "ct": cloud_crypto.encrypt_event(key, ev)})
+                        item = {"ts": ev.get("ts"),
+                                "ct": cloud_crypto.encrypt_event(key, ev)}
+                        # tag ledger records so the server can serve them via
+                        # GET /v1/ledger (TEAM+). The tag is the CLASS only; the
+                        # command/reason stay inside the encrypted `ct`.
+                        if ev.get("ledger"):
+                            item["kind"] = "ledger"
+                        batch.append(item)
                     except Exception:
                         continue
                     if len(batch) >= BATCH:

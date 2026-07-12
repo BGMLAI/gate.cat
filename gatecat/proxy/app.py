@@ -10,6 +10,7 @@ Or via Docker:
     docker run -e OPENAI_API_KEY=sk-... -p 8080:8080 gatecat/proxy
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -33,6 +34,12 @@ from gatecat.integrations import (
     policies_with_extras,
 )
 from gatecat.proxy.config import ProxyConfig
+from gatecat.proxy.local_guard import (
+    LocalGuardState,
+    cost_of,
+    estimate_completion_tokens,
+    session_action_signature,
+)
 from gatecat.proxy.models import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -226,6 +233,55 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
     tool_branch = None  # 4th cascade branch (gatecat.ToolBranch)
     koryto = None       # deterministic atom verifier (gatecat.Koryto)
     stagnation = None   # stagnation-by-state: watches whether the koryto has gone stale
+    # LOCAL, FREE budget-cap + loop-guard state (per session; in-process).
+    local_guard = LocalGuardState()
+
+    def _session_key(request: Request) -> str:
+        """Per-session budget/stagnation key: the X-Gatecat-Session header, else
+        the client's API key (Authorization bearer), else a shared default."""
+        sid = request.headers.get("x-gatecat-session", "").strip()
+        if sid:
+            return sid[:200]
+        auth = request.headers.get("authorization", "")
+        if auth.startswith("Bearer "):
+            return "key:" + hashlib.sha256(auth[7:].encode()).hexdigest()[:16]
+        return "default"
+
+    def _budget_veto(model: str, session: str) -> dict:
+        """Build the halt completion for an over-budget session (local kill)."""
+        reason = (f"local budget cap reached: session {session[:24]} spent "
+                  f"${local_guard.spend(session):.4f} > "
+                  f"${config.budget_usd:.4f} (GATECAT_PROXY_BUDGET_USD). "
+                  "The proxy is denying the next action; no external process is "
+                  "killed. Raise the cap or start a new session to continue.")
+        return _build_veto_response({"model": model}, reason, "budget cap")
+
+    def _record_usage_and_stagnation(resp_data: dict, model: str, session: str,
+                                     est_text: str = "") -> Optional[dict]:
+        """After an upstream completion: add its cost to the session spend and feed
+        the action signature to the loop-guard. Returns a stagnation trip reason
+        (str) if the loop-guard tripped, else None. Never raises."""
+        try:
+            usage = (resp_data or {}).get("usage") or {}
+            ctoks = usage.get("completion_tokens")
+            estimated = False
+            if not ctoks and est_text:
+                ctoks = estimate_completion_tokens(est_text)
+                estimated = True
+            usd = cost_of(ctoks or 0, model, config.model_prices)
+            local_guard.add_spend(session, usd)
+            if estimated and isinstance(resp_data, dict):
+                resp_data.setdefault("gatecat", {})["budget_tokens_estimated"] = True
+        except Exception:
+            pass
+        if config.stagnation_local in ("warn", "block"):
+            try:
+                sig = session_action_signature(resp_data)
+                return local_guard.observe_action(
+                    session, sig, config.stagnation_local_repeat)
+            except Exception:
+                return None
+        return None
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -409,6 +465,18 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 "enforcing": config.tool_veto == "block",
                 "policies": len(_VETO_POLICIES),
             },
+            # LOCAL, FREE budget-cap + loop-guard (never tier-gated). Halts by
+            # denying the next action through the proxy; no external process kill.
+            "local_budget_cap": {
+                "budget_usd": config.budget_usd,
+                "enabled": bool(config.budget_usd and config.budget_usd > 0),
+                "action": config.budget_action,
+            },
+            "loop_guard": {
+                "mode": config.stagnation_local,
+                "enabled": config.stagnation_local in ("warn", "block"),
+                "repeat_trip": config.stagnation_local_repeat,
+            },
         }
 
     # --- Cache stats ---
@@ -431,6 +499,20 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
         stream = req.stream or False
         query = _extract_query(messages)
 
+        # LOCAL BUDGET-CAP (free, never tier-gated): if this session already blew
+        # its budget, HALT the next action here — deny before we even call
+        # upstream. This is the local kill/cap; it does not touch an external
+        # process, it refuses the next call routed through the proxy.
+        session = _session_key(request)
+        if local_guard.over_budget(session, config.budget_usd) and config.budget_action == "block":
+            logger.warning("[proxy] BUDGET-CAP halt: session=%s spent=$%.4f cap=$%.4f",
+                           session[:24], local_guard.spend(session), config.budget_usd)
+            out = _budget_veto(model, session)
+            if stream:
+                return StreamingResponse(_sse_from_completion(out),
+                                         media_type="text/event-stream")
+            return JSONResponse(content=out)
+
         # ACTION-VETO: a tool-calling request gets its proposed tool_calls checked
         # against the deny-list before they reach the agent. We force a
         # non-streaming upstream call so the gate always sees the COMPLETE tool
@@ -444,17 +526,29 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                 data = json.loads(upstream.body.decode())
             except Exception:
                 return upstream  # unparseable upstream -> pass through unchanged
+            # LOCAL budget spend + loop-guard on the upstream completion.
+            stag_reason = _record_usage_and_stagnation(data, model, session)
             blocked, reason, offending = _veto_tool_calls(data)
             if blocked and config.tool_veto == "block":
                 logger.warning("[proxy] TOOL-VETO blocked: %s", offending[:120])
                 out = _build_veto_response(data, reason, offending)
+            elif stag_reason and config.stagnation_local == "block":
+                # LOOP-GUARD halt: the agent keeps proposing the same no-progress
+                # action. Deny the next one (local halt; no external kill).
+                logger.warning("[proxy] LOOP-GUARD halt: %s", stag_reason[:120])
+                out = _build_veto_response(
+                    data, f"loop-guard: no progress ({stag_reason})", offending or "")
             elif blocked:  # flag mode: annotate, do not block
                 logger.info("[proxy] TOOL-VETO flag: %s", offending[:120])
                 data.setdefault("gatecat", {})["tool_veto_flag"] = {
                     "reason": reason, "call": offending[:400]}
                 out = data
+                if stag_reason:  # warn mode: annotate, do not block
+                    data.setdefault("gatecat", {})["stagnation"] = stag_reason
             else:
                 out = data
+                if stag_reason:  # warn mode: surface without blocking
+                    data.setdefault("gatecat", {})["stagnation"] = stag_reason
             if stream:
                 return StreamingResponse(_sse_from_completion(out),
                                          media_type="text/event-stream")
@@ -531,6 +625,16 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
 
         # --- Tier 3: Upstream API call ---
         upstream_resp = await _forward_upstream(body, False, request)
+
+        # LOCAL budget spend (free): accumulate this completion's cost against the
+        # session so a later request halts once the session goes over budget.
+        if isinstance(upstream_resp, JSONResponse):
+            try:
+                _rd = json.loads(upstream_resp.body.decode())
+                _record_usage_and_stagnation(
+                    _rd, model, session, est_text=_extract_response_text(_rd) or "")
+            except Exception:
+                pass
 
         # --- Tier 3.5: KORYTO — verify the model's answer deterministically ---
         # Works INDEPENDENTLY of the gate: catches confident-wrong (zero spread) that
@@ -806,9 +910,18 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
     ):
         """Forward streaming request upstream, buffer chunks, cache on completion."""
         body["stream"] = True
+        # LOCAL budget-cap needs token usage on the streamed response. Ask the
+        # provider to include a final usage chunk (OpenAI-compatible). If the
+        # provider ignores it we fall back to a chars/4 estimate from the buffer.
+        if config.budget_usd and config.budget_usd > 0:
+            so = dict(body.get("stream_options") or {})
+            so["include_usage"] = True
+            body["stream_options"] = so
+        session = _session_key(request)
         headers = _upstream_headers(request)
         url = f"{config.openai_base_url}/chat/completions"
         buffer = []
+        stream_usage_tokens = 0
 
         if http_client is None:
             error_data = {"error": {"message": "http_client not initialized", "type": "proxy_error"}}
@@ -833,13 +946,27 @@ def create_app(config: Optional[ProxyConfig] = None) -> FastAPI:
                                 content = delta.get("content")
                                 if content:
                                     buffer.append(content)
+                            # final usage chunk (stream_options.include_usage)
+                            usage = chunk_data.get("usage")
+                            if isinstance(usage, dict) and usage.get("completion_tokens"):
+                                stream_usage_tokens = int(usage["completion_tokens"])
                         except json.JSONDecodeError:
                             pass
 
                 # After stream completes, cache the full response
+                full_text = "".join(buffer)
                 if buffer and cache:
-                    full_text = "".join(buffer)
                     cache.populate(query, full_text, model=model)
+
+                # LOCAL budget spend for the streamed completion: real usage if
+                # the provider sent it, else an honest chars/4 estimate.
+                if config.budget_usd and config.budget_usd > 0:
+                    try:
+                        toks = stream_usage_tokens or estimate_completion_tokens(full_text)
+                        local_guard.add_spend(
+                            session, cost_of(toks, model, config.model_prices))
+                    except Exception:
+                        pass
 
         except httpx.HTTPError as e:
             # detail only to the log; the client gets a generic message (audit 2026-06-27 #8:
