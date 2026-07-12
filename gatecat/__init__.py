@@ -83,7 +83,7 @@ del _migrate_legacy_env
 # (`pip install gate.cat[cache]`) - see pyproject. A clear ImportError tells the
 # user to install the extra if they reach for a cache name without it.
 
-__version__ = "0.4.12"
+__version__ = "0.4.13"
 
 # name -> (submodule, is_cache_feature). is_cache_feature=True means the symbol
 # lives behind the heavy ML stack, so a missing-dep ImportError is rewritten to
@@ -109,6 +109,7 @@ _LAZY: dict[str, tuple[str, bool]] = {
     "FactBase": ("gatecat.koryto", False),
     "StagnationMonitor": ("gatecat.stagnation", False),
     "StagnationState": ("gatecat.stagnation", False),
+    "StateStagnationDetector": ("gatecat.state_stagnation", False),
     "extract_code_blocks": ("gatecat.codeblocks", False),
     "to_exec_statements": ("gatecat.codeblocks", False),
     "CodeBlock": ("gatecat.codeblocks", False),
@@ -167,6 +168,7 @@ __all__ = [
     "FactBase",
     "StagnationMonitor",
     "StagnationState",
+    "StateStagnationDetector",
     "http_cache_source",
     "chroma_source",
     "multi_source",

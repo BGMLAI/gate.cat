@@ -2,7 +2,79 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
-## [0.4.12] -- Cloud (E2EE), gated shell, +34 more gaps closed, uppercase-flag audit (2026-07-12)
+## [0.4.13] -- adversarial gap-hunt: 70 of 77 engine-confirmed misses closed (2026-07-12)
+
+### Added -- 11 policy classes + a deobfuscator step, from a 9-category adversarial hunt
+
+A pre-release adversarial hunt fanned out 9 red-team finders (one per attack
+category), each empirically testing candidate commands against the real engine
+and reporting only engine-confirmed misses: **770 commands tested, 77 irreversible
+shapes still ALLOWing through the 0.4.12 gate**. 70 are now caught (56 hard-block +
+14 warn); the 7 left are a deliberate, documented boundary. Every closure was
+validated against an 853-command benign near-miss corpus (also engine-generated) +
+the full suite for **zero false positives**.
+
+New/extended, each with a passing benign twin (`tests/test_v0413_gaps.py`):
+- **DISK_ERASE_EXTRA** -- `badblocks -w`, the `mke2fs`/`mkntfs`/`mkswap`/`mkexfatfs`
+  family on a device, `nvme sanitize`/`write-zeroes`, `sg_format`, `dd of=/dev/root`,
+  and `dd if=/dev/zero of=<a .db/.pem/... under a protected root>`.
+- **OVERWRITE_DESTROY_EXTRA** -- null/`:`/empty-echo redirect into `~`/`/root`/`*.db`,
+  `cp /dev/null` over a key, `find -exec truncate/unlink/dd`, `rsync --del` (the
+  `--delete` alias) into a protected root.
+- **CLOUD_DESTROY_EXTRA** + **CLOUD_PROTECTION_OFF** (extended) -- `gsutil rb`,
+  `aws ec2 --no-disable-api-termination`, `aws rds --backup-retention-period 0`,
+  `aws s3api put-bucket-versioning Status=Suspended`, `gcloud compute ... --no-deletion-protection`.
+- **IAC_STATE_DESTROY_EXTRA** -- `terraform state rm`, `terraform workspace delete -force`,
+  `pulumi down`/`state delete`, `terragrunt run-all/non-interactive destroy`, `helmfile destroy`.
+- **DB_DESTRUCTIVE_EXTRA2** (block) -- `DROP OWNED BY`, mongosh `adminCommand({dropDatabase})`/
+  `runCommand({drop})`, `redis-cli shutdown nosave`, cypher `DETACH DELETE`, ES `DELETE /_all`,
+  `influx bucket delete`. **DB_FRAMEWORK_RESET** (warn) -- prisma/artisan/rails/typeorm/
+  sequelize/django/liquibase/knex/alembic/goose `reset`/`drop`/`fresh`/`downgrade base`.
+- **GIT_DESTRUCTIVE_EXTRA** -- `-C`/ref-prefixed `reset --hard`, combined/reordered
+  `branch -fD`/`--force -D`, `gh api graphql delete* mutations`.
+- **K8S_NODE_DELETE_EXTRA** -- `kubectl/k delete node` (slash form + `k` alias; `--dry-run` passes).
+- **SECRET_STORE_DELETE_EXTRA2** (block) -- `gpg2 --delete-secret-keys`, `consul kv delete`,
+  `secret-tool clear`, `security delete-*-password`, `pass rm`. **SECRET_FILE_DELETE** (warn) --
+  `rm`/`shred` of `*.pem`/`*.key`/`.env.production` (`.env.example` passes).
+- **WINDOWS_DESTROY_EXTRA** -- `Format-Volume`, `Remove-Partition` (command-position
+  anchored, `-WhatIf`/`Get-Help` pass), `Win32_ShadowCopy | Remove-CimInstance`,
+  `diskpart clean`, `Clear-Content` of a data file.
+- **Deobfuscator** -- a bare-word backslash-strip step: unquoted `d\d`/`r\b`/`p\ush`/
+  `des\troy` are the shell words `dd`/`rb`/`push`/`destroy`. Variant-only (the original
+  is always evaluated), so it can only add a catch, never mis-normalize a benign command.
+
+Default set is now **63 policies (43 hard-block + 20 warn)**.
+
+### Deliberately left / known-open (the honest boundary)
+
+Not blocked, on purpose: git working-tree discards (`checkout -- .`, `restore .`,
+`checkout -f`, `stash clear`) and `redis SWAPDB` -- too common / reversible to hard-block
+without false positives. Still open, documented like the `$'\x72m'` case: bash
+parameter-expansion obfuscation (`${V/X/ }`, `${V^^}`) -- deliberate hand-obfuscation,
+not real agent output. `tests/test_v0413_gaps.py` pins these so a future change is a
+conscious decision, not silent scope creep.
+
+## [0.4.12] -- Cloud (E2EE), gated shell, state-stagnation layer, +34 more gaps closed (2026-07-12)
+
+### Added -- `StateStagnationDetector`, the deterministic no-progress detector
+
+Productized into the engine from the maintainer's proven prototype
+(`stagnation_state_probe.py`): `gatecat.state_stagnation.StateStagnationDetector`
+watches the AGENT'S STATE across steps and stops it when the state stops moving
+-- the same action, the same error, an unchanged diff, or cost climbing with no
+gain. `update(action=, state_repr=, error=, cost=, progress=)` returns the reason
+of the first tripped signal, else `None`. It is deterministic (no model): the
+point the prototype measured is that a coding error is often CONFIDENT-wrong -- the
+model re-proposes the same bad fix with zero sample scatter, so a probabilistic
+disagreement gate is blind to it, while a state comparison catches the loop on the
+2nd repeat regardless of the model's confidence. Four signals: `repeat_action`,
+`no_state_change`, `repeat_error`, and `cost_without_progress` (the fourth was
+promised by the prototype's own docstring and is completed here; it needs both a
+per-step `cost` and a declared `progress` metric, with a `goal_better` comparator
+for higher- or lower-is-better). Distinct from the koryto `StagnationMonitor`
+(which watches the retrieval channel, not the agent). Advisory (a runaway agent is
+wasted budget, not an irreversible action), zero deps. 11 tests
+(`tests/test_state_stagnation.py`), exported from the package top level.
 
 ### Added -- `gatecat-shell`, a third enforcement point for any agent that shells out
 
@@ -23,8 +95,21 @@ session). Fail-closed with hook parity: engine-import failure, a
 `/bin/sh` (`GATECAT_SHELL_REAL` overrides). Honest trust class: as the agent's
 shell binary it is out-of-band enforcement (hook class); the DEBUG trap is
 weaker (a command can `trap - DEBUG`); either way it is a string gate, not a
-sandbox. New `gatecat-shell` console script; 30 e2e/contract tests
+sandbox. New `gatecat-shell` console script; 40 e2e/contract tests
 (`tests/integrations/test_gatecat_shell.py`); full suite green.
+
+Hardened against a 3-lens adversarial review (6 confirmed findings, all closed):
+the argument parser only recognizes a `-c` in a SHORT single-dash cluster (a long
+option like `--norc`/`--rcfile` is no longer misread as `-c` and the gate no
+longer inspects a decoy string), it consumes argument-taking options
+(`-o/-O/+o/+O`, `--rcfile/--init-file`) so a later `-c` is still found, and — the
+core invariant — it NEVER routes an argv that contains a `-c` to the ungated
+passthrough: `-o pipefail -c "<danger>"`, `+x -c "<danger>"`, and a bare-operand
+prefix before `-c` used to exec raw; now they gate the command or, when the
+command cannot be proven identical to what would run, fail closed
+(`SHELL_AMBIGUOUS`, exit 2). The no-`-c` path also gates command STREAMS
+(`gatecat-shell -s`, piped stdin, a script file) instead of exec'ing them raw;
+only a genuine interactive TTY passes through.
 
 ### Added -- gate.cat Cloud (end-to-end encrypted off-machine veto history)
 

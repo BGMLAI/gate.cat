@@ -781,6 +781,24 @@ CLOUD_STORAGE_WIPE = Policy(
     description="recursive/mirror deletion of cloud object storage (S3/GCS/Azure/rclone/minio) is irreversible on unversioned buckets",
 )
 
+CLOUD_STORAGE_SYNC_DELETE = Policy(
+    name="CLOUD_STORAGE_SYNC_DELETE",
+    patterns=(
+        # `aws s3 sync <src> s3://... --delete` mirrors src ONTO the bucket and
+        # deletes every bucket object NOT present in src - an empty or wrong src
+        # wipes the bucket. But `sync ./build s3://site --delete` is ALSO the
+        # single most common static-site deploy. The two are statically
+        # indistinguishable (we cannot tell if <src> is empty), so this is WARN,
+        # not block: surface it to a human, never hard-block a legitimate deploy.
+        # Known build-output sources (build/dist/public/out/.next/node_modules/
+        # .output) are the benign deploy case and PASS untouched; --dryrun PASSES.
+        r"""\baws\s+s3\s+sync\b(?=[^\n]*\ss3://)(?=[^\n]*\s--delete\b)(?![^\n]*--dry-?run)(?![^\n]*(?:\bbuild\b|\bdist\b|\bpublic\b|/out\b|\.next\b|node_modules|\.output\b))""",
+    ),
+    level="warn",
+    reason="`s3 sync --delete` deletes every bucket object absent from the source; an empty or wrong source wipes the bucket (ambiguous with a normal deploy - surfaced for a human, not hard-blocked)",
+    description="Warns on `aws s3 sync <src> s3://bucket --delete` (mirror-delete wipe risk); build-output sources and --dryrun pass.",
+)
+
 STREAM_QUEUE_DESTROY = Policy(
     name="STREAM_QUEUE_DESTROY",
     patterns=(
@@ -905,6 +923,15 @@ CLOUD_PROTECTION_OFF = Policy(
     patterns=(
         r"""\bgcloud\s+sql\s+instances\s+patch\b(?=.*(?:--no-deletion-protection|--no-backup))""",
         r"""\baws\s+rds\s+modify-db-instance\b(?=.*--no-deletion-protection)""",
+        # 0.4.13: setting --backup-retention-period 0 DELETES all automated backups
+        # and disables future ones (the AWS-native way to kill backups). A positive
+        # retention (--backup-retention-period 7, ENABLING backups) is the benign twin.
+        r"""\baws\s+rds\s+modify-db-(?:instance|cluster)\b(?=.*--backup-retention-period\s+0\b)""",
+        # suspending bucket versioning removes the undo for every future overwrite/delete.
+        # Status=Enabled (the benign twin) PASSES.
+        r"""\baws\s+s3api\s+put-bucket-versioning\b(?=.*Status=Suspended)""",
+        # gcloud compute instance deletion-protection off (arms a later delete).
+        r"""\bgcloud\s+compute\s+instances\s+update\b(?=.*--no-deletion-protection)""",
     ),
     reason="disabling deletion-protection or backups on a prod database sets it up for silent, irreversible destruction",
     description="disabling deletion-protection or backups on a prod database sets it up for silent, irreversible destruction",
@@ -918,6 +945,410 @@ IAC_STATE_DESTROY = Policy(
     ),
     reason="pulumi stack rm/destroy or cdk destroy --force tears down managed infrastructure and its state",
     description="pulumi stack rm/destroy or cdk destroy --force tears down managed infrastructure and its state",
+)
+
+# --- Structure-keyed close-153 policies (2026-07-11): 9 PLAIN_CORE shapes + the
+# 2 keygen-overwrite cases + two residual-obfuscated shapes (etcd compaction,
+# pubsub seek, batch gh delete-asset) an adversarial hunt found still ALLOWing
+# through the live 0.4.12 gate. Each keys on verb+flag+resource (not the tool
+# name alone) and has a benign twin that PASSES (see test_close153.py). Levels
+# per the danger's reversibility: hard "block" for irreversible key/secret/queue
+# loss and config-mgmt file removal on a real path; "warn" (surface to a human)
+# for the ambiguous-but-serious classes (lifecycle nuke, deprecate-all, buildx
+# --push, opaque SQL-from-file, key overwrite, etcd compaction, pubsub seek).
+
+CLOUD_STORAGE_LIFECYCLE_NUKE = Policy(
+    name="CLOUD_STORAGE_LIFECYCLE_NUKE",
+    # warn: an S3 lifecycle rule with a tiny Expiration (Days 1..99) mass-EXPIRES
+    # every matching object shortly after this call - a slow-motion bucket wipe
+    # that CLOUD_STORAGE_WIPE (which keys on `s3 rm`) never sees. A long retention
+    # (Days 365, the archival benign twin) does NOT match: only 1-2 digit day
+    # counts (<=99) are a nuke. Surface to a human, since a legit short TTL exists.
+    level="warn",
+    patterns=(
+        r"\baws\s+s3api\s+put-bucket-lifecycle-configuration\b[^\n]*"
+        r"(?:\"Days\"\s*:\s*[1-9][0-9]?\b|\"NoncurrentDays\"\s*:\s*[1-9][0-9]?\b)",
+    ),
+    reason="an S3 lifecycle rule with a very short expiration mass-deletes bucket objects on a timer - review before running",
+    description="Warns on aws s3api put-bucket-lifecycle-configuration with a short (<=99 day) Expiration/NoncurrentDays.",
+)
+
+CONFIG_MGMT_DESTROY = Policy(
+    name="CONFIG_MGMT_DESTROY",
+    # ansible removing a real path fleet-wide (`-m file -a 'path=... state=absent'`)
+    # deletes it on every host at once; a destroy playbook or an explicit
+    # terminate_instances=true tears down infra. Scoped tight: state=absent on a
+    # throwaway path (/tmp, /var/tmp, /dev/shm) is the benign twin and PASSES.
+    patterns=(
+        r"\bansible(?:-playbook)?\b(?![^\n]*(?:/tmp/|/tmp\b|/var/tmp/|/dev/shm))"
+        r"[^\n]*\bstate=absent\b",
+        r"\bansible-playbook\b[^\n]*\bterminate_instances=true\b",
+        r"\bansible-playbook\b[^\n]*\bdestroy[\w.-]*\.ya?ml\b",
+    ),
+    reason="ansible removing a real path fleet-wide, running a destroy playbook, or terminating instances is irreversible across every host - requires a human",
+    description="Blocks ansible file state=absent on a non-tmp path, ansible-playbook destroy*.yml, and terminate_instances=true.",
+)
+
+STREAM_RETENTION_PURGE = Policy(
+    name="STREAM_RETENTION_PURGE",
+    # forcing a topic's retention to ~0 (retention.ms/bytes = 0/1/tiny) makes the
+    # broker purge every retained message on the next cleanup - a silent data wipe
+    # that STREAM_QUEUE_DESTROY (which keys on --delete) never catches. A real
+    # retention (604800000 = 7 days, the benign twin) has many digits and PASSES.
+    patterns=(
+        r"\bkafka-configs\b(?=[^\n]*--alter\b)"
+        r"(?=[^\n]*\bretention\.(?:ms|bytes)=(?:0|1|-?[0-9]{1,4})\b)",
+    ),
+    reason="forcing a Kafka topic retention to ~zero purges all retained messages irreversibly - requires a human",
+    description="Blocks kafka-configs --alter --add-config retention.ms/bytes=0/1/tiny (forces purge).",
+)
+
+SOPS_KEY_ROTATE_RM = Policy(
+    name="SOPS_KEY_ROTATE_RM",
+    # `sops rotate --rm-pgp/--rm-kms/...` removes an OLD recipient key while
+    # re-encrypting: anyone who only held that key permanently loses access to the
+    # secrets. --add-* (the benign twin, grants access) PASSES.
+    patterns=(
+        r"\bsops\b[^\n]*\brotate\b[^\n]*--rm-(?:pgp|kms|gcp-kms|azure-kv|hc-vault)\b",
+    ),
+    reason="sops rotate --rm-pgp/--rm-kms drops an old key recipient - anyone holding only that key loses access to the secrets - requires a human",
+    description="Blocks sops rotate with --rm-pgp/--rm-kms/--rm-gcp-kms/--rm-azure-kv/--rm-hc-vault.",
+)
+
+PACKAGE_DEPRECATE_ALL = Policy(
+    name="PACKAGE_DEPRECATE_ALL",
+    # `npm deprecate pkg@"*" ... --force` marks EVERY published version deprecated
+    # at once - a public signal that breaks installs for all consumers. A targeted
+    # single-version deprecate (`@1.2.3`, the benign twin) PASSES.
+    level="warn",
+    patterns=(
+        r"\bnpm\s+deprecate\b[^\n]*(?:@[\"']?\*[\"']?|[\"']\*[\"'])(?=[^\n]*(?:--force|@))",
+    ),
+    reason="npm deprecate on the '*' version range flags every published version at once and breaks all consumers - review before running",
+    description="Warns on npm deprecate pkg@\"*\" (all versions).",
+)
+
+REGISTRY_PUSH_EXTRA = Policy(
+    name="REGISTRY_PUSH_EXTRA",
+    # `docker buildx build --push` builds AND pushes to a registry in one step -
+    # the same irreversible outward release as `docker push`, which REGISTRY_PUBLISH
+    # catches, but buildx's combined form slipped past it. A `--load`/no-push build
+    # (the benign twin) PASSES.
+    level="warn",
+    patterns=(
+        r"\bdocker\s+buildx\s+build\b(?=[^\n]*\s--push\b)",
+    ),
+    reason="docker buildx build --push releases an image to a registry - an irreversible outward publish - requires a human",
+    description="Warns on docker buildx build --push (combined build-and-publish).",
+)
+
+DB_FILE_REDIRECT_EXEC = Policy(
+    name="DB_FILE_REDIRECT_EXEC",
+    # warn: `yes | mysql ... < script.sql` auto-confirms and runs a SQL script from
+    # a FILE the gate cannot read - the payload is invisible, so it may be a full
+    # drop. Also catch a mysql redirect from a drop*/delete*/truncate* named .sql
+    # even without `yes`. A plain `mysql prod < seed.sql` / `< schema.sql` (benign
+    # twin, no auto-confirm, non-destructive name) PASSES.
+    level="warn",
+    patterns=(
+        r"\byes\s*\|\s*mysql\b[^\n]*<\s*\S+\.sql\b",
+        r"\bmysql\b[^\n]*<\s*[^\n]*(?:drop|delete|truncate|destroy|wipe|teardown|nuke)[\w.-]*\.sql\b",
+    ),
+    reason="auto-confirming (yes |) a SQL script from a file, or running a drop/delete-named .sql, executes unseen destructive SQL - review before running",
+    description="Warns on `yes | mysql < *.sql` and mysql < drop*/delete*/truncate*.sql (opaque scripted SQL).",
+)
+
+KEY_OVERWRITE = Policy(
+    name="KEY_OVERWRITE",
+    # warn: auto-answering the overwrite prompt (`ssh-keygen ... -f <path> <<< y`)
+    # regenerates a key AT AN EXISTING PATH, silently destroying the old private
+    # key (you only get the prompt when the file exists). `age-keygen -o <file>`
+    # writes a fresh identity file, clobbering any file already there. Generating a
+    # NEW key (no `<<<y`, or age-keygen with -y/convert, the benign twins) PASSES.
+    level="warn",
+    patterns=(
+        # ssh-keygen with -f AND the interactive overwrite auto-confirmed via a
+        # here-string `<<< y` / `<<<y` (the only reason to feed `y` is to accept
+        # "Overwrite (y/n)?" - a brand-new path never prompts).
+        r"\bssh-keygen\b(?=[^\n]*\s-f\b)[^\n]*<<<\s*[\"']?y(?:es)?[\"']?(?:\s|$)",
+        # age-keygen writing to an output file (-o) WITHOUT -y (convert-to-pubkey):
+        # -o overwrites the target identity file if it exists.
+        r"\bage-keygen\b(?=[^\n]*\s-o\b)(?![^\n]*\s-y\b)",
+    ),
+    reason="regenerating a key over an existing path (ssh-keygen -f ... <<<y) or age-keygen -o <file> silently overwrites a private key - review before running",
+    description="Warns on ssh-keygen -f <path> with auto-yes overwrite, and age-keygen -o <file> without -y.",
+)
+
+STREAM_SEEK_PURGE = Policy(
+    name="STREAM_SEEK_PURGE",
+    # warn: `gcloud pubsub subscriptions seek` moves the ack cursor to a time or
+    # snapshot - it can discard un-acked messages (seek forward) or force a mass
+    # re-delivery (seek back). Legit for controlled replay, so surface to a human.
+    # pull/list/describe/create (benign twins) PASS.
+    level="warn",
+    patterns=(
+        r"\bgcloud\s+pubsub\s+subscriptions\s+seek\b",
+    ),
+    reason="pubsub subscriptions seek moves the ack cursor - it can drop un-acked messages or force mass redelivery - review before running",
+    description="Warns on gcloud pubsub subscriptions seek (cursor move / message purge or replay).",
+)
+
+ETCD_COMPACT = Policy(
+    name="ETCD_COMPACT",
+    # warn: `etcdctl compaction <rev>` permanently discards all key revisions
+    # before <rev> (you can no longer read or watch from earlier history);
+    # `etcdctl defrag` rewrites the backend. Both are legit maintenance, but the
+    # compaction is an irreversible history drop - surface to a human. get/put/
+    # member/endpoint/snapshot (benign twins) PASS.
+    level="warn",
+    patterns=(
+        r"\betcdctl\b[^\n]*\b(?:compaction|defrag)\b",
+    ),
+    reason="etcdctl compaction permanently drops key history before a revision (defrag rewrites the store) - review before running",
+    description="Warns on etcdctl compaction/defrag (irreversible history compaction).",
+)
+
+RELEASE_ASSET_MASS_DELETE = Policy(
+    name="RELEASE_ASSET_MASS_DELETE",
+    # warn: a loop that enumerates a release's assets and deletes each
+    # (`gh release view ... --json assets ... | ... gh release delete-asset`) wipes
+    # ALL assets of a release at once - a batch destruction distinct from the
+    # single, recoverable `gh release delete-asset one.dmg` (which stays allowed).
+    level="warn",
+    patterns=(
+        r"\bgh\s+release\s+view\b[^\n]*\bassets\b[\s\S]*?\bgh\s+release\s+delete-asset\b",
+    ),
+    reason="a batch loop deleting every asset of a release (view --json assets -> delete-asset) is a mass destruction - review before running",
+    description="Warns on the gh release view --json assets -> gh release delete-asset batch loop (deletes all assets).",
+)
+
+# --- 0.4.13 adversarial gap-closers (2026-07-12): a 9-category adversarial hunt
+# (770 engine-tested commands) found 77 irreversible shapes still ALLOWing through
+# the live 0.4.12 gate. Each rule below fires on an engine-confirmed miss and has a
+# benign twin that PASSES (see test_v0413_gaps.py). Levels per reversibility: hard
+# "block" for whole-disk/data/secret/infra loss; "warn" (surface to a human) for the
+# dev-routine-but-destructive classes (ORM db reset, cert-file delete). The
+# deliberately-LEFT set (too common to block without false positives): git working-
+# tree discards (checkout -- ., restore ., checkout -f), git stash clear, redis
+# SWAPDB, rsync --delete into a /mnt//media/ backup mount. And two residual obfuscation
+# shapes stay KNOWN-OPEN like $'\x72m': bash parameter-expansion evasion
+# (${V/X/ }, ${V^^}) - deliberate hand-obfuscation, not real agent output.
+
+DISK_ERASE_EXTRA = Policy(
+    name="DISK_ERASE_EXTRA",
+    patterns=(
+        # badblocks WRITE-mode (-w / -wsv) overwrites every sector. Read-only
+        # badblocks (-sv, no 'w') is the benign twin and PASSES.
+        r"\bbadblocks\b[^\n|;&]*\s-[a-zA-Z]*w[a-zA-Z]*\b[^\n|;&]*/dev/",
+        # the mkfs FAMILY beyond the literal `mkfs` (DISK_DESTROY covers mkfs/mkfs.*):
+        # mke2fs/mkntfs/mkdosfs/mkexfatfs/mkreiserfs/mkswap/mkudffs all lay a new
+        # filesystem on a device = wipe. mkdir/mkfifo/mktemp/make do NOT match.
+        r"\b(?:mke2fs|mkntfs|mkdosfs|mkexfatfs|mkreiserfs|mkswap|mkudffs)\b[^\n|;&]*/dev/",
+        # NVMe controller erase beyond `nvme format` (sanitize / write-zeroes) wipes
+        # the whole namespace. Read-only nvme (list/id-ctrl/smart-log) PASSES.
+        r"\bnvme\s+(?:sanitize|write-zeroes)\b[^\n|;&]*/dev/",
+        # SCSI low-level format of a whole disk. sg_format WITHOUT --format (reports
+        # the current format) is the benign twin and PASSES.
+        r"\bsg_format\b[^\n|;&]*--format\b",
+        # dd writing to the mounted-root device alias /dev/root destroys the live
+        # root filesystem (DISK_DESTROY's dd device family omitted `root`).
+        r"\bdd\b[^\n|;&]*\bof=/dev/root\b",
+        # dd zero/random-filling a persistent DATA/secret file irreversibly destroys
+        # it. A copy `dd if=<real> of=x` and a scratch `of=/tmp/..`/`of=*.img` are
+        # benign twins and PASS.
+        r"\bdd\b[^\n|;&]*\bif=/dev/(?:zero|u?random)\b[^\n|;&]*"
+        r"\bof=(?:[^\n|;&]*(?:/root/|/home/|/etc/|/srv/|/opt/)"
+        r"|[^\n|;&]*\.(?:db|sqlite3?|sql|env|pem|key|kdbx|gpg|jks|keystore)\b)",
+    ),
+    reason="whole-disk/namespace erase or zero-filling a persistent data file destroys all data - requires a human",
+    description="Blocks badblocks -w, mke2fs/mkntfs/mkswap on a device, nvme sanitize/write-zeroes, sg_format, dd of=/dev/root, dd zero-fill of a data file.",
+)
+
+OVERWRITE_DESTROY_EXTRA = Policy(
+    name="OVERWRITE_DESTROY_EXTRA",
+    patterns=(
+        # emptying a persistent file via a null/`:`/empty-echo redirect, EXTENDED to
+        # ~ and /root and to data-file extensions (.db/.sqlite/.kdbx) that
+        # OVERWRITE_DESTROY's root list omitted. Scratch (`: > /tmp/lock`,
+        # `echo x > out.txt`) PASSES.
+        r"(?:cat\s+/dev/null|:|echo(?:\s+-n)?\s*(?:''|\"\")?|printf\s*(?:''|\"\")?)\s*>\s*"
+        r"[^\n|;&]*(?:/root/|~/|\.db\b|\.sqlite3?\b|\.kdbx\b)",
+        # cp /dev/null over a key/secret file (or into /etc/ssl/private) empties it.
+        r"\bcp\b[^\n|;&]*\s/dev/null\s+[^\n|;&]*(?:/etc/ssl/private/|\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.kdbx\b)",
+        # find -exec (truncate -s0 | unlink | dd of=) mass-empties/deletes matched
+        # files - the analyzer's find branch only sees -delete/-exec rm/shred.
+        r"\bfind\b[^\n]*-exec(?:dir)?\s+(?:truncate\b[^\n]*-s\s*0|unlink\b|dd\b[^\n]*\bof=)",
+        # rsync mirror-wipe: the --del ALIAS of --delete, and the /root protected
+        # root, both missed by OVERWRITE_DESTROY. A --delete into a non-protected
+        # backup mount (/mnt//media/) stays allowed (common backup idiom).
+        r"\brsync\b[^\n|;&]*\s--del(?:ete)?[a-z-]*\b[^\n|;&]*"
+        r"(?:/home/|~/|/srv/|/var/|/etc/|/boot/|/usr/|/opt/|/root/)",
+    ),
+    reason="emptying/overwriting a persistent file or a mass find-exec truncation destroys data - requires a human",
+    description="Blocks null-redirect to ~ /root /*.db, cp /dev/null over a key, find -exec truncate/unlink/dd, rsync --del into a protected root.",
+)
+
+CLOUD_DESTROY_EXTRA = Policy(
+    name="CLOUD_DESTROY_EXTRA",
+    patterns=(
+        # gsutil rb removes an entire GCS bucket (CLOUD_DESTROY has aws s3 rb + gcloud
+        # storage buckets delete, not gsutil's `rb`). ls/cp/rsync/rm PASS.
+        r"\bgsutil\b(?:\s+-\w+)*\s+rb\b",
+        # aws ec2 modify-instance-attribute --no-disable-api-termination REMOVES
+        # termination protection. The protecting --disable-api-termination PASSES.
+        r"\baws\s+ec2\s+modify-instance-attribute\b(?=[^\n]*--no-disable-api-termination)",
+    ),
+    reason="removing a GCS bucket or disarming EC2 termination protection sets up irreversible loss - requires a human",
+    description="Blocks gsutil rb (bucket removal) and aws ec2 --no-disable-api-termination.",
+)
+
+IAC_STATE_DESTROY_EXTRA = Policy(
+    name="IAC_STATE_DESTROY_EXTRA",
+    patterns=(
+        # terraform state surgery orphans real infra from its state. state list/show PASS.
+        r"\bterraform\s+state\s+rm\b",
+        r"\bterraform\s+workspace\s+delete\b(?=[^\n]*(?:-force|--force))",
+        r"\bpulumi\s+(?:down|state\s+delete)\b",
+        # terragrunt run-all destroy (every module) or a NON-INTERACTIVE/auto-approve
+        # destroy tears down infra with no human in the loop - matching the gate's
+        # terraform stance (plain interactive `terragrunt destroy`, which PROMPTS, is
+        # the benign twin and PASSES, exactly like plain `terraform destroy`).
+        r"\bterragrunt\b[^\n]*\b(?:run-all\s+destroy|destroy\b[^\n]*(?:--terragrunt-non-interactive|-auto-approve))",
+        # helmfile destroy removes every release with no prompt (same class as the
+        # already-blocked `helm uninstall`).
+        r"\bhelmfile\b[^\n]*\bdestroy\b",
+    ),
+    reason="IaC state removal or a fleet-wide destroy tears down managed infrastructure irreversibly - requires a human",
+    description="Blocks terraform state rm, terraform workspace delete -force, pulumi down/state delete, terragrunt destroy, helmfile destroy.",
+)
+
+DB_DESTRUCTIVE_EXTRA2 = Policy(
+    name="DB_DESTRUCTIVE_EXTRA2",
+    patterns=(
+        # DROP OWNED BY <role> drops every object a role owns (a whole app schema).
+        r"\bDROP\s+OWNED\s+BY\b",
+        # mongosh adminCommand({dropDatabase}) / runCommand({drop:...}) - the eval
+        # forms DATASTORE_FLUSH_EXTRA's `.drop(`/`.dropDatabase(` regex missed.
+        r"\bmongo(?:sh)?\b[^\n]*(?:adminCommand\s*\(\s*\{\s*dropDatabase|runCommand\s*\(\s*\{\s*drop\b)",
+        # redis-cli shutdown nosave stops the server discarding unsaved data.
+        r"\bredis-cli\b[^\n]*\bshutdown\b[^\n]*\bnosave\b",
+        # cypher DETACH DELETE across a bare match wipes the whole graph.
+        r"\bDETACH\s+DELETE\b",
+        # elasticsearch delete ALL indices (DELETE /_all or /*).
+        r"(?:-X\s*DELETE|--request\s+DELETE)[^\n]*://[^\n]*/(?:_all|\*)(?:\b|$)",
+        r":9200/(?:_all|\*)(?:\b|/|$)",
+        # influx bucket delete removes a whole bucket's series.
+        r"\binflux\s+bucket\s+delete\b",
+    ),
+    reason="datastore-wide destruction (DROP OWNED, mongosh drop, redis shutdown nosave, DETACH DELETE, ES delete _all, influx bucket delete) - requires a human",
+    description="Blocks DROP OWNED BY, mongosh adminCommand/runCommand drop, redis shutdown nosave, cypher DETACH DELETE, ES DELETE _all, influx bucket delete.",
+)
+
+DB_FRAMEWORK_RESET = Policy(
+    name="DB_FRAMEWORK_RESET",
+    # WARN: ORM/migration "reset the whole database" commands DROP+recreate every
+    # table (all data gone). Routine in dev, catastrophic in prod - surface to a
+    # human, don't hard-block. FORWARD twins (migrate dev/deploy, db push,
+    # migrate:latest, upgrade head, db:migrate, goose up) carry no reset token and PASS.
+    level="warn",
+    patterns=(
+        r"\bprisma\s+migrate\s+reset\b",
+        r"\bprisma\s+db\s+push\b[^\n]*--force-reset\b",
+        r"\bartisan\s+migrate:(?:fresh|reset)\b",
+        r"\b(?:rake|rails)\s+db:(?:reset|drop)\b",
+        r"\btypeorm(?:-ts-node-\S+)?\s+schema:drop\b",
+        r"\bsequelize(?:-cli)?\s+db:drop\b",
+        r"\bmanage\.py\s+flush\b",
+        r"\bliquibase\b[^\n]*\bdropAll\b",
+        r"\bknex\s+migrate:rollback\b[^\n]*--all\b",
+        r"\balembic\s+downgrade\s+base\b",
+        r"\bgoose\b[^\n]*\bdown-to\s+0\b",
+        # mongorestore --drop drops each collection before restoring.
+        r"\bmongorestore\b[^\n]*--drop\b",
+    ),
+    reason="an ORM/migration reset drops and recreates the whole database (all data lost) - review before running",
+    description="Warns on prisma migrate reset, artisan migrate:fresh, rails db:reset, typeorm schema:drop, sequelize db:drop, django flush, liquibase dropAll, knex rollback --all, alembic downgrade base, goose down-to 0, mongorestore --drop.",
+)
+
+GIT_DESTRUCTIVE_EXTRA = Policy(
+    name="GIT_DESTRUCTIVE_EXTRA",
+    patterns=(
+        # reset --hard with a `-C <dir>` global option and/or a <commit> before the
+        # flag - GIT_DESTRUCTIVE needed them adjacent. reset --soft / reset HEAD
+        # <file> (no --hard) are benign twins and PASS.
+        r"\bgit\b(?:\s+-C\s+\S+)?\s+reset\b[^\n]*--hard\b",
+        # branch force-delete in COMBINED (-fD) / reordered (--force -D) / -C forms.
+        # Case-PINNED capital D (?-i:D) so benign `git branch -d merged` PASSES.
+        r"\bgit\b(?:\s+-C\s+\S+)?\s+branch\b[^\n]*\s-[a-zA-Z]*(?-i:D)[a-zA-Z]*\b",
+        # GitHub GraphQL destructive mutations via `gh api graphql` (the -X DELETE
+        # wall never sees a POST graphql mutation). Read queries PASS.
+        r"\bgh\s+api\b[^\n]*graphql[^\n]*\b(?:deleteRepository|deleteRef|deleteBranch|deleteIssue|deleteProject|deletePackageVersion)\b",
+    ),
+    reason="hard-resetting, force-deleting a branch, or a GitHub GraphQL delete mutation destroys work/history - requires a human",
+    description="Blocks git -C/ref reset --hard, git branch -fD/--force -D, gh api graphql delete* mutations.",
+)
+
+K8S_NODE_DELETE_EXTRA = Policy(
+    name="K8S_NODE_DELETE_EXTRA",
+    patterns=(
+        # kubectl/k delete node in the slash form (node/worker-1) or via the `k`
+        # alias - K8S_DESTROY_EXTRA required `kubectl` + space-separated args. get
+        # nodes / delete pod (not node) / a --dry-run are benign twins and PASS.
+        r"\b(?:kubectl|k)\s+(?!(?:[^\n]*\s)?--dry-run)(?:[^\n]*\s)?delete\s+(?:nodes?|no)[/\s]",
+    ),
+    reason="deleting a Kubernetes node evicts all its pods and removes it from the cluster - requires a human",
+    description="Blocks kubectl/k delete node (slash form and the k alias).",
+)
+
+SECRET_STORE_DELETE_EXTRA2 = Policy(
+    name="SECRET_STORE_DELETE_EXTRA2",
+    patterns=(
+        # gpg2 (not just gpg) deleting a secret key.
+        r"\bgpg2?\b[^\n]*--delete-secret-keys?\b",
+        # deleting an entry from a running secret store. get/put/lookup/find PASS.
+        r"\bconsul\s+kv\s+delete\b",
+        r"\bsecret-tool\s+clear\b",
+        r"\bsecurity\s+delete-(?:generic|internet)-password\b",
+        r"\bpass\s+(?:rm|remove)\b",
+    ),
+    reason="deleting a stored secret/credential entry is irreversible and can break running services - requires a human",
+    description="Blocks gpg2 --delete-secret-keys, consul kv delete, secret-tool clear, security delete-*-password, pass rm.",
+)
+
+SECRET_FILE_DELETE = Policy(
+    name="SECRET_FILE_DELETE",
+    # WARN: rm/shred of a cert/key/prod-env file by extension (beyond the id_rsa/.ssh
+    # paths SECRET_DELETE covers). Could be a stale cert cleanup or a real prod secret.
+    # .env.example/.sample/.template (benign twins) do NOT match.
+    level="warn",
+    patterns=(
+        r"\b(?:rm|shred|unlink)\b[^\n|;&]*\s[^\n|;&]*"
+        r"(?:\.pem\b|\.key\b|\.p12\b|\.pfx\b|\.kdbx\b|\.jks\b|\.keystore\b|"
+        r"\.env\.(?!example\b|sample\b|template\b)\w+)",
+    ),
+    reason="deleting a certificate/key/production-env file may be irreversible loss of a secret - review before running",
+    description="Warns on rm/shred of *.pem/*.key/*.p12/*.pfx/*.kdbx/.env.production files.",
+)
+
+WINDOWS_DESTROY_EXTRA = Policy(
+    name="WINDOWS_DESTROY_EXTRA",
+    patterns=(
+        # Format-Volume / Remove-Partition wipe a volume or partition. Anchored at a
+        # COMMAND position (start / after ; & | newline) so `Get-Help Format-Volume`
+        # and `Get-Command Format-Volume` (introspection, cmdlet as an ARGUMENT) PASS;
+        # Get-Volume/Get-Partition (read) and a `-WhatIf` dry-run also PASS.
+        r"(?:^|[\n;&|(]\s*)Format-Volume\b(?![^\n]*-WhatIf\b)",
+        r"(?:^|[\n;&|(]\s*)Remove-Partition\b(?![^\n]*-WhatIf\b)",
+        # deleting VSS shadow copies via CIM (Get-CimInstance Win32_ShadowCopy |
+        # Remove-CimInstance) drops the recovery snapshots.
+        r"\bWin32_ShadowCopy\b[^\n]*\|\s*Remove-CimInstance\b|\bRemove-CimInstance\b[^\n]*\bWin32_ShadowCopy\b",
+        # diskpart `clean` wipes the partition table of the selected disk.
+        r"\bdiskpart\b[^\n]*\bclean\b|\bclean\b[^\n]*\|\s*diskpart\b",
+        # Clear-Content on a data file empties it in place.
+        r"\bClear-Content\b[^\n]*\.(?:db|sqlite3?|mdf|ldf|env|config)\b",
+    ),
+    reason="Windows volume/partition/shadow-copy/content destruction is irreversible - requires a human",
+    description="Blocks Format-Volume, Remove-Partition, Win32_ShadowCopy|Remove-CimInstance, diskpart clean, Clear-Content on a data file.",
 )
 
 DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
@@ -962,6 +1393,7 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     # is the TARGET PATH being auto-executed later. Warn on both pathways.
     AUTOEXEC_WRITE,
     CLOUD_STORAGE_WIPE,
+    CLOUD_STORAGE_SYNC_DELETE,
     STREAM_QUEUE_DESTROY,
     WINDOWS_DESTROY,
     MACOS_DISK_DESTROY,
@@ -973,6 +1405,37 @@ DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
     SECRET_STORE_DELETE_EXTRA,
     CLOUD_PROTECTION_OFF,
     IAC_STATE_DESTROY,
+    # close-153 structure-keyed additions (2026-07-11): plain-core shapes +
+    # keygen-overwrite + residual-obfuscated (etcd/pubsub/gh-batch) the hunt found
+    # still ALLOWing. Blocks for irreversible key/queue/config loss; warns for the
+    # ambiguous-but-serious. Each has a passing benign twin (test_close153.py).
+    CLOUD_STORAGE_LIFECYCLE_NUKE,
+    CONFIG_MGMT_DESTROY,
+    STREAM_RETENTION_PURGE,
+    SOPS_KEY_ROTATE_RM,
+    PACKAGE_DEPRECATE_ALL,
+    REGISTRY_PUSH_EXTRA,
+    DB_FILE_REDIRECT_EXEC,
+    KEY_OVERWRITE,
+    STREAM_SEEK_PURGE,
+    ETCD_COMPACT,
+    RELEASE_ASSET_MASS_DELETE,
+    # 0.4.13 adversarial gap-closers (2026-07-12): 77 engine-confirmed misses from a
+    # 9-category hunt. Blocks for whole-disk/data/secret/infra loss; warns for the
+    # dev-routine-destructive (ORM reset, cert-file delete). Benign twins pass
+    # (test_v0413_gaps.py). CLOUD_PROTECTION_OFF extended in place (rds retention 0,
+    # s3 versioning suspend, gcloud compute deletion-protection off).
+    DISK_ERASE_EXTRA,
+    OVERWRITE_DESTROY_EXTRA,
+    CLOUD_DESTROY_EXTRA,
+    IAC_STATE_DESTROY_EXTRA,
+    DB_DESTRUCTIVE_EXTRA2,
+    DB_FRAMEWORK_RESET,
+    GIT_DESTRUCTIVE_EXTRA,
+    K8S_NODE_DELETE_EXTRA,
+    SECRET_STORE_DELETE_EXTRA2,
+    SECRET_FILE_DELETE,
+    WINDOWS_DESTROY_EXTRA,
 )
 
 # Default payment policy instance (blocks every payment-shaped action).
@@ -1014,6 +1477,7 @@ ALL_PRESETS: dict[str, Policy] = {
     "REGISTRY_PUBLISH": REGISTRY_PUBLISH,
     "AUTOEXEC_WRITE": AUTOEXEC_WRITE,
     "CLOUD_STORAGE_WIPE": CLOUD_STORAGE_WIPE,
+    "CLOUD_STORAGE_SYNC_DELETE": CLOUD_STORAGE_SYNC_DELETE,
     "STREAM_QUEUE_DESTROY": STREAM_QUEUE_DESTROY,
     "WINDOWS_DESTROY": WINDOWS_DESTROY,
     "MACOS_DISK_DESTROY": MACOS_DISK_DESTROY,
@@ -1025,4 +1489,26 @@ ALL_PRESETS: dict[str, Policy] = {
     "SECRET_STORE_DELETE_EXTRA": SECRET_STORE_DELETE_EXTRA,
     "CLOUD_PROTECTION_OFF": CLOUD_PROTECTION_OFF,
     "IAC_STATE_DESTROY": IAC_STATE_DESTROY,
+    "CLOUD_STORAGE_LIFECYCLE_NUKE": CLOUD_STORAGE_LIFECYCLE_NUKE,
+    "CONFIG_MGMT_DESTROY": CONFIG_MGMT_DESTROY,
+    "STREAM_RETENTION_PURGE": STREAM_RETENTION_PURGE,
+    "SOPS_KEY_ROTATE_RM": SOPS_KEY_ROTATE_RM,
+    "PACKAGE_DEPRECATE_ALL": PACKAGE_DEPRECATE_ALL,
+    "REGISTRY_PUSH_EXTRA": REGISTRY_PUSH_EXTRA,
+    "DB_FILE_REDIRECT_EXEC": DB_FILE_REDIRECT_EXEC,
+    "KEY_OVERWRITE": KEY_OVERWRITE,
+    "STREAM_SEEK_PURGE": STREAM_SEEK_PURGE,
+    "ETCD_COMPACT": ETCD_COMPACT,
+    "RELEASE_ASSET_MASS_DELETE": RELEASE_ASSET_MASS_DELETE,
+    "DISK_ERASE_EXTRA": DISK_ERASE_EXTRA,
+    "OVERWRITE_DESTROY_EXTRA": OVERWRITE_DESTROY_EXTRA,
+    "CLOUD_DESTROY_EXTRA": CLOUD_DESTROY_EXTRA,
+    "IAC_STATE_DESTROY_EXTRA": IAC_STATE_DESTROY_EXTRA,
+    "DB_DESTRUCTIVE_EXTRA2": DB_DESTRUCTIVE_EXTRA2,
+    "DB_FRAMEWORK_RESET": DB_FRAMEWORK_RESET,
+    "GIT_DESTRUCTIVE_EXTRA": GIT_DESTRUCTIVE_EXTRA,
+    "K8S_NODE_DELETE_EXTRA": K8S_NODE_DELETE_EXTRA,
+    "SECRET_STORE_DELETE_EXTRA2": SECRET_STORE_DELETE_EXTRA2,
+    "SECRET_FILE_DELETE": SECRET_FILE_DELETE,
+    "WINDOWS_DESTROY_EXTRA": WINDOWS_DESTROY_EXTRA,
 }
