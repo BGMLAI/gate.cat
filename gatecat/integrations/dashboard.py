@@ -75,7 +75,13 @@ _DECISION_LABEL = {
     "warn": ("flagged", "yellow"),
     "allow": ("allowed", "green"),
     "disarmed": ("disarmed", "grey"),
+    "disarmed_off": ("off-allowed", "grey"),
+    "armed": ("armed", "green"),
     "shadow_block": ("would-stop", "cyan"),
+    # FREE-CORE local control (protection.py)
+    "override_allow": ("override", "cyan"),
+    "override_grant": ("pre-approved", "cyan"),
+    "stagnation": ("no-progress", "yellow"),
 }
 
 
@@ -99,8 +105,19 @@ def render_status(records: list[dict], color: bool = True) -> str:
                 "  .claude/settings.json (matcher \"Bash|Write|Edit\"), then it starts\n"
                 "  watching. Full config: https://github.com/BGMLAI/gate.cat#the-hook--the-strongest-mode")
     s = _summary(records)
+    # FREE-CORE: show the local on/off protection state up top (gate.cat status).
+    try:
+        from gatecat.integrations import protection as _prot
+        _off = _prot.is_protection_off()
+    except Exception:
+        _off = False
+    if _off:
+        banner = c("gate.cat", "bold") + " " + c("PROTECTION OFF", "yellow") + \
+            c(" (catastrophic classes still hard-block)", "grey")
+    else:
+        banner = c("gate.cat", "bold") + " " + c("ON DUTY", "green")
     lines = [
-        c("gate.cat", "bold") + " " + c("ON DUTY", "green"),
+        banner,
         "=" * 40,
         f"  watched   {s['total']:>7} commands",
         f"  {c('STOPPED', 'red')}   {s['stopped']:>7} irreversible / dangerous",
@@ -264,9 +281,45 @@ def main(argv: list[str] | None = None) -> int:
         cloud_cli.main(args[1:])
         return 0
 
+    # --- FREE-CORE local control verbs (protection.py): on / off / allow ------
+    # All LOCAL, all FREE - no cloud key, no entitlement. These write the state
+    # files through the tool itself (not a shell redirect), so the
+    # STATE_FILE_TAMPER wall - which blocks an agent's shell write to those same
+    # files - never fires on the legitimate human CLI path.
+    if cmd in ("off", "on"):
+        from gatecat.integrations import protection as _prot
+        state = _prot.set_protection(cmd)
+        if state == "off":
+            print("gate.cat protection is now OFF.\n"
+                  "  Ordinary rules are downgraded to allow on THIS machine "
+                  "(logged, never silent).\n"
+                  "  Catastrophic classes (rm -rf /, cloud/disk destroy, guard/"
+                  "security tamper,\n"
+                  "  secret/DB wipe) STILL hard-block - they can never be disarmed.\n"
+                  "  Re-arm with: gate.cat on")
+        else:
+            print("gate.cat protection is now ON. Every rule is enforced again.")
+        return 0
+    if cmd == "allow":
+        from gatecat.integrations import protection as _prot
+        if len(args) < 2:
+            print('usage: gate.cat allow "<command>" [ttl_seconds]')
+            return 2
+        command = args[1]
+        ttl = 300
+        if len(args) > 2 and args[2].isdigit():
+            ttl = int(args[2])
+        entry = _prot.add_override(command, ttl_s=ttl)
+        print(f"pre-approved ONE command for {ttl}s (single-use, then it expires):\n"
+              f"  {entry['command_preview']}\n"
+              "  It will pass ONCE if the gate would have blocked it - UNLESS it is a\n"
+              "  catastrophic class (those can never be overridden). Granted by "
+              f"{entry['who']}.")
+        return 0
+
     if cmd in ("status", "", "-h", "--help") and cmd != "why":
         if cmd in ("-h", "--help"):
-            print("gate.cat [status|stats|log|report [YYYY-MM]|why <command>]")
+            print("gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|why <command>]")
             return 0
         print(render_status(_read(), color))
         return 0
@@ -292,7 +345,7 @@ def main(argv: list[str] | None = None) -> int:
         print(explain(" ".join(args[1:]), color))
         return 0
     print(f"unknown command: {cmd}\n"
-          "gate.cat [status|stats|log|report [YYYY-MM]|why <command>]")
+          "gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|why <command>]")
     return 2
 
 

@@ -142,6 +142,74 @@ def _raise_block(source: str, reason: str, action: str, policy: str | None,
     return ActionVetoed(ascii_safe(reason))
 
 
+# FREE-CORE local control (protection.py): the human's own machine-local
+# on/off toggle and per-command override. Applied at EVERY would-be-block point.
+# A catastrophic NEVER_DISARM class can NEVER be downgraded - not by OFF, not by
+# an override. The lookup is fail-safe: any error in the control layer leaves the
+# block intact (the gate never fails OPEN because the toggle file was unreadable).
+def _local_control_allow(
+    source: str, action: str, policy: str | None, reason: str,
+    stages: "list[tuple[str, str, str]]",
+) -> "Decision | None":
+    """If protection is OFF, or a valid manual override pre-approves this exact
+    command, downgrade a would-be BLOCK to an audited ALLOW - UNLESS the policy is
+    a NEVER_DISARM catastrophic class (then always None -> the block stands).
+
+    Returns an allowing Decision to substitute for the block, or None to block."""
+    try:
+        from gatecat.integrations import protection as _prot
+    except Exception:
+        return None  # control layer unavailable -> block stands (fail-closed)
+
+    # 1) catastrophic classes are NEVER disarmable, by toggle OR override.
+    if _prot.is_never_disarm(policy):
+        return None
+
+    # 2) whole-machine OFF toggle: downgrade ordinary block/warn to allow.
+    try:
+        off = _prot.is_protection_off()
+    except Exception:
+        off = False
+    if off:
+        stages.append(("local-control", "disarmed-off",
+                       f"protection OFF: downgraded {policy or 'block'} to allow"))
+        r = (f"protection OFF (local): would-block [{policy or 'gate'}] downgraded "
+             f"to allow - {reason}")
+        # Distinct decision value from the toggle FLIP (which is 'disarmed' and
+        # hash-chained): this is the routine per-command downgrade WHILE off, not a
+        # tamper-evident state change. Keeps the two legible in the dashboard/log.
+        log_decision(source=source, decision="disarmed_off", reason=r,
+                     policy=policy, context=action, stages=stages)
+        return Decision(blocked=False, reason=r, policy=policy,
+                        level="allow").with_stages(stages)
+
+    # 3) per-command manual override: consume a valid, non-expired pre-approval.
+    try:
+        entry = _prot.consume_override(action)
+    except Exception:
+        entry = None
+    if entry is not None:
+        who = entry.get("who", "local")
+        stages.append(("local-control", "override-allow",
+                       f"human override by {who} for [{policy or 'gate'}]"))
+        r = (f"manual override (local) by {ascii_safe(str(who))}: would-block "
+             f"[{policy or 'gate'}] pre-approved once - {reason}")
+        # hash-chained audit record (who / cmd-hash / policy / time).
+        try:
+            _prot._log_chained(
+                decision="override_allow", reason=r, policy=policy, context=action,
+                kind="override_allow",
+                payload={"cmd_sha256": _prot.override_hash(action),
+                         "who": who, "policy": policy})
+        except Exception:
+            log_decision(source=source, decision="override_allow", reason=r,
+                         policy=policy, context=action, stages=stages)
+        return Decision(blocked=False, reason=r, policy=policy,
+                        level="allow").with_stages(stages)
+
+    return None
+
+
 def _shadow_allow(source: str, reason: str, action: str, policy: str | None) -> None:
     """A8: record a would-be block that shadow mode is letting through.
 
@@ -511,6 +579,9 @@ def check_action(
                 _shadow_allow(source, reason, action, del_decision.policy)
                 return Decision(False, f"SHADOW: {ascii_safe(reason)}",
                                 del_decision.policy, level="allow").with_stages(stages)
+            _lc = _local_control_allow(source, action, del_decision.policy, reason, stages)
+            if _lc is not None:
+                return _lc
             raise _raise_block(source, reason, action, del_decision.policy, stages=stages)
         # analyzer ALLOWED this delete: the analyzer OWNS the plain fs-delete
         # class, so drop ONLY RM_RF (see _DELETE_POLICY_NAMES) from the engine
@@ -574,9 +645,18 @@ def check_action(
             if esc is not None and esc[0] == "block" and not shadow_on:
                 stages.append(("deobfuscate", "block", f"{esc[1]}: {esc[2]}"[:200]))
                 reason = f"VETO [{esc[1] or 'gate'}] (de-obfuscated): {esc[2]}"
+                _lc = _local_control_allow(source, action, esc[1], reason, stages)
+                if _lc is not None:
+                    return _lc
                 raise _raise_block(source, reason, action, esc[1], stages=stages)
-            stages.append(("warn-tier", "warn", f"ambiguous-executable {decision.policy}"))
+            # warn-tier: under an OFF toggle (non-catastrophic) the human has
+            # disarmed ordinary rules, so downgrade the warn to an audited allow;
+            # else surface the warn as before.
             wreason = f"unchecked [{decision.policy}]: {decision.reason}"
+            _lc = _local_control_allow(source, action, decision.policy, wreason, stages)
+            if _lc is not None:
+                return _lc
+            stages.append(("warn-tier", "warn", f"ambiguous-executable {decision.policy}"))
             log_decision(source=source, decision="warn", reason=wreason,
                          policy=decision.policy, context=action, stages=stages)
             return Decision(blocked=False, reason=wreason, policy=decision.policy,
@@ -587,6 +667,9 @@ def check_action(
             return Decision(
                 blocked=False, reason=f"SHADOW: {ascii_safe(reason)}", policy=decision.policy
             ).with_stages(stages)
+        _lc = _local_control_allow(source, action, decision.policy, reason, stages)
+        if _lc is not None:
+            return _lc
         raise _raise_block(source, reason, action, decision.policy, stages=stages)
 
     # --- De-obfuscation escalation (Layer 1, ADD-ONLY, fail-safe) ---
@@ -609,6 +692,9 @@ def check_action(
                 _shadow_allow(source, reason, action, esc_pol)
                 return Decision(blocked=False, reason=f"SHADOW: {ascii_safe(reason)}",
                                 policy=esc_pol).with_stages(stages)
+            _lc = _local_control_allow(source, action, esc_pol, reason, stages)
+            if _lc is not None:
+                return _lc
             raise _raise_block(source, reason, action, esc_pol, stages=stages)
         if esc_lvl == "warn":
             stages.append(("deobfuscate", "warn", f"{esc_pol}: {esc_reason}"[:200]))

@@ -292,6 +292,23 @@ def _decide(command: str) -> int:
         return BLOCK
     if getattr(decision, "level", None) == "warn":
         sys.stderr.write(ascii_safe(f"gate.cat WARN (unchecked): {decision.reason}") + "\n")
+
+    # FREE-CORE stagnation (local half): before we let this command run, feed it
+    # to the disk-persisted per-session no-progress detector. On a trip it prints
+    # a VISIBLE stderr warning and logs decision='stagnation'. Honest scope: this
+    # warns on repeated no-progress commands routed through THIS shell; it does
+    # NOT kill an external process. Warn-only by default (GATECAT_STAGNATION_HALT=1
+    # opts into a soft halt) so legit retries / polling are not false-tripped.
+    try:
+        from gatecat.integrations import shell_stagnation
+        reason = shell_stagnation.surface(command, source=SOURCE)
+        if reason and shell_stagnation.halt_enabled():
+            sys.stderr.write(_ascii(
+                "gate.cat HALT [STAGNATION]: no progress across repeated commands "
+                f"(soft halt, GATECAT_STAGNATION_HALT=1): {reason}\n"))
+            return BLOCK
+    except Exception:
+        pass  # stagnation tracking is best-effort; never break the gate verdict
     return ALLOW
 
 

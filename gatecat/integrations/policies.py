@@ -1713,7 +1713,65 @@ SECURITY_CONTROL_DISABLE = Policy(
                 "non-security app / iptables -L / ufw status PASS.",
 )
 
+# ---------------------------------------------------------------------------
+# FREE-CORE state-file self-defense (2026-07-12): the on/off toggle
+# (~/.gatecat/protection.json) and the per-command override store
+# (~/.gatecat/overrides.json) are the new attack surface introduced by the
+# local-control layer. An agent that WRITES either file through a shell -
+# `echo off > ...protection.json`, `tee`, `sed -i`, `cp`, `python
+# open('...','w')`, a redirect/append - could flip its OWN guard off or
+# self-approve a blocked command, defeating the whole free-core promise. BLOCK
+# every such write; it is a NEVER_DISARM class (protection.py:NEVER_DISARM), so
+# even with protection OFF or an override present it still hard-blocks.
+#
+# The LEGIT path is untouched: the human uses `gate.cat on/off/allow`, whose
+# writer (protection.py) writes the file with the Python stdlib DIRECTLY - not
+# by shelling out - so it never passes through this wall. Reading the files
+# (`cat`/`less`/`python open('...','r')`) is allowed - only WRITES are blocked.
+# Tight path allowlist: only ~/.gatecat/protection.json and overrides.json;
+# any other .gatecat file or any other config path is untouched (0-FP).
+# ---------------------------------------------------------------------------
+_STATE_FILE = r"[/\\]\.gatecat[/\\](?:protection|overrides)\.json\b"
+
+STATE_FILE_TAMPER = Policy(
+    name="STATE_FILE_TAMPER",
+    patterns=(
+        # single/append redirect INTO a state file: `echo off > ...protection.json`,
+        # `printf ... >> ...overrides.json`, `... > $HOME/.gatecat/protection.json`.
+        r">>?[^\n|;&]*" + _STATE_FILE,
+        # tee (with/without -a, sudo prefix) writing a state file.
+        r"\btee\b[^\n]*" + _STATE_FILE,
+        # in-place stream edit: `sed -i ...protection.json`, perl -i, ex, `dd of=`.
+        r"\bsed\b[^\n]*-i[^\n]*" + _STATE_FILE,
+        r"\bperl\b[^\n]*-i[^\n]*" + _STATE_FILE,
+        r"\bdd\b[^\n]*\bof=[^\n]*" + _STATE_FILE,
+        # copy / move / install / link ONTO a state file: the DESTINATION is the
+        # LAST operand, so the state file must sit at the END of the command (a
+        # `>`/`;`/`|`/`&` may follow). Anchoring to the tail keeps `cp
+        # ...protection.json /tmp/backup.json` (reading FROM the file to a backup)
+        # ALLOWED - only writing INTO the state file is blocked.
+        r"\b(?:cp|mv|install|ln)\b[^\n]*" + _STATE_FILE + r"\s*(?:$|[;&|])",
+        # truncate always names the file it shrinks, wherever it sits.
+        r"\btruncate\b[^\n]*" + _STATE_FILE,
+        r"\b:\s*>[^\n]*" + _STATE_FILE,           # `: > file` truncate idiom
+        # a Python/interpreter open(...,'w'|'a'|...)/write_text/Path.write on the file.
+        r"open\([^\n)]*\.gatecat[/\\](?:protection|overrides)\.json[^\n)]*['\"][wax]",
+        r"write_text\([^\n)]*" + _STATE_FILE,
+        # shell/python that names the state file with a write-y verb nearby.
+        r"\b(?:chmod|chown)\b[^\n]*" + _STATE_FILE,
+    ),
+    reason="writing/editing gate.cat's own state files "
+           "(~/.gatecat/protection.json or overrides.json) via a shell would let "
+           "an agent flip its guard off or self-approve a blocked command - "
+           "requires a human (use the `gate.cat on/off/allow` CLI, not a shell write)",
+    description="Blocks shell WRITES (>, >>, tee, sed -i, cp/mv/install, dd of=, "
+                "python open('w')/write_text) to ~/.gatecat/protection.json and "
+                "overrides.json. Reads (cat/less/open('r')) and the gate.cat CLI "
+                "path PASS. NEVER_DISARM: still blocks with protection OFF.",
+)
+
 DOGFOOD_DEFAULTS: tuple[Policy, ...] = (
+    STATE_FILE_TAMPER,
     TERRAFORM_PROD,
     DB_DESTRUCTIVE,
     CLOUD_DESTROY,
@@ -1817,6 +1875,7 @@ PAYMENTS_DEFAULT = PAYMENTS()
 # .to_dict() without isinstance guards). PAYMENTS the factory lives beside
 # this dict, not inside it.
 ALL_PRESETS: dict[str, Policy] = {
+    "STATE_FILE_TAMPER": STATE_FILE_TAMPER,
     "TERRAFORM_PROD": TERRAFORM_PROD,
     "DB_DESTRUCTIVE": DB_DESTRUCTIVE,
     "EMAIL_SEND": EMAIL_SEND,
