@@ -148,11 +148,11 @@ def test_order_created_event_supported(tmp_path, env_vars):
     assert ca.activate_lemonsqueezy(body, sig)["tier"] == "solo"
 
 
-def test_ignored_event_not_provisioned(tmp_path, env_vars):
+def test_unhandled_event_not_provisioned(tmp_path, env_vars):
     ca = _load_activate(tmp_path, {
         "LEMONSQUEEZY_WEBHOOK_SECRET": SECRET,
         "LEMONSQUEEZY_VARIANT_TEAM": "555"})
-    body, sig = _signed(_sub("555", event="subscription_updated"))
+    body, sig = _signed(_sub("555", event="subscription_paused"))
     res = ca.activate_lemonsqueezy(body, sig)
     assert res["ok"] is False and "ignored" in res["error"]
 
@@ -168,6 +168,45 @@ def test_activation_is_idempotent(tmp_path, env_vars):
     r2 = ca.activate_lemonsqueezy(body, sig)
     assert r1["key"] == r2["key"]        # same key on redelivery
     assert r1["idempotent"] is False and r2["idempotent"] is True
+
+
+def test_order_and_subscription_events_mint_one_key(tmp_path, env_vars):
+    ca = _load_activate(tmp_path, {
+        "LEMONSQUEEZY_WEBHOOK_SECRET": SECRET,
+        "LEMONSQUEEZY_VARIANT_SOLO": "111"})
+    order = {"meta": {"event_name": "order_created"},
+             "data": {"id": "ord_1", "attributes": {
+                 "user_email": "same@x", "first_order_item": {"variant_id": 111}}}}
+    b1, s1 = _signed(order)
+    b2, s2 = _signed(_sub("111", email="same@x", rid="sub_1"))
+    r1 = ca.activate_lemonsqueezy(b1, s1)
+    r2 = ca.activate_lemonsqueezy(b2, s2)
+    assert r1["key"] == r2["key"]
+    assert len(ca.cloud_server._load_accounts()) == 1
+
+
+def test_expired_subscription_revokes_cloud_key(tmp_path, env_vars):
+    ca = _load_activate(tmp_path, {
+        "LEMONSQUEEZY_WEBHOOK_SECRET": SECRET,
+        "LEMONSQUEEZY_VARIANT_TEAM": "555"})
+    created, created_sig = _signed(_sub("555", rid="sub_exp"))
+    issued = ca.activate_lemonsqueezy(created, created_sig)
+    assert ca.cloud_server._account_for(issued["key"])["tier"] == "team"
+
+    expired, expired_sig = _signed(_sub("555", rid="sub_exp",
+                                        event="subscription_expired"))
+    result = ca.activate_lemonsqueezy(expired, expired_sig)
+    assert result["ok"] is True and result["revoked"] is True
+    assert ca.cloud_server._account_for(issued["key"]) is None
+
+    redelivery = ca.activate_lemonsqueezy(expired, expired_sig)
+    assert redelivery["ok"] is True and redelivery["revoked"] is False
+    assert redelivery["idempotent"] is True
+
+    renewed, renewed_sig = _signed(_sub("555", email="buyer@x", rid="sub_new"))
+    replacement = ca.activate_lemonsqueezy(renewed, renewed_sig)
+    assert replacement["key"] != issued["key"]
+    assert ca.cloud_server._account_for(replacement["key"])["tier"] == "team"
 
 
 # ---- test-mode safety (LS env unset) ----------------------------------------

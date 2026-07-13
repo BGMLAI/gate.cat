@@ -134,6 +134,26 @@ def _already(session_id):
     return None
 
 
+def _already_account_tier(account: str, tier: str):
+    """Return the existing entitlement for duplicate order/subscription events.
+
+    Lemon Squeezy emits both ``order_created`` and ``subscription_created`` for
+    a subscription checkout. Without this account+tier dedupe one payment mints
+    two active API keys.
+    """
+    if not account or not os.path.exists(ISSUED):
+        return None
+    for line in reversed(open(ISSUED, encoding="utf-8").readlines()):
+        try:
+            row = json.loads(line)
+        except Exception:
+            continue
+        if row.get("account") == account and row.get("tier") == tier and row.get("key"):
+            if cloud_server._account_for(row["key"]):
+                return row
+    return None
+
+
 def _record(session_id, account, tier, key):
     os.makedirs(os.path.dirname(ISSUED), exist_ok=True)
     with open(ISSUED, "a", encoding="utf-8") as f:
@@ -160,6 +180,21 @@ def activate_lemonsqueezy(raw_body: bytes, signature: str,
     except Exception:
         return {"ok": False, "error": "bad json"}
     event_name, unique_id, account, variant_id = _ls_extract(payload)
+    lifecycle = {"subscription_expired", "subscription_updated"}
+    if event_name in lifecycle:
+        ident = "ls:" + (unique_id or (account + ":" + variant_id))
+        prev = _already(ident)
+        status = str(((json.loads(raw_body or b"{}") or {}).get("data") or {})
+                     .get("attributes", {}).get("status", "")).lower()
+        should_revoke = event_name == "subscription_expired" or status == "expired"
+        if not prev:
+            return {"ok": False, "error": f"unknown subscription {unique_id!r}"}
+        if should_revoke:
+            revoked = cloud_server.revoke_key(prev.get("key", ""), event_name)
+            return {"ok": True, "tier": prev["tier"], "account": prev["account"],
+                    "revoked": revoked, "idempotent": not revoked}
+        return {"ok": True, "tier": prev["tier"], "account": prev["account"],
+                "revoked": False, "idempotent": True}
     if event_name not in ("subscription_created", "order_created"):
         return {"ok": False, "error": f"ignored event {event_name!r}"}
     tier = ls_variant_tier().get(variant_id)
@@ -170,6 +205,11 @@ def activate_lemonsqueezy(raw_body: bytes, signature: str,
     if prev:
         return {"ok": True, "tier": prev["tier"], "account": prev["account"],
                 "key": prev["key"], "idempotent": True}
+    existing = _already_account_tier(account, tier)
+    if existing:
+        _record(ident, account, tier, existing["key"])
+        return {"ok": True, "tier": tier, "account": account,
+                "key": existing["key"], "idempotent": True}
     key = cloud_server.issue_key(account or "unknown", tier)
     _record(ident, account, tier, key)
     return {"ok": True, "tier": tier, "account": account, "key": key,
@@ -252,7 +292,8 @@ class Handler(BaseHTTPRequestHandler):
         res = activate_lemonsqueezy(raw, sig)
         if res.get("ok"):
             code, body = 200, {"ok": True, "tier": res["tier"],
-                               "idempotent": res.get("idempotent", False)}
+                               "idempotent": res.get("idempotent", False),
+                               "revoked": res.get("revoked", False)}
         else:
             # 401 for a bad signature (auth), 400 for a mapping/parse problem.
             code = 401 if res.get("error") == "bad signature" else 400

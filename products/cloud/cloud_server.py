@@ -183,8 +183,32 @@ def issue_key(account: str, tier: str = "solo") -> str:
     key = "gck_" + secrets.token_urlsafe(32)
     with open(ACCOUNTS, "a", encoding="utf-8") as f:
         f.write(json.dumps({"key_sha256": hashlib.sha256(key.encode()).hexdigest(),
-                            "account": account, "tier": tier, "ts": int(time.time())}) + "\n")
+                            "account": account, "tier": tier, "status": "active",
+                            "ts": int(time.time())}) + "\n")
     return key
+
+
+def revoke_key(api_key: str, reason: str = "subscription_expired") -> bool:
+    """Append a revocation for *api_key* without rewriting account history.
+
+    The account log is last-event-wins per key hash, so revocation is durable,
+    auditable and immediately invalidates the accounts cache. Returns False for
+    an unknown key and never stores the plaintext key.
+    """
+    if not api_key:
+        return False
+    _ensure()
+    key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    current = _load_accounts().get(key_hash)
+    if not current or current.get("status", "active") != "active":
+        return False
+    with open(ACCOUNTS, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"key_sha256": key_hash,
+                            "account": current.get("account", "unknown"),
+                            "tier": current.get("tier", "free"),
+                            "status": "revoked", "reason": reason,
+                            "ts": int(time.time())}) + "\n")
+    return True
 
 
 def _load_accounts() -> dict:
@@ -219,7 +243,10 @@ def _account_for(api_key: str):
     h = hashlib.sha256(api_key.encode()).hexdigest()
     # constant-time-ish: hashing already hides the key; dict lookup is fine since
     # the stored value is itself a hash (no secret compared byte-by-byte here).
-    return _load_accounts().get(h)
+    rec = _load_accounts().get(h)
+    if not rec or rec.get("status", "active") != "active":
+        return None
+    return rec
 
 
 def _sanitize_account(account: str) -> str:
