@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gate.cat Cloud — subscription activation (Stripe redirect -> provision API key).
 
-After a buyer subscribes (Solo $9/mo or Team $199/mo Payment Link), Stripe
+After a buyer subscribes (Solo €19/mo, Team €149/mo, or Business €399/mo), Stripe
 redirects to ``/cloud/activate?session_id={CHECKOUT_SESSION_ID}``. We verify the
 session server-side (paid + a live subscription), issue a per-account API key
 ONCE (idempotent per session), and render a page with the key and the 3-line
@@ -39,10 +39,15 @@ def payment_channel() -> str:
 
 
 STRIPE_KEY = os.environ.get("STRIPE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_SIG_TOLERANCE = 300
 ISSUED = os.environ.get("CLOUD_ISSUED_LOG", "/opt/bgml/gatecat-cloud/issued.jsonl")
 PRICE_TIER = {
-    "price_1TsB84IesWcqqZ2OyrkmEFVQ": "solo",   # gate.cat Cloud Solo $9/mo (legacy)
-    "price_1TsB84IesWcqqZ2OWn8HrgYR": "team",   # gate.cat Cloud Team $199/mo (legacy)
+    "price_1Tr0na2Va7XV3fWYCU40u4ZT": "solo",   # gate.cat Cloud Solo $9/mo (legacy)
+    "price_1Tr0nc2Va7XV3fWYnUa29lL1": "team",   # gate.cat Cloud Team $199/mo (legacy)
+    "price_1Tssxx2Va7XV3fWYp5TdkpEI": "solo",   # gate.cat Cloud Solo €19/mo
+    "price_1Tssxx2Va7XV3fWYfsmO8kCS": "team",   # gate.cat Cloud Team €149/mo
+    "price_1Tssxx2Va7XV3fWYXxKnAaDj": "business",  # gate.cat Cloud Business €399/mo
 }
 try:
     PRICE_TIER.update(json.loads(os.environ.get("CLOUD_PRICE_TIER", "{}")))
@@ -154,11 +159,106 @@ def _already_account_tier(account: str, tier: str):
     return None
 
 
-def _record(session_id, account, tier, key):
+def _record(session_id, account, tier, key, **extra):
     os.makedirs(os.path.dirname(ISSUED), exist_ok=True)
+    row = {"session": session_id, "account": account, "tier": tier,
+           "key": key, "ts": int(time.time())}
+    row.update({k: v for k, v in extra.items() if v})
     with open(ISSUED, "a", encoding="utf-8") as f:
-        f.write(json.dumps({"session": session_id, "account": account, "tier": tier,
-                            "key": key, "ts": int(time.time())}) + "\n")
+        f.write(json.dumps(row) + "\n")
+
+
+def _already_subscription(subscription_id: str):
+    if not subscription_id or not os.path.exists(ISSUED):
+        return None
+    for line in reversed(open(ISSUED, encoding="utf-8").readlines()):
+        try:
+            row = json.loads(line)
+        except Exception:
+            continue
+        if row.get("subscription") == subscription_id and row.get("key"):
+            return row
+    return None
+
+
+def verify_stripe_signature(raw_body: bytes, signature: str,
+                            secret: str | None = None,
+                            now: int | None = None) -> bool:
+    """Verify Stripe's ``t=...,v1=...`` signature over the exact request body."""
+    secret = STRIPE_WEBHOOK_SECRET if secret is None else secret
+    if not secret or not signature:
+        return False
+    timestamp = None
+    candidates = []
+    for part in signature.split(","):
+        key, sep, value = part.partition("=")
+        if not sep:
+            continue
+        if key == "t":
+            timestamp = value
+        elif key == "v1":
+            candidates.append(value)
+    try:
+        ts = int(timestamp or "")
+    except ValueError:
+        return False
+    current = int(time.time()) if now is None else int(now)
+    if abs(current - ts) > STRIPE_SIG_TOLERANCE:
+        return False
+    expected = hmac.new(secret.encode(),
+                        str(ts).encode() + b"." + raw_body,
+                        hashlib.sha256).hexdigest()
+    return any(hmac.compare_digest(expected, candidate)
+               for candidate in candidates)
+
+
+def handle_stripe_event(raw_body: bytes, signature: str,
+                        secret: str | None = None) -> dict:
+    """Provision or revoke Cloud access from a verified Stripe webhook.
+
+    Checkout completion is idempotent per Checkout Session. Subscription
+    cancellation/revocation is idempotent per API key because ``revoke_key``
+    appends only when the current account state is active.
+    """
+    if not verify_stripe_signature(raw_body, signature, secret):
+        return {"ok": False, "error": "bad signature"}
+    try:
+        event = json.loads(raw_body or b"{}")
+    except Exception:
+        return {"ok": False, "error": "bad json"}
+    event_type = str(event.get("type", ""))
+    obj = ((event.get("data") or {}).get("object") or {})
+
+    if event_type == "checkout.session.completed":
+        if obj.get("mode") != "subscription" or obj.get("payment_status") != "paid":
+            return {"ok": True, "ignored": True}
+        was_existing = _already(str(obj.get("id", ""))) is not None
+        try:
+            tier, account, _key = activate(str(obj.get("id", "")))
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+        return {"ok": True, "tier": tier, "account": account,
+                "idempotent": was_existing}
+
+    if event_type in ("customer.subscription.updated",
+                      "customer.subscription.deleted"):
+        subscription_id = str(obj.get("id", ""))
+        status = str(obj.get("status", "")).lower()
+        should_revoke = (event_type == "customer.subscription.deleted" or
+                         status in {"canceled", "unpaid", "incomplete_expired", "paused"})
+        if not should_revoke:
+            return {"ok": True, "ignored": True, "status": status}
+        prev = _already_subscription(subscription_id)
+        if not prev:
+            return {"ok": True, "ignored": True, "status": status}
+        revoked = cloud_server.revoke_key(prev.get("key", ""), event_type)
+        return {"ok": True, "tier": prev.get("tier"), "revoked": revoked,
+                "idempotent": not revoked}
+
+    # invoice.paid / invoice.payment_failed are accepted for observability, but
+    # access follows the canonical Subscription status above (events can arrive
+    # out of order, and a single failed retry should not revoke immediately).
+    return {"ok": True, "ignored": True}
 
 
 def activate_lemonsqueezy(raw_body: bytes, signature: str,
@@ -227,13 +327,21 @@ def activate(session_id: str):
     if sess.get("payment_status") != "paid" or sess.get("mode") != "subscription":
         raise ValueError("not a paid subscription")
     account = (sess.get("customer_details") or {}).get("email") or sess.get("customer")
-    tier = "solo"
+    tier = None
+    matched_price = None
     for li in (sess.get("line_items") or {}).get("data", []):
         pid = (li.get("price") or {}).get("id")
         if pid in PRICE_TIER:
             tier = PRICE_TIER[pid]
+            matched_price = pid
+    if tier is None:
+        raise ValueError("unmapped Stripe price")
     key = cloud_server.issue_key(account or "unknown", tier)
-    _record(session_id, account, tier, key)
+    subscription = sess.get("subscription")
+    if isinstance(subscription, dict):
+        subscription = subscription.get("id")
+    _record(session_id, account, tier, key, provider="stripe",
+            subscription=subscription, price=matched_price)
     return tier, account, key
 
 
@@ -279,7 +387,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         u = urlparse(self.path)
-        if u.path not in ("/cloud/lemonsqueezy/webhook", "/cloud/ls/webhook"):
+        if u.path not in ("/cloud/lemonsqueezy/webhook", "/cloud/ls/webhook",
+                          "/cloud/stripe/webhook"):
             self.send_response(404); self.end_headers(); return
         try:
             n = int(self.headers.get("Content-Length", 0) or 0)
@@ -288,10 +397,14 @@ class Handler(BaseHTTPRequestHandler):
         if n > 1024 * 1024:                  # a webhook body is small; cap RAM
             self.send_response(413); self.end_headers(); return
         raw = self.rfile.read(n) if n else b""
-        sig = self.headers.get("X-Signature", "")
-        res = activate_lemonsqueezy(raw, sig)
+        if u.path == "/cloud/stripe/webhook":
+            sig = self.headers.get("Stripe-Signature", "")
+            res = handle_stripe_event(raw, sig)
+        else:
+            sig = self.headers.get("X-Signature", "")
+            res = activate_lemonsqueezy(raw, sig)
         if res.get("ok"):
-            code, body = 200, {"ok": True, "tier": res["tier"],
+            code, body = 200, {"ok": True, "tier": res.get("tier"),
                                "idempotent": res.get("idempotent", False),
                                "revoked": res.get("revoked", False)}
         else:

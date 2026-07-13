@@ -51,11 +51,10 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 | Evidence log self-hosted in **your** infra | — | — | — | ✅ | ✅ |
 | Support | community | email | priority | dedicated | dedicated + custom policies |
 | Price | €0 forever | €19/mo | €149/mo flat | €399/mo | custom |
-| | | [**Join Solo launch list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Solo%20launch) | [**Join Team launch list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Team%20launch) | [**Join Business launch list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Business%20launch) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
+| | | [**Start Solo →**](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09) | [**Start Team →**](https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a) | [**Start Business →**](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
 
-The Cloud launch list is open, but checkout stays paused until a production
-Lemon Squeezy lifecycle smoke verifies provisioning, renewal and revocation.
-Once open, billing includes EU VAT handling, cancellation at any time and a
+Stripe checkout is live while Lemon Squeezy account review is pending. Billing
+includes automatic tax handling, cancellation at any time and a
 **30-day full refund, no questions asked.**
 
 ## Policy Packs — €29 one-time (available now)
@@ -70,9 +69,9 @@ benign twin — the same bar as the core gate.
 
 | Pack | What it blocks | Buy |
 |---|---|---|
-| **Fintech** | refund creation, payouts/transfers, customer & billing-config deletion — Stripe CLI/SDK/REST, PayPal/Braintree/Adyen/Wise/Mercury (5 policies) | [**€29 →**](https://gatecat.lemonsqueezy.com/checkout/buy/889730ae-0da8-40e9-b59b-0af1f4d361cc) |
-| **PaaS** | `vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, `railway down`, `render/supabase delete` — deploy/list/info stay allowed | [**€29 →**](https://gatecat.lemonsqueezy.com/checkout/buy/6b11d058-b12b-48b9-9ed9-5d830d25542e) |
-| **HTTP-API Breadth** | destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI, … — the modality CLI-verb walls never see (requires gate.cat ≥ 0.4.9) | [**€29 →**](https://gatecat.lemonsqueezy.com/checkout/buy/083799b4-1fd8-4df7-a0af-0eec9b519fda) |
+| **Fintech** | refund creation, payouts/transfers, customer & billing-config deletion — Stripe CLI/SDK/REST, PayPal/Braintree/Adyen/Wise/Mercury (5 policies) | [**€29 →**](https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c) |
+| **PaaS** | `vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, `railway down`, `render/supabase delete` — deploy/list/info stay allowed | [**€29 →**](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) |
+| **HTTP-API Breadth** | destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI, … — the modality CLI-verb walls never see (requires gate.cat ≥ 0.4.9) | [**€29 →**](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e) |
 
 Delivery is fully automated: pay → instant download page (wheel + install
 instructions). Install = `pip install <wheel>` + one env var
