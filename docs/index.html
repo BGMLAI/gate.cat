@@ -1335,9 +1335,8 @@ check_action("agent", cmd,
         <h3>Your agent, on the record</h3>
         <p>Off-machine veto history + push &amp; email alerts + monthly report, across every machine you run.</p>
       </div>
-      <div class="pack-price"><span id="solo-old" style="color:var(--ink-faint);text-decoration:line-through;font-size:.62em;margin-right:9px;font-weight:400">€19</span>€9<small>/mo · locked forever</small></div>
-      <div id="solo-countdown" data-deadline="1784505599000" aria-live="polite" style="font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--lime-deep);letter-spacing:.04em;margin:-4px 0 12px;text-transform:uppercase">founding €9 — ends this week</div>
-      <a id="solo-buy" class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/custom/59e94755-6677-4689-901a-7472c3fe7ffd?expires=1785110399&amp;signature=db4555a87436e4a9ed4204454c9ccce1b9f399082644373ddfadcd601758d127">Start Solo · €9
+      <div class="pack-price">€19<small>/mo</small></div>
+      <a id="solo-buy" class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/d2853dd8-376a-4f06-85c9-237d3dd5cef3">Start Solo
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
     <div class="card">
@@ -1455,7 +1454,7 @@ check_action("agent", cmd,
     <p>One command. No account, no API key, no ML stack. The installer keeps the system Python untouched.</p>
   </div>
   <div class="cmd-box">
-    <span class="pfx">$</span><span class="cmd" id="cmd">curl -fsSL https://gate.cat/install.sh | sh</span>
+    <span class="pfx">$</span><span class="cmd" id="cmd">curl -fsSL https://gate.cat/install.sh -o /tmp/gatecat-install.sh &amp;&amp; sh /tmp/gatecat-install.sh</span>
     <span class="cp" id="cp" role="button" tabindex="0" aria-label="Copy install command">⧉ copy</span>
   </div>
   <p class="under">Then add <b style="color:var(--ink)">gatecat-hook</b> to Claude Code. The installer creates the private environment and puts the command on your PATH.</p>
@@ -1480,7 +1479,7 @@ check_action("agent", cmd,
 <script>
   (function(){
     var cp=document.getElementById('cp');
-    function copy(){navigator.clipboard.writeText('curl -fsSL https://gate.cat/install.sh | sh').then(function(){cp.textContent='✓ copied';cp.classList.add('done');setTimeout(function(){cp.textContent='⧉ copy';cp.classList.remove('done');},1800);});}
+    function copy(){navigator.clipboard.writeText('curl -fsSL https://gate.cat/install.sh -o /tmp/gatecat-install.sh && sh /tmp/gatecat-install.sh').then(function(){cp.textContent='✓ copied';cp.classList.add('done');setTimeout(function(){cp.textContent='⧉ copy';cp.classList.remove('done');},1800);});}
     cp.addEventListener('click',copy);
     cp.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();copy();}});
   })();
@@ -1532,23 +1531,5 @@ check_action("agent", cmd,
 {"@type":"Question","name":"How do I uninstall gate.cat?","acceptedAnswer":{"@type":"Answer","text":"pip uninstall gate.cat and remove the hook entry from .claude/settings.json. No daemon, no account, no leftovers."}}
 ]}
 </script>
-<script>(function(){
-  var el=document.getElementById('solo-countdown'); if(!el) return;
-  var deadline=parseInt(el.getAttribute('data-deadline'),10);
-  var buy=document.getElementById('solo-buy'), price=el.previousElementSibling;
-  function p(n){return n<10?'0'+n:''+n;}
-  function tick(){
-    var diff=deadline-Date.now();
-    if(diff<=0){
-      if(price) price.innerHTML='€19<small>/mo</small>';
-      el.style.display='none';
-      if(buy){buy.setAttribute('href','https://gatecat.lemonsqueezy.com/checkout/buy/d2853dd8-376a-4f06-85c9-237d3dd5cef3'); if(buy.childNodes[0]) buy.childNodes[0].nodeValue='Start Solo ';}
-      clearInterval(t); return;
-    }
-    var d=Math.floor(diff/864e5),h=Math.floor(diff%864e5/36e5),m=Math.floor(diff%36e5/6e4),s=Math.floor(diff%6e4/1e3);
-    el.textContent='founding €9 — ends in '+d+'d '+p(h)+'h '+p(m)+'m '+p(s)+'s';
-  }
-  tick(); var t=setInterval(tick,1000);
-})();</script>
 </body>
 </html>

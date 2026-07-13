@@ -40,7 +40,7 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Tiers
 
-| | **Free** | **Solo — $9/mo** *(your agent, on the record)* | **Team — $199/mo flat, up to 10 devs** *(one policy, whole fleet)* | **Audit-readiness pilot** | **White-glove** |
+| | **Free** | **Solo — €19/mo** *(your agent, on the record)* | **Team — €149/mo flat, up to 10 machines** *(one policy, whole fleet)* | **Business** | **White-glove** |
 |---|---|---|---|---|---|
 | The gate: veto engine + **Claude Code hook** (enforcement in the harness) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Framework adapters (crewAI/LangGraph/AutoGen — in-process convention, honestly weaker than the hook) | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -50,16 +50,16 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 | Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ *(ships this month)* | ✅ | ✅ |
 | Evidence log self-hosted in **your** infra | — | — | — | ✅ | ✅ |
 | Support | community | email | priority | dedicated | dedicated + custom policies |
-| Price | $0 forever | $9/mo · **$90/yr** (2 months free) | $199/mo · **$1,990/yr** (2 months free) | **$7,500/yr** · 2–3 slots per quarter | **$25,000/yr** |
-| | | [**Join the founding list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20founding%20—%20Solo) | [**Join the founding list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20founding%20—%20Team) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20audit-readiness%20pilot) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
+| Price | €0 forever | €19/mo | €149/mo flat | €399/mo | custom |
+| | | [**Start Solo →**](https://gatecat.lemonsqueezy.com/checkout/buy/d2853dd8-376a-4f06-85c9-237d3dd5cef3) | [**Start Team →**](https://gatecat.lemonsqueezy.com/checkout/buy/903a7fb2-3866-4cb9-ae20-e67057bebdeb) | [**Start Business →**](https://gatecat.lemonsqueezy.com/checkout/buy/35897cd6-32f3-4411-990b-96894853fe1a) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
 
-**Cloud checkout is not open yet — deliberately.** We don't take money before fulfillment is fully automated (hosted history live, report generated and delivered without a human in the loop). That's days away, not months: the service is built and tested; it's being deployed. Joining the founding list costs nothing and locks the founding price for when checkout opens.
+Checkout and billing are handled by Lemon Squeezy, including EU VAT. Cancel
+anytime. **30-day full refund, no questions asked.** Cloud activation is
+zero-touch: payment provisions the API key used by the encrypted reporter.
 
-Prices in USD. Cancel anytime once live. **30-day full refund, no questions asked.**
+## Policy Packs — €29 one-time (available now)
 
-## Policy Packs — $29 one-time (available now)
-
-The 28 core policies are free forever and cover the universal, catastrophic
+The 71 core policies are free forever and cover the universal, catastrophic
 classes — that's the open-core rule: **safety everyone needs is never
 paywalled** (KMS/secret destroy, IAM escalation, backup destruction and the
 identity/DNS HTTP-API class were all *promoted into the free core* when audits
@@ -69,9 +69,9 @@ benign twin — the same bar as the core gate.
 
 | Pack | What it blocks | Buy |
 |---|---|---|
-| **Fintech** | refund creation, payouts/transfers, customer & billing-config deletion — Stripe CLI/SDK/REST, PayPal/Braintree/Adyen/Wise/Mercury (5 policies) | [**$29 →**](https://buy.stripe.com/3cI8wIbVH3iM9hugMe67S06) |
-| **PaaS** | `vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, `railway down`, `render/supabase delete` — deploy/list/info stay allowed | [**$29 →**](https://buy.stripe.com/5kQ9AMaRDf1u2T6eE667S07) |
-| **HTTP-API Breadth** | destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI, … — the modality CLI-verb walls never see (requires gate.cat ≥ 0.4.9) | [**$29 →**](https://buy.stripe.com/3cIdR24tfdXqgJW8fI67S08) |
+| **Fintech** | refund creation, payouts/transfers, customer & billing-config deletion — Stripe CLI/SDK/REST, PayPal/Braintree/Adyen/Wise/Mercury (5 policies) | [**€29 →**](https://gatecat.lemonsqueezy.com/checkout/buy/889730ae-0da8-40e9-b59b-0af1f4d361cc) |
+| **PaaS** | `vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, `railway down`, `render/supabase delete` — deploy/list/info stay allowed | [**€29 →**](https://gatecat.lemonsqueezy.com/checkout/buy/6b11d058-b12b-48b9-9ed9-5d830d25542e) |
+| **HTTP-API Breadth** | destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI, … — the modality CLI-verb walls never see (requires gate.cat ≥ 0.4.9) | [**€29 →**](https://gatecat.lemonsqueezy.com/checkout/buy/083799b4-1fd8-4df7-a0af-0eec9b519fda) |
 
 Delivery is fully automated: pay → instant download page (wheel + install
 instructions). Install = `pip install <wheel>` + one env var
@@ -87,7 +87,7 @@ silently running without it.
   recall misses across 1,085,159 real agent commands through the full gate; a
   bypass suite that prints its own gaps) and pick whichever you trust.
 - **Team:** nearest per-seat alternatives price at $39–100 *per user per
-  month* (market snapshot, 2026-07-08). Flat $199 costs less from the second
+  month* (market snapshot, 2026-07-08). Flat €149 costs less from the second
   developer onward and doesn't tax your team's growth up to 10 devs — larger
   fleets, email us.
 - **Pilot & White-glove:** one runaway `terraform destroy` loop cost a team
@@ -129,22 +129,20 @@ What a compliance buyer gets (and what we deliberately do not claim):
   is self-hosted and every report is reproducible from your own data — the
   trust model doesn't require believing us.
 
-## Honest note on "Founding" pricing
+## Launch pricing
 
 You are early, and the price reflects it in both directions:
 
-- **Today:** the full local gate (free part) and a place on the founding list —
-  the founding price is **locked for as long as you stay subscribed** once
-  checkout opens.
-- **Ships this month:** the hosted dashboard (history, alerts, self-serve
-  report download) and Team policy sharing. Founding subscribers get both the
-  day they're live, at the price they already pay. **A redacted sample report —
+- **Today:** the full local gate is free forever. Cloud checkout provisions the
+  encrypted off-machine history account without a manual handoff.
+- **Cloud:** the hosted dashboard includes history, alerts and self-serve report
+  download. Team adds signed policy sharing and fleet reporting. **A redacted sample report —
   generated from our own real dogfood log, red-team caveats included — is
   [right here](docs/SAMPLE_REPORT.md)**, and the 30-day refund covers the rest
   of the doubt.
-- **Why no checkout yet:** we won't charge before the pipeline is zero-touch —
-  payment → key → off-machine history → monthly report, no human in the loop.
-  The gate stays free either way.
+- **Fulfillment:** payment → API key → encrypted off-machine history → monthly
+  report. The local gate and its blocking behavior never depend on payment or
+  Cloud availability.
 
 ---
 

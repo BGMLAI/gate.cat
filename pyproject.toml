@@ -1,6 +1,6 @@
 [project]
 name = "gate.cat"
-version = "0.4.11"
+version = "0.4.16"
 description = "Block irreversible AI-agent actions before they run — deterministic, fail-closed action-veto (deny-list + exec-check + human-in-the-loop) for any tool-using agent, from a Claude Code hook to local LLMs."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -54,6 +54,8 @@ anthropic = ["anthropic>=0.20.0"]
 image = ["Pillow>=10.0.0"]
 voice = ["soundfile>=0.12.0"]
 proxy = ["fastapi>=0.110.0", "uvicorn[standard]>=0.27.0", "httpx>=0.27.0", "pydantic>=2.0.0"]
+# Cloud reporter — client-side end-to-end encryption of the off-machine veto history
+cloud = ["cryptography>=41.0.0"]
 # framework adapters (gatecat.integrations) — lazy-imported, never pulled by core
 crewai = ["crewai>=0.80,<2"]
 langgraph = ["langgraph>=0.2,<2"]
@@ -78,6 +80,10 @@ gatecat = "gatecat.integrations.dashboard:main"
 # F8 (eng review E1): ship the Claude Code veto hook as a console script so
 # `pip install gate.cat` delivers it — no repo checkout, no sys.path hack.
 gatecat-hook = "gatecat.hooks.claude_code:_entry"
+# gated shell (0.4.12): the third enforcement point beside hook + proxy. A
+# drop-in `sh -c` gate for any agent that shells out (Codex/Gemini CLI/aider/
+# OpenClaw/...): block -> exit 2 (no exec), allow/warn -> exec the real shell.
+gatecat-shell = "gatecat.shell:_entry"
 # F3 (D1=A purge): the old `cacheback` / `cacheback-proxy` script names are
 # dropped, not repointed — no `cacheback` command survives the rename.
 gatecat-cli = "gatecat.cli:main"

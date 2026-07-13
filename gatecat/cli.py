@@ -166,6 +166,14 @@ def cmd_audit(args):
 
 
 def main():
+    import sys
+    # `gate.cat cloud <init|report|verify|key>` — the E2EE off-machine history CLI.
+    # Dispatched before argparse so cloud_cli owns its own sub-arguments.
+    if len(sys.argv) > 1 and sys.argv[1] == "cloud":
+        from gatecat import cloud_cli
+        cloud_cli.main(sys.argv[2:])
+        return
+
     parser = argparse.ArgumentParser(
         prog="gatecat",
         description="Universal semantic cache for AI APIs",

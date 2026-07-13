@@ -10,7 +10,7 @@
 > from gatecat import check_action                     # deny-list gate
 > check_action("agent", "terraform destroy -auto-approve")  # -> raises ActionVetoed
 > ```
-> The distribution is `gate.cat` (PyPI normalizes it, so `pip install gate-cat`);
+> The distribution is `gate.cat` (PyPI also accepts the normalized spelling `gate-cat`);
 > the import module is `gatecat`. 0.2.x used `import cacheback` — see `MIGRATION.md`.
 > Honest line, up front: the gate is certain only about what it **blocks**. An
 > action it does not match is *unchecked*, not *safe*.
@@ -58,7 +58,7 @@ a single byte executes — a real terminal, `pip install gate-cat`, no montage:
 ## Install
 
 ```bash
-pip install gate-cat                  # core
+pip install gate.cat                  # core (inside a venv)
 pip install "gate-cat[openai]"      # + OpenAI wrapper
 pip install "gate-cat[anthropic]"   # + Anthropic wrapper
 pip install "gate-cat[proxy]"       # + proxy server (FastAPI)
@@ -100,6 +100,69 @@ Framework adapters (crewAI / LangGraph / AutoGen) exist too, but they are
 in-process convention — a prompt injection can route around them. Only the hook
 is enforcement the agent cannot skip. See
 [`examples/veto_integrations/`](examples/veto_integrations/) for adapter usage.
+
+## The gated shell — enforcement for any agent that shells out
+
+Not on Claude Code? The hook only fires there, and the proxy only sees what an
+OpenAI-API model layer emits. But **almost every agent ultimately runs a command
+through a shell** — `sh -c "<command>"`. `gatecat-shell` sits at that exec point:
+point the agent's shell at it and every command is vetted by the same
+deterministic engine the hook uses, *before* the real shell runs it.
+
+```bash
+# gate one command, then run it — block => exit 2, the real shell never sees it
+gatecat-shell -c "rm -rf ~/project"     # VETO [DELETE_ANALYZER] ... exit 2
+gatecat-shell -c "git status"           # allowed -> execs /bin/sh -c "git status"
+
+# gate only, no exec (the primitive for git hooks, CI wrappers, other agents)
+gatecat-shell --check "terraform destroy -auto-approve"   # exit 2
+echo "DROP TABLE users" | gatecat-shell --check           # exit 2
+
+# for any agent that drives a bash session you can seed: a DEBUG-trap gate
+eval "$(gatecat-shell --install-bash)"
+```
+
+Point an agent's execution at it wherever the tool lets you set the shell
+command (many honor `$SHELL` or a config exec setting). The real shell is
+`/bin/sh`; set `GATECAT_SHELL_REAL=/bin/bash` to change it. The gated command is
+passed through byte-for-byte — the gate saw the exact string it runs, so there
+is no re-parse gap.
+
+**Trust class, labeled honestly.** Set as the agent's *shell binary* (`-c`
+mode), this is enforcement outside the model's control — the same class as the
+hook. The `--install-bash` DEBUG trap is *weaker*: a command inside the session
+can `trap - DEBUG` to disarm it, so prefer setting the shell binary where you
+can. Either way it is a **string gate, not a sandbox** — it reads the command,
+it does not contain the process; run the agent in an OS sandbox *and* keep the
+gate in front. Fail-closed: an engine fault, an unparseable `-c`, or an
+evaluation error exits 2 rather than running the command.
+
+## Stagnation — catch an agent that is busy but going nowhere
+
+The deny-list stops one dangerous command; it says nothing about a loop of
+*safe* commands that never makes progress — the agent re-running a failing
+build, or re-proposing the same broken fix. `StateStagnationDetector` watches
+the agent's STATE across steps and stops it when the state stops moving:
+
+```python
+from gatecat.state_stagnation import StateStagnationDetector
+
+det = StateStagnationDetector(max_repeat_action=2, max_no_change=2)
+for step in agent_loop():
+    reason = det.update(action=step.tool_call, state_repr=step.diff,
+                        error=step.error, cost=step.cost, progress=step.tests_passing)
+    if reason:
+        pause_and_report(reason); break     # the loop isn't moving — turn back / escalate
+```
+
+`update()` returns the reason of the first tripped signal (`repeat_action`,
+`no_state_change`, `repeat_error`, `cost_without_progress`) or `None`. It is
+**deterministic** — the point is that a coding error is often *confident-wrong*:
+the model re-proposes the same bad fix with zero scatter, so a probabilistic
+disagreement gate is blind to it, while a state comparison catches the loop
+regardless of confidence. Advisory (a runaway agent is wasted budget, not an
+irreversible action). Distinct from the koryto `StagnationMonitor`, which watches
+the retrieval channel rather than the agent.
 
 ## Truth Pipeline (koryto → gate → veto)
 
@@ -199,15 +262,15 @@ What we ask back — this project runs on one currency:
   CHANGELOG, and the bypass suite grows from exactly these reports. …and if the
   gate ever blocks something dumb before it happened, a ⭐ helps other people find this.
 
-## Pricing (announced — checkout opens when the hosted layer ships)
+## Pricing
 
 **The local gate is free forever — including local reports.** The paid layer,
 **gate.cat Cloud**, is the off-machine copy of your veto history — the one an
 agent with shell access can't delete or rewrite (a local log is inside its
-blast radius). Announced prices: **Solo $9/mo · Team $199/mo flat (up to 10
-devs) · audit-readiness pilots by invoice**. We deliberately don't take money
-until fulfillment is zero-touch; the founding list locks the price:
-[PRICING.md](PRICING.md).
+blast radius). Launch prices: **Solo €19/mo · Team €149/mo flat (up to 10
+machines) · Business €399/mo**. Checkout and EU VAT are handled by Lemon
+Squeezy; the local gate remains free forever. Full boundaries and policy-pack
+pricing: [PRICING.md](PRICING.md).
 
 ## Verify the numbers
 

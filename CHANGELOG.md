@@ -2,6 +2,259 @@
 
 All notable changes to `gate.cat` will be documented in this file.
 
+
+## [0.4.16] -- full launch consistency + secret-exfil hardening (2026-07-13)
+
+### Added
+- `SECRET_EXFIL`, a default-on hard block for secret-file dereferences flowing
+  into network or mail sinks in one action. Private keys, credential files and
+  real `.env` files are covered; public keys, templates and ordinary sends stay
+  allowed. The opt-in `EMAIL_SEND` preset remains separate.
+- PEP 668-safe Linux and Windows user-local installers.
+
+### Launch
+- Reconciled the 0.4.15 product/Cloud branch with the public landing branch.
+- Made Lemon Squeezy pricing consistent across the landing, README and pricing
+  page: Solo €19/mo, Team €149/mo flat, Business €399/mo; packs €29 one-time.
+- Replaced the self-contradictory `curl | sh` landing CTA with a download-then-run
+  installer command that gate.cat does not itself veto.
+
+
+## [0.4.15] -- free-core agent-control layer (2026-07-12)
+
+Ships the local, free features built alongside 0.4.14 (held back from that
+release; now published). All local, all free -- safety and the ability to
+run/override your own command are never paywalled.
+
+### Added
+- Local on/off toggle (`gate.cat on` / `gate.cat off`, `~/.gatecat/protection.json`)
+  with a signed local audit; `_NEVER_DISARM` catastrophic classes stay blocked
+  even when protection is off.
+- Per-command manual override -- a human approves one blocked command (single-use,
+  TTL, hash-chained local audit); cannot approve `_NEVER_DISARM`.
+- Stagnation / loop detection wired into the gated shell -- visible stderr warning
+  on repeated no-progress commands (`GATECAT_STAGNATION_HALT=1` soft-halts).
+- State-file gate-watch -- the agent cannot flip its own guard or self-approve.
+- Local proxy budget-cap + loop-guard (halts by denying the next action) and a
+  client-decrypted cross-machine dashboard (`gate.cat dashboard`).
+
+## [0.4.14] -- second adversarial gap-hunt + guard self-defense (2026-07-12)
+
+Two more adversarial fan-outs against the live 0.4.13 engine, every finding
+independently re-confirmed and paired with a passing benign twin for **zero new
+false positives**. Full suite green (1749 passed); default set now **69 policies
+(49 block + 20 warn)**, up from 63.
+
+### Added -- 80 more engine-confirmed misses closed
+
+- **Round-2/3 destructive-command gaps (28, verified 0-FP):**
+  - Deobfuscator now expands bash default/alternate parameter expansion
+    `${VAR:-WORD}` / `${VAR-WORD}` / `${VAR:=WORD}` / `${VAR:+WORD}` inline (even
+    with no leading `VAR=`), closing `vastai ${OP:-destroy}`, `aws ec2
+    ${OP:-terminate-instances}`, `dd if=/dev/zero of=${D:-/dev/sda}`,
+    `wipefs ${F:--af}`, `zfs ${OP:-destroy}`; plus adjacent-quote concatenation
+    (`psql -c 'DR''OP TABLE'`).
+  - **AUDIT_LOG_TAMPER** (new) -- `aws cloudtrail stop-logging`/`delete-trail`,
+    cloudwatch/logs/config/guardduty `delete-*`.
+  - **CLOUD_DESTROY** extended -- `deregister-image`, the `k` kubectl alias,
+    `crd`/`customresourcedefinition`, `eksctl`/`doctl` cluster delete,
+    `kubeadm reset`, `argocd app delete` (excl. `--cascade=false`).
+  - **K8S_CRI_DESTROY** (new) -- `crictl`/`ctr`/`nerdctl` remove; `etcdctl del
+    --from-key`; `terraform`/`tofu state push`.
+  - DB -- `mariadb-admin`, `pg_resetwal`/`pg_resetxlog` (excl. `-n`/`--dry-run`),
+    `dd` zero-fill of a datafile.
+  - **SECRET_FILE_OVERWRITE**/**SECRET_FILE_DELETE** (new) -- empty/zero-source
+    overwrite of a key/credential path via `cp /dev/null`, `tee </dev/null`,
+    `install /dev/null`, `openssl rand -out`, `dd of=~/.ssh/id_rsa`,
+    `echo '' >` into a protected/secret path.
+  - **WINDOWS_DESTROY**/**WINDOWS_PERMISSION_LOCKOUT** (new) -- `.NET`
+    `[IO.Directory]::Delete(...,$true)`, `wbadmin delete backup`, recursive
+    `takeown`/`icacls` on system paths.
+- **Guard self-defense (52, verified 0-FP) -- GUARD_TAMPER + SECURITY_CONTROL_DISABLE (new):**
+  a guarded agent must not be able to kill or blind the guard. Blocks
+  `pkill`/`killall`/`kill` of `gatecat`/`gate.cat`/`gatecat-hook`/`-shell`/`-proxy`
+  (incl. `$(pgrep ...)`, `pgrep | xargs kill`, `ps|grep|awk|xargs kill`, pidfile,
+  bracket/variable obfuscation); `pip`/`uv` uninstall of the guard; `rm`/`chmod` of
+  its console-script; `GATECAT_*` enforcement toggles; disabling host security
+  controls -- `setenforce 0` (value-aware: `setenforce 1` / `echo 1 > .../enforce`
+  stay ALLOW), AppArmor teardown, `systemctl|service stop/disable/mask` of
+  apparmor/firewalld/auditd/ufw/osquery/falcon/crowdstrike/clamav/sshd, `ufw
+  disable`, iptables/nft flush, security-daemon kills, journal purge, `chattr -ia`
+  on audit logs, history-tamper. Tight NAME allowlists throughout -- killing your
+  own app, `systemctl restart nginx`, `pip uninstall <other pkg>` all stay ALLOW.
+
+## [0.4.13] -- adversarial gap-hunt: 70 of 77 engine-confirmed misses closed (2026-07-12)
+
+### Added -- 11 policy classes + a deobfuscator step, from a 9-category adversarial hunt
+
+A pre-release adversarial hunt fanned out 9 red-team finders (one per attack
+category), each empirically testing candidate commands against the real engine
+and reporting only engine-confirmed misses: **770 commands tested, 77 irreversible
+shapes still ALLOWing through the 0.4.12 gate**. 70 are now caught (56 hard-block +
+14 warn); the 7 left are a deliberate, documented boundary. Every closure was
+validated against an 853-command benign near-miss corpus (also engine-generated) +
+the full suite for **zero false positives**.
+
+New/extended, each with a passing benign twin (`tests/test_v0413_gaps.py`):
+- **DISK_ERASE_EXTRA** -- `badblocks -w`, the `mke2fs`/`mkntfs`/`mkswap`/`mkexfatfs`
+  family on a device, `nvme sanitize`/`write-zeroes`, `sg_format`, `dd of=/dev/root`,
+  and `dd if=/dev/zero of=<a .db/.pem/... under a protected root>`.
+- **OVERWRITE_DESTROY_EXTRA** -- null/`:`/empty-echo redirect into `~`/`/root`/`*.db`,
+  `cp /dev/null` over a key, `find -exec truncate/unlink/dd`, `rsync --del` (the
+  `--delete` alias) into a protected root.
+- **CLOUD_DESTROY_EXTRA** + **CLOUD_PROTECTION_OFF** (extended) -- `gsutil rb`,
+  `aws ec2 --no-disable-api-termination`, `aws rds --backup-retention-period 0`,
+  `aws s3api put-bucket-versioning Status=Suspended`, `gcloud compute ... --no-deletion-protection`.
+- **IAC_STATE_DESTROY_EXTRA** -- `terraform state rm`, `terraform workspace delete -force`,
+  `pulumi down`/`state delete`, `terragrunt run-all/non-interactive destroy`, `helmfile destroy`.
+- **DB_DESTRUCTIVE_EXTRA2** (block) -- `DROP OWNED BY`, mongosh `adminCommand({dropDatabase})`/
+  `runCommand({drop})`, `redis-cli shutdown nosave`, cypher `DETACH DELETE`, ES `DELETE /_all`,
+  `influx bucket delete`. **DB_FRAMEWORK_RESET** (warn) -- prisma/artisan/rails/typeorm/
+  sequelize/django/liquibase/knex/alembic/goose `reset`/`drop`/`fresh`/`downgrade base`.
+- **GIT_DESTRUCTIVE_EXTRA** -- `-C`/ref-prefixed `reset --hard`, combined/reordered
+  `branch -fD`/`--force -D`, `gh api graphql delete* mutations`.
+- **K8S_NODE_DELETE_EXTRA** -- `kubectl/k delete node` (slash form + `k` alias; `--dry-run` passes).
+- **SECRET_STORE_DELETE_EXTRA2** (block) -- `gpg2 --delete-secret-keys`, `consul kv delete`,
+  `secret-tool clear`, `security delete-*-password`, `pass rm`. **SECRET_FILE_DELETE** (warn) --
+  `rm`/`shred` of `*.pem`/`*.key`/`.env.production` (`.env.example` passes).
+- **WINDOWS_DESTROY_EXTRA** -- `Format-Volume`, `Remove-Partition` (command-position
+  anchored, `-WhatIf`/`Get-Help` pass), `Win32_ShadowCopy | Remove-CimInstance`,
+  `diskpart clean`, `Clear-Content` of a data file.
+- **Deobfuscator** -- a bare-word backslash-strip step: unquoted `d\d`/`r\b`/`p\ush`/
+  `des\troy` are the shell words `dd`/`rb`/`push`/`destroy`. Variant-only (the original
+  is always evaluated), so it can only add a catch, never mis-normalize a benign command.
+
+Default set is now **63 policies (43 hard-block + 20 warn)**.
+
+### Deliberately left / known-open (the honest boundary)
+
+Not blocked, on purpose: git working-tree discards (`checkout -- .`, `restore .`,
+`checkout -f`, `stash clear`) and `redis SWAPDB` -- too common / reversible to hard-block
+without false positives. Still open, documented like the `$'\x72m'` case: bash
+parameter-expansion obfuscation (`${V/X/ }`, `${V^^}`) -- deliberate hand-obfuscation,
+not real agent output. `tests/test_v0413_gaps.py` pins these so a future change is a
+conscious decision, not silent scope creep.
+
+## [0.4.12] -- Cloud (E2EE), gated shell, state-stagnation layer, +34 more gaps closed (2026-07-12)
+
+### Added -- `StateStagnationDetector`, the deterministic no-progress detector
+
+Productized into the engine from the maintainer's proven prototype
+(`stagnation_state_probe.py`): `gatecat.state_stagnation.StateStagnationDetector`
+watches the AGENT'S STATE across steps and stops it when the state stops moving
+-- the same action, the same error, an unchanged diff, or cost climbing with no
+gain. `update(action=, state_repr=, error=, cost=, progress=)` returns the reason
+of the first tripped signal, else `None`. It is deterministic (no model): the
+point the prototype measured is that a coding error is often CONFIDENT-wrong -- the
+model re-proposes the same bad fix with zero sample scatter, so a probabilistic
+disagreement gate is blind to it, while a state comparison catches the loop on the
+2nd repeat regardless of the model's confidence. Four signals: `repeat_action`,
+`no_state_change`, `repeat_error`, and `cost_without_progress` (the fourth was
+promised by the prototype's own docstring and is completed here; it needs both a
+per-step `cost` and a declared `progress` metric, with a `goal_better` comparator
+for higher- or lower-is-better). Distinct from the koryto `StagnationMonitor`
+(which watches the retrieval channel, not the agent). Advisory (a runaway agent is
+wasted budget, not an irreversible action), zero deps. 11 tests
+(`tests/test_state_stagnation.py`), exported from the package top level.
+
+### Added -- `gatecat-shell`, a third enforcement point for any agent that shells out
+
+The hook only fires in Claude Code and the proxy only sees what an OpenAI-API
+model layer emits, but almost every agent (Codex, Gemini CLI, aider, OpenClaw,
+Hermes, Antigravity, a plain `subprocess`/`os.system` script) ultimately runs
+`sh -c "<command>"`. `gatecat-shell` is a drop-in gate at that exec point: it
+runs the same deterministic engine as the hook on the command, then **blocks
+(exit 2, the real shell never runs it) or `execv`s the real shell** with the
+byte-for-byte command. Modes: `-c "<cmd>"` (gate + exec, tolerates combined
+flags like `-lc`), `--check "<cmd>"` (gate only, exit 0/2 — the primitive for
+git hooks / CI wrappers / other agents, command via arg or stdin), and
+`--install-bash` (an `extdebug` DEBUG-trap snippet to source into a bash
+session). Fail-closed with hook parity: engine-import failure, a
+`GATECAT_EXTRA_POLICIES` fault, an evaluation error, a hung engine (watchdog,
+`GATECAT_SHELL_DEADLINE_S`), or a malformed `-c` all exit 2 without exec'ing;
+`GATECAT_VETO_SHADOW=1` proceeds except on those config faults. Real shell is
+`/bin/sh` (`GATECAT_SHELL_REAL` overrides). Honest trust class: as the agent's
+shell binary it is out-of-band enforcement (hook class); the DEBUG trap is
+weaker (a command can `trap - DEBUG`); either way it is a string gate, not a
+sandbox. New `gatecat-shell` console script; 40 e2e/contract tests
+(`tests/integrations/test_gatecat_shell.py`); full suite green.
+
+Hardened against a 3-lens adversarial review (6 confirmed findings, all closed):
+the argument parser only recognizes a `-c` in a SHORT single-dash cluster (a long
+option like `--norc`/`--rcfile` is no longer misread as `-c` and the gate no
+longer inspects a decoy string), it consumes argument-taking options
+(`-o/-O/+o/+O`, `--rcfile/--init-file`) so a later `-c` is still found, and — the
+core invariant — it NEVER routes an argv that contains a `-c` to the ungated
+passthrough: `-o pipefail -c "<danger>"`, `+x -c "<danger>"`, and a bare-operand
+prefix before `-c` used to exec raw; now they gate the command or, when the
+command cannot be proven identical to what would run, fail closed
+(`SHELL_AMBIGUOUS`, exit 2). The no-`-c` path also gates command STREAMS
+(`gatecat-shell -s`, piped stdin, a script file) instead of exec'ing them raw;
+only a genuine interactive TTY passes through.
+
+### Added -- gate.cat Cloud (end-to-end encrypted off-machine veto history)
+
+The council red line for subscriptions, built and deployed: the off-machine copy
+of your veto history is stored by a server that **cannot read it**. Events are
+AES-256-GCM encrypted on your machine with a key we never receive; the server
+holds ciphertext + a timestamp. `gate.cat cloud verify` diffs the off-machine
+copy against your local log and catches an agent that rewrote local history after
+it shipped. `pip install gate-cat[cloud]`; the free gate never imports any of it.
+Full boundary in `THREAT_MODEL_CLOUD.md`. Subscription activation issues an API
+key on purchase (Stripe). Verified end-to-end over the wire. The store is
+crowd-hardened for launch day: a per-account append lock (concurrent POSTs never
+collide on `seq`), an 8 MB body cap (413 before the body is read — RAM-DoS
+guard), an app-layer per-IP rate limit (429 on a flood; nginx does not front the
+box with `limit_req`), a path-traversal-safe account id, and a `(mtime, size)`
+accounts cache that stays O(1) per request yet shows a brand-new subscriber's key
+immediately. 5 hardening contracts in `tests/test_cloud_server_hardening.py`.
+
+### Added -- 12 gap-closer classes (adversarial hunt round 2)
+
+34 more real irreversible shapes that still passed 0.4.11, now blocked/warned
+(0 false-positives; benign twins validated). Extends CLOUD_STORAGE_WIPE
+(gsutil `-a`/`rsync -d`, azcopy/mc/s3cmd wipes), STREAM_QUEUE_DESTROY (nats,
+kafka-storage format, rabbitmq forget-node), DB_DESTRUCTIVE_EXTRA (`UPDATE`
+without `WHERE`, flyway clean), DATASTORE_FLUSH_EXTRA (dropAllUsers, etcd restore
+from /dev/null), GIT_FORCE_PUSH (`+refspec`; `--force-with-lease` deliberately
+allowed as the safe form), GH_DESTRUCTIVE (glab), WINDOWS_DESTROY (vssadmin
+delete shadows, Clear-Disk -RemoveData, manage-bde -off, wmic shadowcopy),
+REGISTRY_IMAGE_DELETE (gem yank), SYSTEM_TAMPER (ip link/route, warn),
+CONTAINER_DESTROY (prune -af/swarm/podman reset, warn); plus two new classes
+CLOUD_PROTECTION_OFF (disable deletion-protection/backups) and IAC_STATE_DESTROY
+(pulumi/cdk destroy --force). Core: 38 -> 40 policies. Full suite 1218 passed.
+
+### Fixed
+
+- `GIT_DESTRUCTIVE` false-blocked the benign `git branch -d merged-branch`. The
+  walls run case-insensitively, so the `-D` (force-delete) pattern also matched
+  the lowercase `-d` -- but git itself REFUSES `-d` on a branch that is not fully
+  merged, making it the safe benign twin that the project rule says must pass.
+  The `-D` is now pinned case-sensitively with `(?-i:-D)` (same precedent as
+  `GIT_FORCE_PUSH`'s `(?-i:-f)`); the dangerous `-d --force` form is still caught
+  by the second alternative.
+
+### Fixed (audit of other uppercase short flags)
+
+A full sweep of every uppercase short flag in the deny-list for the same
+IGNORECASE-vs-benign-twin class turned up three more, now case-pinned:
+
+- `DISK_DESTROY` -- `sgdisk` flag class narrowed to `(?-i:[Zzog])`. A plain
+  `[Zog]` under IGNORECASE also matched the READ-ONLY `-O/--print-mbr` (and
+  `-G/--randomize-guids`), false-blocking a partition-table print. The destructive
+  `-Z/-z` (zap), `-o` (clear), `-g` (mbrtogpt) all still block -- this also makes
+  the previously-incidental lowercase `-z` match explicit.
+- `SYSTEM_TAMPER` -- `iptables (?-i:-F)`. Lowercase `-f/--fragment` is a benign
+  rule matcher, not a firewall flush.
+- `SECRET_READ` -- `curl (?-i:-T)`. Lowercase `-t/--telnet-option` is a different,
+  benign flag, not a file upload.
+
+Left case-insensitive on purpose (documented in-line): `PERMISSION_LOCKOUT`'s
+`chmod/chown -R` (no benign lowercase `-r` flag -- lowercase `r` is a symbolic
+mode bit, and the pattern also requires an octal mode / system path), and the
+`-X DELETE` walls (`GH_DESTRUCTIVE`, `HTTP_API_*`, ES) -- those anchor on the
+literal `DELETE` method token, which the benign `-x/--proxy` flag never takes.
+
 ## [0.4.11] -- +10 coverage classes, 67 real gaps closed (2026-07-11)
 
 An adversarial fan-out generated 444 concrete irreversible commands across 16

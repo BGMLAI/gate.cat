@@ -142,6 +142,74 @@ def _raise_block(source: str, reason: str, action: str, policy: str | None,
     return ActionVetoed(ascii_safe(reason))
 
 
+# FREE-CORE local control (protection.py): the human's own machine-local
+# on/off toggle and per-command override. Applied at EVERY would-be-block point.
+# A catastrophic NEVER_DISARM class can NEVER be downgraded - not by OFF, not by
+# an override. The lookup is fail-safe: any error in the control layer leaves the
+# block intact (the gate never fails OPEN because the toggle file was unreadable).
+def _local_control_allow(
+    source: str, action: str, policy: str | None, reason: str,
+    stages: "list[tuple[str, str, str]]",
+) -> "Decision | None":
+    """If protection is OFF, or a valid manual override pre-approves this exact
+    command, downgrade a would-be BLOCK to an audited ALLOW - UNLESS the policy is
+    a NEVER_DISARM catastrophic class (then always None -> the block stands).
+
+    Returns an allowing Decision to substitute for the block, or None to block."""
+    try:
+        from gatecat.integrations import protection as _prot
+    except Exception:
+        return None  # control layer unavailable -> block stands (fail-closed)
+
+    # 1) catastrophic classes are NEVER disarmable, by toggle OR override.
+    if _prot.is_never_disarm(policy):
+        return None
+
+    # 2) whole-machine OFF toggle: downgrade ordinary block/warn to allow.
+    try:
+        off = _prot.is_protection_off()
+    except Exception:
+        off = False
+    if off:
+        stages.append(("local-control", "disarmed-off",
+                       f"protection OFF: downgraded {policy or 'block'} to allow"))
+        r = (f"protection OFF (local): would-block [{policy or 'gate'}] downgraded "
+             f"to allow - {reason}")
+        # Distinct decision value from the toggle FLIP (which is 'disarmed' and
+        # hash-chained): this is the routine per-command downgrade WHILE off, not a
+        # tamper-evident state change. Keeps the two legible in the dashboard/log.
+        log_decision(source=source, decision="disarmed_off", reason=r,
+                     policy=policy, context=action, stages=stages)
+        return Decision(blocked=False, reason=r, policy=policy,
+                        level="allow").with_stages(stages)
+
+    # 3) per-command manual override: consume a valid, non-expired pre-approval.
+    try:
+        entry = _prot.consume_override(action)
+    except Exception:
+        entry = None
+    if entry is not None:
+        who = entry.get("who", "local")
+        stages.append(("local-control", "override-allow",
+                       f"human override by {who} for [{policy or 'gate'}]"))
+        r = (f"manual override (local) by {ascii_safe(str(who))}: would-block "
+             f"[{policy or 'gate'}] pre-approved once - {reason}")
+        # hash-chained audit record (who / cmd-hash / policy / time).
+        try:
+            _prot._log_chained(
+                decision="override_allow", reason=r, policy=policy, context=action,
+                kind="override_allow",
+                payload={"cmd_sha256": _prot.override_hash(action),
+                         "who": who, "policy": policy})
+        except Exception:
+            log_decision(source=source, decision="override_allow", reason=r,
+                         policy=policy, context=action, stages=stages)
+        return Decision(blocked=False, reason=r, policy=policy,
+                        level="allow").with_stages(stages)
+
+    return None
+
+
 def _shadow_allow(source: str, reason: str, action: str, policy: str | None) -> None:
     """A8: record a would-be block that shadow mode is letting through.
 
@@ -245,6 +313,23 @@ _PIPE_TO_EXECUTOR = re.compile(
     re.IGNORECASE)
 
 
+# A single-`>` truncating redirect (NOT `>>` append) into a protected/secret
+# destination, appearing right after an echo/printf body. Used to keep the body
+# verbatim so `echo '' > ~/.ssh/id_rsa` reaches the empty-echo overwrite wall
+# instead of being blanked. Protected targets: a private-key basename, anything
+# under an .ssh/ dir, home/root credential dotfiles (.aws/credentials, .netrc,
+# .pgpass, .kube/config, .gnupg), or a ~/ / /root/ / .env / .db-class path. The
+# `(?!>)` after the first `>` rejects `>>` (append) so the benign authorized_keys
+# append idiom is NOT caught here.
+_TRUNCATE_INTO_PROTECTED = re.compile(
+    r"\s*>(?!>)\s*[^\n|;&]*"
+    r"(?:\bid_rsa\b|\bid_ed25519\b|\bid_ecdsa\b|\.ssh/|/\.ssh\b"
+    r"|\.aws/credentials|\.netrc\b|\.pgpass\b|\.kube/config|\.gnupg\b"
+    r"|/root/|~/|\$HOME/|\.env\b|\.db\b|\.sqlite3?\b|\.kdbx\b|\.pem\b|\.key\b)",
+    re.IGNORECASE,
+)
+
+
 def _strip_inert_literals(action: str) -> str:
     """Blank the body of an inert literal slot (git commit message, echo/printf
     text, grep pattern) so a dangerous LITERAL inside it can't false-block.
@@ -268,11 +353,100 @@ def _strip_inert_literals(action: str) -> str:
             seg = re.split(r";|&&|\|\||\n", action[m.end():], 1)[0]
             if _PIPE_TO_EXECUTOR.search(seg):
                 return whole
+            # An echo/printf whose body is IMMEDIATELY followed by a single-`>`
+            # TRUNCATING redirect into a protected/secret path is an in-place
+            # empty-file overwrite (`echo '' > ~/.ssh/id_rsa`), NOT text being
+            # printed. Blanking the body to `__INERT__` breaks the empty-echo
+            # adjacency the OVERWRITE_DESTROY walls key on, so keep it verbatim.
+            # `>>` (append) is EXCLUDED (the benign authorized_keys idiom), and the
+            # redirect target must be a protected path (a private key, a home/root
+            # dotfile, a credential/secret file) - an ordinary `echo x > out.txt`
+            # is still blanked as before.
+            if _TRUNCATE_INTO_PROTECTED.match(action[m.end():]):
+                return whole
         return head + "__INERT__" + whole[body_end:]
     try:
         return _INERT_LITERAL.sub(_repl, action)
     except Exception:
         return action
+
+
+def _raw_evaluate_variant(
+    source: str, variant: str, policies: Sequence[Policy],
+    *, cwd: str | None, env: dict | None, home: str | None,
+) -> "tuple[str, str | None, str] | None":
+    """Evaluate ONE de-obfuscated variant through the same two walls the raw
+    action goes through (delete-analyzer + regex policy walls), WITHOUT raising
+    or logging. Returns ``(level, policy, reason)`` where level is
+    "block"/"warn"/"allow", or None if this variant could not be evaluated.
+
+    This is the read-only core used by the de-obfuscation escalation. It never
+    mutates state and never raises (fail-safe: a variant that errors just yields
+    None and is ignored - the raw pass already decided the baseline)."""
+    try:
+        # 1) delete-analyzer (same target-anchored pass as the raw action)
+        dd = _analyze_delete_class(source, variant, policies, cwd=cwd, env=env, home=home)
+        if dd is not None:
+            if dd.blocked:
+                return ("block", dd.policy, dd.reason)
+            if dd.level == "warn":
+                # a warn from the analyzer still needs the regex walls to run
+                # (they may hard-block); fall through and merge below.
+                pass
+        # 2) regex policy walls over the (heredoc-stripped) variant
+        vaction = _strip_data_heredocs_safe(variant)
+        vdec = evaluate(source, vaction, policies)
+        if vdec.blocked:
+            if _policy_is_warn(vdec.policy, policies):
+                return ("warn", vdec.policy, vdec.reason)
+            return ("block", vdec.policy, vdec.reason)
+        # analyzer said warn, walls found nothing hard -> warn stands
+        if dd is not None and dd.level == "warn":
+            return ("warn", dd.policy, dd.reason)
+        return ("allow", vdec.policy, vdec.reason)
+    except Exception:
+        return None
+
+
+_LEVEL_RANK = {"allow": 0, "warn": 1, "block": 2}
+
+
+def _deobfuscated_escalation(
+    source: str, action: str, policies: Sequence[Policy],
+    *, cwd: str | None, env: dict | None, home: str | None,
+    floor: str,
+) -> "tuple[str, str | None, str] | None":
+    """Run every de-obfuscation variant of *action* and return the STRICTEST
+    ``(level, policy, reason)`` that is stricter than *floor* (the raw verdict),
+    or None if no variant beats the floor.
+
+    ADD-ONLY / fail-safe by construction: this can only ever RAISE the strictness
+    (block > warn > allow). It reads the raw verdict as *floor* and returns
+    something only when a normalized spelling reveals a danger the raw literal
+    hid. If :func:`deobfuscate` or any variant errors, it is skipped - worst case
+    the raw verdict stands unchanged (never loosened)."""
+    try:
+        from gatecat.integrations.deobfuscate import deobfuscate
+        variants = deobfuscate(action)
+    except Exception:
+        return None
+    floor_rank = _LEVEL_RANK.get(floor, 0)
+    best: "tuple[str, str | None, str] | None" = None
+    best_rank = floor_rank
+    for v in variants:
+        if v == action:
+            continue  # the raw form is the floor; only NORMALIZED forms can add
+        res = _raw_evaluate_variant(source, v, policies, cwd=cwd, env=env, home=home)
+        if res is None:
+            continue
+        lvl = res[0]
+        rank = _LEVEL_RANK.get(lvl, 0)
+        if rank > best_rank:
+            best = res
+            best_rank = rank
+            if best_rank == _LEVEL_RANK["block"]:
+                break  # cannot get stricter than block
+    return best
 
 
 def _analyze_delete_class(
@@ -405,6 +579,9 @@ def check_action(
                 _shadow_allow(source, reason, action, del_decision.policy)
                 return Decision(False, f"SHADOW: {ascii_safe(reason)}",
                                 del_decision.policy, level="allow").with_stages(stages)
+            _lc = _local_control_allow(source, action, del_decision.policy, reason, stages)
+            if _lc is not None:
+                return _lc
             raise _raise_block(source, reason, action, del_decision.policy, stages=stages)
         # analyzer ALLOWED this delete: the analyzer OWNS the plain fs-delete
         # class, so drop ONLY RM_RF (see _DELETE_POLICY_NAMES) from the engine
@@ -460,8 +637,26 @@ def check_action(
         # human instead of hard-blocking - a `python -c "rmtree(X)"` where X may
         # be a backup or a build cache should be reviewed, not silently killed.
         if _policy_is_warn(decision.policy, engine_policies):
-            stages.append(("warn-tier", "warn", f"ambiguous-executable {decision.policy}"))
+            # A de-obfuscated spelling may reveal a HARD block hidden behind an
+            # ambiguous one (raw counted first; escalation can only raise). If a
+            # variant hard-blocks, block; otherwise the raw warn stands.
+            esc = _deobfuscated_escalation(
+                source, action, engine_policies, cwd=cwd, env=env, home=home, floor="warn")
+            if esc is not None and esc[0] == "block" and not shadow_on:
+                stages.append(("deobfuscate", "block", f"{esc[1]}: {esc[2]}"[:200]))
+                reason = f"VETO [{esc[1] or 'gate'}] (de-obfuscated): {esc[2]}"
+                _lc = _local_control_allow(source, action, esc[1], reason, stages)
+                if _lc is not None:
+                    return _lc
+                raise _raise_block(source, reason, action, esc[1], stages=stages)
+            # warn-tier: under an OFF toggle (non-catastrophic) the human has
+            # disarmed ordinary rules, so downgrade the warn to an audited allow;
+            # else surface the warn as before.
             wreason = f"unchecked [{decision.policy}]: {decision.reason}"
+            _lc = _local_control_allow(source, action, decision.policy, wreason, stages)
+            if _lc is not None:
+                return _lc
+            stages.append(("warn-tier", "warn", f"ambiguous-executable {decision.policy}"))
             log_decision(source=source, decision="warn", reason=wreason,
                          policy=decision.policy, context=action, stages=stages)
             return Decision(blocked=False, reason=wreason, policy=decision.policy,
@@ -472,7 +667,43 @@ def check_action(
             return Decision(
                 blocked=False, reason=f"SHADOW: {ascii_safe(reason)}", policy=decision.policy
             ).with_stages(stages)
+        _lc = _local_control_allow(source, action, decision.policy, reason, stages)
+        if _lc is not None:
+            return _lc
         raise _raise_block(source, reason, action, decision.policy, stages=stages)
+
+    # --- De-obfuscation escalation (Layer 1, ADD-ONLY, fail-safe) ---
+    # The raw literal passed the walls, but obfuscation (var-indirection, split
+    # quotes, ANSI-C bytes, $(printf)/alias/base64, PowerShell concat) may hide a
+    # danger. Run normalized VARIANTS through the same walls and take the
+    # strictest. This can only RAISE strictness above the raw verdict (the raw is
+    # the floor, counted first); a normalizer bug at worst fails to add a catch,
+    # never opens a bypass, because the raw pass already ran and every variant
+    # goes through the SAME evaluate()/analyzer with the SAME policies.
+    raw_floor = "warn" if deferred_warn is not None else "allow"
+    esc = _deobfuscated_escalation(
+        source, action, engine_policies, cwd=cwd, env=env, home=home, floor=raw_floor)
+    if esc is not None:
+        esc_lvl, esc_pol, esc_reason = esc
+        if esc_lvl == "block":
+            stages.append(("deobfuscate", "block", f"{esc_pol}: {esc_reason}"[:200]))
+            reason = f"VETO [{esc_pol or 'gate'}] (de-obfuscated): {esc_reason}"
+            if shadow_on:
+                _shadow_allow(source, reason, action, esc_pol)
+                return Decision(blocked=False, reason=f"SHADOW: {ascii_safe(reason)}",
+                                policy=esc_pol).with_stages(stages)
+            _lc = _local_control_allow(source, action, esc_pol, reason, stages)
+            if _lc is not None:
+                return _lc
+            raise _raise_block(source, reason, action, esc_pol, stages=stages)
+        if esc_lvl == "warn":
+            stages.append(("deobfuscate", "warn", f"{esc_pol}: {esc_reason}"[:200]))
+            wreason = f"unchecked [{esc_pol}] (de-obfuscated): {esc_reason}"
+            log_decision(source=source, decision="warn", reason=wreason,
+                         policy=esc_pol, context=action, stages=stages)
+            return Decision(blocked=False, reason=wreason, policy=esc_pol,
+                            level="warn").with_stages(stages)
+
     # No wall fired. If the analyzer had surfaced a WARN (opaque/remote delete),
     # it stands now that the deny-walls have run and found nothing to hard-block -
     # surface the unchecked delete rather than silently allowing it.
