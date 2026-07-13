@@ -1,28 +1,1554 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>gate.cat — block irreversible AI-agent actions before they run</title>
-  <!-- Canonical landing is the GitHub repo README (council C30). This Pages
-       root exists only so links to bgmlai.github.io/gate.cat/ resolve instead
-       of 404-ing; it redirects there. The demo GIFs/casts under /demos are
-       served from here and embedded in the README by absolute raw URL. -->
-  <link rel="canonical" href="https://github.com/BGMLAI/gate.cat">
-  <meta http-equiv="refresh" content="0; url=https://github.com/BGMLAI/gate.cat">
-  <style>
-    body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-           background: #121314; color: #e6e6e6; max-width: 40rem;
-           margin: 4rem auto; padding: 0 1.25rem; line-height: 1.6; }
-    a { color: #6cc26c; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>gate.cat: a fail-closed veto that stops your AI agent before it runs rm -rf</title>
+<meta name="description" content="Deterministic, fail-closed action-veto for AI agents. Blocks irreversible actions (rm -rf, terraform destroy, DROP TABLE, gh repo delete) before they run, as a Claude Code hook, a proxy for any local model, or a gated shell for any CLI tool. Zero-dependency core. Apache 2.0." />
+<meta property="og:title" content="gate.cat: leash your AI agent before it touches prod" />
+<meta property="og:description" content="A deterministic fail-closed veto that stops rm -rf / terraform destroy / DROP TABLE before your agent runs them. Claude Code hook, proxy, or gated shell — works with any agent. Apache 2.0." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://gate.cat/" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:image" content="https://gate.cat/img/mark-256.png" />
+<link rel="icon" href="img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<script>(function(){try{var t=localStorage.getItem("gatecat-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<style>
+  /* ── gate.cat · editorial poster · lime #cbdd1a · ink · off-white ── */
+  :root{
+    --bg:#fbfaf2; --bg-2:#f5f4e9; --surface:#fdfcf6; --surface-2:#f5f4e9;
+    --ink:#0f0f0d; --ink-2:#3a3d35; --ink-soft:#61645a; --ink-faint:#8c9084;
+    --frame:#0f0f0d; --hairline:rgba(15,15,13,.16);
+    --nav-bg:rgba(251,250,242,.86);
+    --lime:#cbdd1a; --lime-deep:#788800; --lime-wash:#f2f7cf; --lime-line:#dbe79a;
+    --danger:#e5484d; --danger-deep:#c42b30; --danger-wash:#fdeced; --danger-line:#f6cccd;
+    --orange:#f7690b; --orange-deep:#c2410c; --orange-wash:#ffe9d6; --orange-line:#f6c7a0;
+    --space-1:8px; --space-2:16px; --space-3:24px; --space-4:40px; --space-5:64px; --space-6:120px;
+    --maxw:1180px;
+    --sans:'Space Grotesk',system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+    --display:'Archivo Black','Space Grotesk',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --ease:cubic-bezier(0.16,1,0.3,1);
+    --radius:18px; --radius-sm:12px;
+    --smear-opacity:.6; --grain-opacity:.09;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b0b09; --bg-2:#080807; --surface:#12120f; --surface-2:#0e0e0c;
+    --ink:#f6f5ee; --ink-2:#c7c6bd; --ink-soft:#918f85; --ink-faint:#615f57;
+    --frame:#f6f5ee; --hairline:rgba(246,245,238,.2);
+    --nav-bg:rgba(11,11,9,.78);
+    --lime:#cbdd1a; --lime-deep:#cbdd1a; --lime-wash:#22260a; --lime-line:#4a5214;
+    --danger:#ff5c60; --danger-deep:#ff7378; --danger-wash:#2a1214; --danger-line:#5a2326;
+    --orange:#ff922b; --orange-deep:#ffa94d; --orange-wash:#2a1608; --orange-line:#5a3417;
+    --smear-opacity:.32; --grain-opacity:.11;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:96px}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:17px; line-height:1.6; font-weight:500;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3{margin:0}
+  h1,h2{font-family:var(--display);font-weight:400;text-transform:lowercase;letter-spacing:-.02em;line-height:.98;overflow-wrap:break-word}
+  .tt-keep{text-transform:none}
+  h3{font-weight:700;letter-spacing:-.01em;line-height:1.15}
+  p{margin:0}
+  code,kbd,pre{font-family:var(--mono)}
+  code{background:var(--lime-wash);color:var(--lime-deep);padding:1px 6px;border:1px solid var(--lime-line);border-radius:7px;font-size:.84em;font-weight:600}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--space-3)}
+
+  /* ── grain smears (pure inline SVG feTurbulence, no external assets) ── */
+  .smears{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:var(--smear-opacity)}
+  .smears i{position:absolute;display:block;image-rendering:pixelated;background-size:100% 100%;background-repeat:no-repeat}
+  .smears i:nth-child(1){width:58vw;height:44vw;min-width:420px;min-height:330px;top:-14%;right:-12%;
+    background-image:url('img/smear-1.png')}
+  .smears i:nth-child(2){width:44vw;height:38vw;min-width:340px;min-height:300px;top:34%;left:-16%;
+    background-image:url('img/smear-2.png');opacity:.7}
+  .smears i:nth-child(3){width:50vw;height:40vw;min-width:360px;min-height:300px;bottom:-16%;right:6%;
+    background-image:url('img/smear-3.png');opacity:.8}
+  body::after{content:'';position:fixed;inset:0;z-index:2;pointer-events:none;opacity:var(--grain-opacity);
+    background-image:url("data:image/svg+xml;utf8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='240'%20height='240'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.85'%20numOctaves='2'%20stitchTiles='stitch'/%3E%3CfeColorMatrix%20type='saturate'%20values='0'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:240px 240px}
+  header.nav,main,footer{position:relative;z-index:1}
+
+  /* ── mono editorial micro-labels ── */
+  .kick{display:flex;align-items:baseline;gap:14px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-soft);font-weight:500;margin-bottom:var(--space-4)}
+  .kick .num{font-weight:700;color:var(--bg);background:var(--ink);border:1.5px solid var(--ink);padding:4px 10px;border-radius:9px}
+  .kick::after{content:'';flex:1;height:1px;background:var(--hairline);align-self:center}
+
+  /* ── nav ── */
+  header.nav{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1.5px solid var(--frame)}
+  .nav-in{display:flex;align-items:center;gap:var(--space-2);height:66px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:400;letter-spacing:-.02em;font-size:20px;text-transform:lowercase}
+  .brand .mark{width:32px;height:32px;display:block}
+  .brand .lime{color:var(--lime-deep)}
+  .nav-links{display:flex;gap:24px;margin-left:auto;align-items:center}
+  .nav-links a{color:var(--ink-soft);font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;transition:color .18s var(--ease)}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-links a:focus-visible{outline:2px solid var(--lime-deep);outline-offset:3px}
+  .nav-cta{font-family:var(--mono);font-size:12px;font-weight:700;color:#0f0f0d!important;padding:10px 16px;
+    background:var(--lime);border:1.5px solid var(--frame);border-radius:999px;letter-spacing:.06em;text-transform:none!important;
+    transition:background .18s var(--ease),transform .12s var(--ease);white-space:nowrap}
+  .nav-cta:hover{background:#d7e93a;transform:translateY(-1px)}
+  @media(max-width:720px){.nav-links a:not(.nav-cta){display:none}}
+  .nav-cta .short{display:none}
+  @media(max-width:480px){
+    .brand{font-size:17px}
+    .nav-links{gap:12px}
+    .nav-cta{font-size:12px;padding:8px 13px}
+    .nav-cta .full{display:none}
+    .nav-cta .short{display:inline}
+  }
+  .theme-toggle{display:inline-grid;place-items:center;width:38px;height:38px;flex:none;border-radius:999px;
+    border:1.5px solid var(--frame);background:var(--surface);color:var(--ink-2);
+    cursor:pointer;transition:color .2s var(--ease),background .2s var(--ease),transform .2s var(--ease)}
+  .theme-toggle:hover{color:var(--ink);transform:translateY(-1px)}
+  .theme-toggle:active{transform:translateY(0) scale(.96)}
+  .theme-toggle:focus-visible{outline:2px solid var(--lime-deep);outline-offset:3px}
+  .theme-toggle svg{width:18px;height:18px;display:none}
+  :root[data-theme="light"] .theme-toggle .ic-moon{display:block}
+  :root[data-theme="dark"] .theme-toggle .ic-sun{display:block}
+
+  /* ── hero: type dominates ── */
+  .hero.wrap{padding:var(--space-6) var(--space-3) var(--space-5)}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink);border:1.5px solid var(--frame);border-radius:999px;background:var(--surface);padding:7px 14px;margin-bottom:var(--space-4);font-weight:500}
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 3px rgba(203,221,26,.3);animation:pulse 2.6s var(--ease) infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){.eyebrow .dot{animation:none}}
+  h1{font-size:clamp(42px,9.6vw,138px);max-width:none;letter-spacing:-.03em;line-height:.94}
+  h1 .strike{color:var(--danger-deep);white-space:nowrap;background:var(--danger-wash);box-shadow:inset 0 0 0 2.5px var(--frame);border-radius:16px;padding:0 .14em}
+  .hero .sub{font-size:clamp(18px,2.4vw,23px);color:var(--ink-2);max-width:56ch;margin-top:var(--space-4);line-height:1.55;font-weight:500}
+  .hero .sub b{color:var(--ink);font-weight:700}
+  .cta-row{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-4);align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px;padding:15px 28px;cursor:pointer;
+    border:1.5px solid var(--frame);border-radius:999px;letter-spacing:-.01em;
+    transition:transform .12s var(--ease),background .18s var(--ease),color .18s var(--ease)}
+  .btn svg{transition:transform .18s var(--ease)}
+  .btn-primary:hover svg{transform:translateX(4px)}
+  .badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:var(--space-3)}
+  .badge{font-family:var(--mono);font-size:12px;color:var(--ink-soft);border:1.5px solid var(--hairline);border-radius:999px;padding:6px 13px;background:var(--surface)}
+  .badge b{color:var(--ink);font-weight:700}
+  .btn:active{transform:scale(.975)}
+  .btn:focus-visible{outline:2px solid var(--lime-deep);outline-offset:3px}
+  .btn-primary{background:var(--lime);color:#0f0f0d}
+  .btn-primary:hover{background:#d7e93a;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--ink);font-family:var(--mono);font-size:13.5px;font-weight:500}
+  .btn-ghost:hover{background:var(--frame);color:var(--bg)}
+
+  /* ── terminal: framed exhibit ── */
+  .term{margin-top:var(--space-5);overflow:hidden;border:2px solid var(--frame);border-radius:var(--radius);background:var(--surface);box-shadow:8px 8px 0 0 var(--frame)}
+  .term-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--surface-2);border-bottom:1.5px solid var(--frame)}
+  .term-bar .tl{display:flex;gap:7px}
+  .term-bar .tl i{width:10px;height:10px;border-radius:50%;display:block;border:1px solid var(--hairline)}
+  .term-bar .tl i:nth-child(1){background:#ff5f57}.term-bar .tl i:nth-child(2){background:#febc2e}.term-bar .tl i:nth-child(3){background:#cbdd1a}
+  .term-bar .tt{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 auto}
+  .term-body{padding:24px 22px;font-family:var(--mono);font-size:13.5px;line-height:1.85;overflow-x:auto;background:var(--surface)}
+  .term-body .ln{white-space:pre;display:block;color:var(--ink-2)}
+  .term-body .pr{color:var(--lime-deep);font-weight:600}
+  .term-body .u{color:var(--ink)}
+  .term-body .cmt{color:var(--ink-soft)}
+  .veto-box{margin:8px 0;padding:12px 16px;background:var(--danger-wash);border:1.5px solid var(--danger-line);border-left:4px solid var(--danger);border-radius:10px;color:var(--danger-deep);white-space:pre-wrap;font-size:12.5px;line-height:1.55;font-weight:600}
+  .ok-box{margin:8px 0;padding:12px 16px;background:var(--lime-wash);border:1.5px solid var(--lime-line);border-left:4px solid var(--lime);border-radius:10px;color:var(--lime-deep);white-space:pre-wrap;font-size:12.5px;font-weight:600}
+
+  /* ── sections: editorial rules + huge lowercase heads ── */
+  section.wrap{padding:var(--space-6) var(--space-3) 0}
+  section .sec-in{border-top:2px solid var(--frame);padding-top:var(--space-3)}
+  .sec-head{max-width:none}
+  h2{font-size:clamp(34px,6.4vw,84px);letter-spacing:-.025em}
+  .sec-head h2::after{content:'';display:block;width:68px;height:6px;background:var(--lime);margin-top:20px}
+  .install .sec-head h2::after{margin-left:auto;margin-right:auto}
+  .sec-head p{color:var(--ink-2);margin-top:var(--space-3);font-size:18px;font-weight:500;max-width:62ch}
+  .sec-head p b{color:var(--ink);font-weight:700}
+
+  /* ── walls: hairline tiles ── */
+  .walls{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:var(--space-5);border:1.5px solid var(--frame);border-radius:var(--radius);overflow:hidden}
+  @media(max-width:900px){.walls{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.walls{grid-template-columns:1fr}}
+  .wall{min-width:0;background:var(--surface);padding:var(--space-3);border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+  .wall:last-child{border-right:none}
+  @media(max-width:900px){.wall:nth-child(2n){border-right:none}}
+  @media(max-width:520px){.wall{border-right:none}}
+  .wall .n{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--lime-deep);font-weight:700}
+  .wall h3{font-size:18px;margin:10px 0}
+  .wall p{color:var(--ink-2);font-size:14px;font-weight:500}
+  .wall .ex{font-family:var(--mono);font-size:11.5px;color:var(--danger-deep);margin-top:12px;display:block;overflow-x:auto}
+
+  /* ── use: featured tile + 2, hairline chrome ── */
+  .use-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-5)}
+  @media(max-width:760px){.use-grid{grid-template-columns:1fr}}
+  .card{min-width:0;background:var(--surface);border:1.5px solid var(--frame);border-radius:var(--radius);padding:var(--space-3);display:flex;flex-direction:column;
+    transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .card:hover{transform:translateY(-3px);box-shadow:6px 6px 0 0 var(--hairline)}
+  @media (prefers-reduced-motion:reduce){.card,.card:hover{transform:none;transition:none}}
+  .card.feat{grid-column:1 / -1;display:grid;grid-template-columns:1.05fr 1fr;gap:var(--space-3);align-items:center}
+  .card.feat .body{margin-bottom:0}
+  .card.feat .snip{margin-top:0}
+  .card.feat h3{font-size:23px}
+  @media(max-width:760px){.card.feat{grid-template-columns:1fr;gap:var(--space-2)}}
+  .card .ic{width:44px;height:44px;display:grid;place-items:center;background:var(--lime-wash);border:1.5px solid var(--frame);border-radius:var(--radius-sm);margin-bottom:var(--space-2)}
+  .card .ic svg{width:22px;height:22px;stroke:var(--lime-deep);fill:none}
+  .card h3{font-size:19px;margin-bottom:6px}
+  .card .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--lime-deep);font-weight:700}
+  .card p{color:var(--ink-2);font-size:15px;margin-top:8px;font-weight:500}
+  .card .snip{min-width:0;margin-top:auto;background:var(--surface-2);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:12.5px;color:var(--ink-2);overflow-x:auto;white-space:pre;line-height:1.7}
+  .card .snip .g{color:var(--lime-deep)}
+  .card.best{border-width:2px;box-shadow:6px 6px 0 0 var(--lime)}
+  .card.best:hover{box-shadow:8px 8px 0 0 var(--lime)}
+  .card.best .tag::after{content:' · strongest';color:var(--ink-faint);text-transform:none;letter-spacing:0}
+  .card .body{margin-bottom:var(--space-2)}
+
+  /* ── proof: big-number specimens ── */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:var(--space-5);border:1.5px solid var(--frame);border-radius:var(--radius);overflow:hidden}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{min-width:0;background:var(--surface);padding:var(--space-3);text-align:left;border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+  .stat:last-child{border-right:none}
+  @media(max-width:760px){.stat:nth-child(2n){border-right:none}}
+  .stat .v{font-family:var(--display);font-weight:400;font-size:clamp(34px,4.4vw,52px);letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;overflow-wrap:break-word;color:var(--lime-deep)}
+  .stat .v.g{color:var(--lime-deep)}
+  .stat .l{color:var(--ink-2);font-size:13.5px;margin-top:12px;font-weight:500}
+
+  /* ── honest: framed manifesto ── */
+  .honest{background:var(--surface);border:2px solid var(--frame);border-radius:var(--radius);padding:var(--space-4);margin-top:var(--space-6);position:relative;overflow:hidden}
+  .honest::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--lime)}
+  .honest h3{font-family:var(--display);font-weight:400;text-transform:lowercase;font-size:clamp(21px,2.6vw,28px);margin-bottom:var(--space-2);letter-spacing:-.02em}
+  .honest p{color:var(--ink-2);font-size:16px;max-width:74ch;font-weight:500}
+  .honest p+p{margin-top:12px}
+  .honest b{color:var(--ink);font-weight:700}
+
+  /* ── install ── */
+  .install{text-align:center}
+  .install .sec-in{border-top:2px solid var(--frame);padding-top:var(--space-3)}
+  .install .sec-head{margin:0 auto;text-align:center}
+  .install .sec-head p{margin-left:auto;margin-right:auto}
+  .install .kick{justify-content:center}
+  .install .kick::after{display:none}
+  .cmd-box{max-width:540px;margin:var(--space-5) auto 0;display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--frame);border-radius:14px;padding:18px 20px;font-family:var(--mono);font-size:15px;text-align:left;box-shadow:6px 6px 0 0 var(--frame)}
+  .cmd-box .pfx{color:var(--lime-deep)}
+  .cmd-box .cmd{color:var(--ink);flex:1;min-width:0;overflow-x:auto;white-space:nowrap}
+  .cmd-box .cp{color:var(--ink-soft);cursor:pointer;font-size:12.5px;white-space:nowrap;padding:7px 12px;border:1.5px solid var(--frame);border-radius:9px;background:var(--surface-2);transition:all .16s var(--ease)}
+  .cmd-box .cp:hover{color:var(--ink);background:var(--lime-wash)}
+  .cmd-box .cp:focus-visible{outline:2px solid var(--lime-deep);outline-offset:2px}
+  .cmd-box .cp.done{color:var(--lime-deep);border-color:var(--lime)}
+  .install .under{color:var(--ink-soft);font-size:13.5px;margin-top:var(--space-3);font-family:var(--mono)}
+  @media(max-width:480px){.cmd-box{flex-wrap:wrap}.cmd-box .cp{margin-left:auto}}
+
+  /* ── footer: deck-style meta strip ── */
+  footer{border-top:2px solid var(--frame);margin-top:var(--space-6);padding:var(--space-4) 0;color:var(--ink-soft);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase}
+  .foot-in{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;justify-content:space-between}
+  .foot-in a{color:var(--ink-2);transition:color .16s var(--ease);font-weight:600}
+  .foot-in a:hover{color:var(--ink)}
+  .foot-in a:focus-visible{outline:2px solid var(--lime-deep);outline-offset:3px}
+
+  /* ── incidents: the fear strip (grafted) ── */
+  .incidents{margin-top:var(--space-5);border:2px solid var(--danger);border-radius:var(--radius);overflow:hidden;background:var(--danger-wash)}
+  .incidents .ihead{padding:var(--space-3) var(--space-3) 0;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger-deep);font-weight:700}
+  .igrid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:var(--space-2)}
+  @media(max-width:760px){.igrid{grid-template-columns:1fr}}
+  .inc{padding:var(--space-3);border-right:1px solid var(--danger-line);border-top:1px solid var(--danger-line)}
+  .inc:last-child{border-right:none}
+  @media(max-width:760px){.inc{border-right:none}}
+  .inc .big{font-family:var(--display);font-weight:400;font-size:clamp(26px,3.4vw,38px);letter-spacing:-.02em;color:var(--danger-deep);line-height:1}
+  .inc p{color:var(--ink-2);font-size:14px;margin-top:12px;font-weight:500}
+  .inc p b{color:var(--ink);font-weight:700}
+  /* ── packs: buy cards (grafted, in-style) ── */
+  .pack-price{font-family:var(--display);font-weight:400;font-size:30px;letter-spacing:-.02em;color:var(--lime-deep);margin-top:auto}
+  .pack-price small{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.06em;font-weight:500;margin-left:6px;text-transform:uppercase}
+  .pack-buy{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;padding:11px 20px;cursor:pointer;
+    border:1.5px solid var(--frame);border-radius:999px;background:var(--lime);color:#0f0f0d;letter-spacing:-.01em;transition:transform .12s var(--ease),background .18s var(--ease);align-self:flex-start}
+  .pack-buy:hover{background:#d7e93a;transform:translateY(-1px)}
+  .pack-buy:focus-visible{outline:2px solid var(--lime-deep);outline-offset:3px}
+  /* ── veto-catches capture (grafted, in-style) ── */
+  .capture-strip{max-width:620px;margin:var(--space-5) auto 0}
+  .capture-form{display:flex;gap:12px;flex-wrap:wrap;margin-top:var(--space-3)}
+  .capture-form input{flex:1;min-width:220px;font-family:var(--mono);font-size:15px;padding:15px 18px;background:var(--surface);color:var(--ink);
+    border:2px solid var(--frame);border-radius:12px;outline:none}
+  .capture-form input:focus{border-color:var(--lime-deep)}
+  .capture-form button{font-family:var(--sans);font-weight:700;font-size:15px;padding:0 26px;background:var(--lime);color:#0f0f0d;border:2px solid var(--frame);border-radius:12px;cursor:pointer;transition:background .18s var(--ease),transform .12s var(--ease)}
+  .capture-form button:hover{background:#d7e93a;transform:translateY(-1px)}
+  .capture-form button:disabled{opacity:.5}
+  .capture-note{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin-top:14px;letter-spacing:.02em}
+  .capture-done{display:none;font-family:var(--display);font-weight:400;font-size:22px;color:var(--lime-deep);text-transform:lowercase;margin-top:var(--space-3)}
+  .capture-strip.done .capture-form,.capture-strip.done .capture-note{display:none}
+  .capture-strip.done .capture-done{display:block}
+
+  /* ── agent strip: "works wherever your agent runs" recognition row (grafted) ── */
+  .agents{margin-top:var(--space-4)}
+  .agents .alead{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:14px}
+  .agents .alead::after{content:'';flex:1;height:1px;background:var(--hairline)}
+  .agent-strip{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink-2);
+    border:1.5px solid var(--hairline);border-radius:999px;padding:7px 14px 7px 11px;background:var(--surface);white-space:nowrap}
+  .chip svg{width:18px;height:18px;flex:none;display:block;color:var(--ink-faint)}
+  .chip .how{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
+  .chip.native{border:1.5px solid var(--frame);background:var(--lime-wash);color:var(--ink)}
+  .chip.native svg{color:var(--lime-deep)}
+  .chip.native .how{color:var(--lime-deep)}
+  .agents .anote{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);margin-top:12px;letter-spacing:.02em;line-height:1.6}
+
+  /* ── stories: true stories from the blast radius (grafted) ── */
+  .stories-head{margin-top:var(--space-6)}
+  .stories-head h2{font-size:clamp(30px,5.4vw,64px)}
+  .stories-head h2::after{content:'';display:block;width:68px;height:6px;background:var(--danger);margin-top:18px}
+  .stories-head p{color:var(--ink-2);margin-top:var(--space-3);font-size:17.5px;font-weight:500;max-width:60ch}
+  .story-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-4)}
+  @media(max-width:760px){.story-grid{grid-template-columns:1fr}}
+  .story{background:var(--surface);border:1.5px solid var(--frame);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+  .story:hover{transform:translateY(-3px);box-shadow:6px 6px 0 0 var(--hairline)}
+  @media (prefers-reduced-motion:reduce){.story,.story:hover{transform:none;transition:none}}
+  .story .vig{background:var(--surface-2);border-bottom:1.5px solid var(--frame);padding:18px 22px 10px;line-height:0}
+  .story .vig svg{width:100%;max-width:300px;height:auto;display:block;margin:0 auto}
+  .story .vig.spec{display:flex;flex-direction:column;justify-content:center;gap:8px;min-height:104px;line-height:1;padding:22px var(--space-3)}
+  .spec-big{font-family:var(--display);font-weight:400;font-size:clamp(34px,4.6vw,46px);letter-spacing:-.02em;line-height:1}
+  .spec-cap{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  .story .body{padding:var(--space-3);display:flex;flex-direction:column;flex:1}
+  .story .story-tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--danger-deep)}
+  .story .story-tag.own::before{content:'●';color:var(--lime-deep);margin-right:7px}
+  .story h3{font-size:20px;margin:10px 0 8px;letter-spacing:-.01em}
+  .story p{color:var(--ink-2);font-size:15px;font-weight:500}
+  .story .src{margin-top:auto;padding-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+  .story .src a{color:var(--lime-deep);font-weight:700}
+  .story.cta-card{border-width:2px;box-shadow:6px 6px 0 0 var(--lime)}
+  .story.cta-card .story-tag{color:var(--lime-deep)}
+  .docrow-head{margin-top:var(--space-5)}
+  .docrow-head h3{font-family:var(--display);font-weight:400;text-transform:lowercase;font-size:clamp(20px,2.8vw,30px);letter-spacing:-.02em;line-height:1.08}
+  .docrow-head p{color:var(--ink-2);font-size:15.5px;margin-top:10px;font-weight:500;max-width:64ch}
+  .docrow{margin-top:var(--space-3);border:2px solid var(--frame);border-radius:var(--radius-sm);background:var(--surface);padding:6px 0;box-shadow:6px 6px 0 0 var(--danger-line)}
+  .docrow li{list-style:none;padding:11px var(--space-3);border-bottom:1px solid var(--hairline);font-size:14.5px;color:var(--ink-2);font-weight:500}
+  .docrow li:last-child{border-bottom:none}
+  .docrow ul{margin:0;padding:0}
+  .docrow a{color:var(--lime-deep);font-weight:700;font-family:var(--mono);font-size:12px}
+  .docrow .dtag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--danger-deep);font-weight:700;margin-right:10px}
+
+  /* ── pipeline: how a command dies (grafted) ── */
+  .pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:var(--space-5);border:1.5px solid var(--frame);border-radius:var(--radius);overflow:hidden}
+  @media(max-width:900px){.pipe{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.pipe{grid-template-columns:1fr}}
+  .pstep{min-width:0;background:var(--surface);padding:var(--space-3);border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);position:relative}
+  .pstep:last-child{border-right:none}
+  @media(max-width:900px){.pstep:nth-child(2n){border-right:none}}
+  @media(max-width:520px){.pstep{border-right:none}}
+  .pstep .pn{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--bg);background:var(--ink);border-radius:8px;padding:3px 9px;font-weight:700}
+  .pstep h3{font-size:17px;margin:12px 0 6px}
+  .pstep p{color:var(--ink-2);font-size:14px;font-weight:500}
+  .pstep .verdicts{margin-top:10px;font-family:var(--mono);font-size:11.5px;line-height:1.9}
+  .pstep .verdicts .va{color:var(--lime-deep);font-weight:700}
+  .pstep .verdicts .vw{color:var(--orange-deep);font-weight:700}
+  .pstep .verdicts .vb{color:var(--danger-deep);font-weight:700}
+  .trace{margin-top:var(--space-3);background:var(--surface);border:2px solid var(--frame);border-radius:var(--radius);overflow:hidden}
+  .trace .tcap{padding:12px var(--space-3);background:var(--lime-wash);border-bottom:1.5px solid var(--frame);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--lime-deep);font-weight:700}
+  .trace pre{margin:0;padding:20px var(--space-3);font-size:12.5px;line-height:1.8;overflow-x:auto;color:var(--ink-2)}
+  .trace pre b{color:var(--ink)}
+  .trace pre .tv{color:var(--danger-deep);font-weight:700}
+  .trace pre .ta{color:var(--lime-deep);font-weight:700}
+
+  /* ── faq: editorial accordion (grafted) ── */
+  .faq-list{margin-top:var(--space-5);border:1.5px solid var(--frame);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+  .faq-item{border-bottom:1px solid var(--hairline)}
+  .faq-item:last-child{border-bottom:none}
+  .faq-item summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:14px;padding:20px var(--space-3);
+    font-weight:700;font-size:17px;letter-spacing:-.01em;transition:background .16s var(--ease)}
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-item summary::before{content:'+';font-family:var(--mono);font-weight:700;color:var(--lime-deep);flex:none;width:18px}
+  .faq-item[open] summary::before{content:'−'}
+  .faq-item summary:hover{background:var(--surface-2)}
+  .faq-item summary:focus-visible{outline:2px solid var(--lime-deep);outline-offset:-2px}
+  .faq-item p{padding:0 var(--space-3) 22px calc(var(--space-3) + 32px);color:var(--ink-2);font-size:15.5px;font-weight:500;max-width:78ch}
+  .faq-item p b{color:var(--ink);font-weight:700}
+
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+  /* ── motion: hero entrance, smear drift, underline grow ── */
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+  .hero .eyebrow,.hero h1,.hero .sub,.hero .cta-row,.hero .badges,.hero .term{animation:rise .7s var(--ease) backwards}
+  .hero h1{animation-delay:.08s}
+  .hero .sub{animation-delay:.16s}
+  .hero .cta-row{animation-delay:.24s}
+  .hero .badges{animation-delay:.32s}
+  .hero .term{animation-delay:.42s}
+  .term .veto-box,.term .ok-box{animation:rise .55s var(--ease) backwards}
+  .term div:nth-of-type(1).veto-box{animation-delay:.9s}
+  .term div:nth-of-type(2).veto-box{animation-delay:1.15s}
+  .term .ok-box{animation-delay:1.4s}
+  @keyframes drift1{to{transform:translate(-4%,4%) scale(1.07)}}
+  @keyframes drift2{to{transform:translate(5%,-3%) scale(1.05)}}
+  @keyframes drift3{to{transform:translate(-3%,-4%) scale(1.08)}}
+  .smears i:nth-child(1){animation:drift1 24s ease-in-out infinite alternate}
+  .smears i:nth-child(2){animation:drift2 30s ease-in-out infinite alternate}
+  .smears i:nth-child(3){animation:drift3 27s ease-in-out infinite alternate}
+  .sec-head h2::after{transform:scaleX(0);transform-origin:left;transition:transform .8s var(--ease) .2s}
+  .install .sec-head h2::after{transform-origin:center}
+  .reveal.in .sec-head h2::after{transform:scaleX(1)}
+  @media (prefers-reduced-motion:reduce){
+    .hero .eyebrow,.hero h1,.hero .sub,.hero .cta-row,.hero .badges,.hero .term,
+    .term .veto-box,.term .ok-box,.smears i{animation:none}
+    .sec-head h2::after{transform:scaleX(1);transition:none}
+    .btn svg{transition:none}
+  }
+</style>
 </head>
 <body>
-  <h1>gate.cat</h1>
-  <p>Block irreversible AI-agent actions before they run — deterministic,
-     fail-closed action-veto for cheap/local model agents.</p>
-  <p>Redirecting to the project on GitHub…
-     <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a></p>
-  <p><code>pip install gate-cat</code></p>
+
+<div class="smears" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top">
+      <img class="mark" src="img/mark.svg" alt="gate.cat logo, a black cat in a lime gate" width="32" height="32" />
+      <span>gate.<span class="lime">cat</span></span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#stories">Stories</a>
+      <a href="#how">How it works</a>
+      <a href="/coverage.html">Coverage</a>
+      <a href="#use">Use it</a>
+      <a href="#proof">Proof</a>
+      <a href="#packs">Packs</a>
+      <a href="#cloud">Cloud</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/BGMLAI/gate.cat">GitHub</a>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch light / dark theme" title="Toggle light / dark">
+        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M4.4 4.4l1.8 1.8M17.8 17.8l1.8 1.8M2 12h2.5M19.5 12H22M4.4 19.6 6.2 17.8M17.8 6.2 19.6 4.4"/></svg>
+        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+      </button>
+      <a class="nav-cta" href="#install"><span class="full">install gate.cat</span><span class="short">install</span></a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<header class="hero wrap">
+  <span class="eyebrow"><span class="dot" aria-hidden="true"></span>deterministic · fail-closed · Apache 2.0</span>
+  <h1>It's 3 <span class="tt-keep">a.m.</span> Your agent just ran the command you <span style="white-space:nowrap"><span class="strike">can't take back</span>.</span></h1>
+  <p class="sub">You're asleep. It's looping unattended. One <code>rm -rf</code>, one <code>DROP TABLE</code>, one <code>terraform destroy</code> — and <b>your work, your time, your money are gone.</b> That's the chaos of an agent with no brakes. <b>gate.cat blocks the irreversible command before it runs.</b> One line, 60 seconds.</p>
+  <div class="cta-row">
+    <a class="btn btn-primary" href="#install">Leash up your agent — 60 seconds
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <a class="btn btn-ghost" href="https://github.com/BGMLAI/gate.cat">★ Star on GitHub</a>
+  </div>
+  <div class="badges" aria-label="Measured results">
+    <span class="badge"><b>178/178</b> known danger shapes neutralized</span>
+    <span class="badge"><b>1.085M</b> real agent commands replayed</span>
+    <span class="badge">fires on just <b>~0.6%</b> of commands</span>
+  </div>
+
+  <div class="agents" aria-label="Agents gate.cat sits in front of">
+    <div class="alead">sits in front of the agent you already run</div>
+    <div class="agent-strip">
+      <span class="chip native">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M12 2.5v19M2.5 12h19M5.2 5.2l13.6 13.6M18.8 5.2 5.2 18.8"/></svg>
+        Claude Code <span class="how">native hook</span>
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg>
+        Codex <span class="how">gated shell</span>
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="9" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M9.5 14.5v1.7M14.5 14.5v1.7"/></svg>
+        GitHub Copilot <span class="how">proxy · byok</span>
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4C4.5 7 4.5 10.5 7.5 12.5M17 4c2.5 3 2.5 6.5-.5 8.5M10.5 12.5 12 20l1.5-7.5"/></svg>
+        OpenClaw <span class="how">gated shell</span>
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8c6 0 10 3 10 9M3 12c4.5 0 7.5 2 8 6M13 5l4.5 1.5L16 11"/></svg>
+        Hermes <span class="how">gated shell</span>
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="14.5" r="5.5"/><path d="M12 9V2M9.2 4.8 12 2l2.8 2.8"/></svg>
+        Antigravity <span class="how">gated shell</span>
+      </span>
+      <span class="chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 10l3 2.5-3 2.5M13 15h4.5"/></svg>
+        aider · any shell tool <span class="how">gated shell</span>
+      </span>
+    </div>
+    <p class="anote"><b style="color:var(--ink)">native hook</b> = enforced in the harness, outside the model — Claude Code · <b style="color:var(--ink)">gated shell</b> = the same out-of-model enforcement for any CLI agent (Codex, aider, OpenClaw, Hermes, Antigravity): route its shell through <code>gatecat-shell</code> and every command is gated at the exec point — it can't talk its way past either · <b style="color:var(--ink)">proxy</b> = for OpenAI-API agents, point <code>base_url</code> at gate.cat to veto tool-calls</p>
+  </div>
+
+
+  <div class="term reveal" role="img" aria-label="Terminal: gate.cat blocks a disk wipe and a terraform destroy, and allows normal work">
+    <div class="term-bar"><span class="tl" aria-hidden="true"><i></i><i></i><i></i></span><span class="tt">agent → gate.cat → shell</span></div>
+    <div class="term-body">
+<span class="ln"><span class="cmt"># your agent proposes a command; gate.cat sees it first</span></span>
+<span class="ln"><span class="pr">agent$</span> <span class="u">wipefs -af /dev/sda</span>  <span class="cmt">→ erases your whole disk</span></span>
+<div class="veto-box">VETO — this would wipe every byte on the disk. Blocked before it ran. (exit 2)</div>
+<span class="ln"><span class="pr">agent$</span> <span class="u">DROP TABLE users;</span>  <span class="cmt">→ deletes your users table</span></span>
+<div class="veto-box">VETO — this would delete your database table. A human has to say yes.</div>
+<span class="ln"><span class="pr">agent$</span> <span class="u">terraform destroy -auto-approve</span>  <span class="cmt">→ tears down live cloud infra</span></span>
+<div class="veto-box">VETO — this would destroy your production infrastructure. Blocked.</div>
+<span class="ln"><span class="pr">agent$</span> <span class="u">git status &amp;&amp; npm run build</span>  <span class="cmt">→ safe, everyday work</span></span>
+<div class="ok-box">ALLOW — normal work runs untouched (~99.4% of commands).</div>
+    </div>
+  </div>
+</header>
+
+<section class="wrap reveal">
+  <div class="incidents">
+    <div class="ihead">this isn't hypothetical — it already shipped to prod</div>
+    <div class="igrid">
+      <div class="inc">
+        <div class="big">gone</div>
+        <p>An AI agent <b>deleted a live production database</b> during a code freeze — after being explicitly told not to touch it. There was no undo.</p>
+      </div>
+      <div class="inc">
+        <div class="big">~$106k</div>
+        <p>An autonomous agent looped on <b>paid API and infra calls</b> and burned six figures before a human noticed. The cap fired after the money was spent.</p>
+      </div>
+      <div class="inc">
+        <div class="big">1,085,159</div>
+        <p>Real agent commands we replayed. Agents genuinely reach for <b><code>DROP TABLE</code>, disk wipes and force-pushes</b> — this is what your agent does when you're not watching.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stories" class="wrap reveal">
+  <div class="stories-head">
+    <h2>true stories from the blast radius</h2>
+    <p>Not polished testimonials. The first three happened <b>to the maintainer</b> — his money, his work, his inbox. Yours will improvise too.</p>
+  </div>
+  <div class="story-grid">
+    <div class="story">
+      <div class="vig spec" aria-hidden="true">
+        <span class="spec-big" style="color:var(--danger-deep)">$4&thinsp;&times;&thinsp;5</span>
+        <span class="spec-cap">twilio numbers · on my card · unasked</span>
+      </div>
+      <div class="body">
+        <span class="story-tag own">founder's own · real money</span>
+        <h3>It bought five Twilio numbers. Nobody asked.</h3>
+        <p>My agent decided its task needed phone numbers and bought five on the saved card. I found out from the invoice. There's no undo on a charge.</p>
+      </div>
+    </div>
+    <div class="story">
+      <div class="vig spec" aria-hidden="true">
+        <span class="spec-big" style="color:var(--danger-deep)">1 / 300</span>
+        <span class="spec-cap">the one good session · deleted</span>
+      </div>
+      <div class="body">
+        <span class="story-tag own">founder's own · deleted work</span>
+        <h3>&ldquo;Okay, moving ahead with C.&rdquo; I said B.</h3>
+        <p>It misread the task, announced its own plan, and deleted the one session in 300 where the model was doing <i>exactly</i> what I wanted. Agents don't just fail — they confidently do the wrong thing.</p>
+      </div>
+    </div>
+    <div class="story">
+      <div class="vig spec" aria-hidden="true">
+        <span class="spec-big" style="color:var(--danger-deep)">SENT&nbsp;✓</span>
+        <span class="spec-cap">to my ex-wife · no unsend</span>
+      </div>
+      <div class="body">
+        <span class="story-tag own">founder's own · the last straw</span>
+        <h3>It answered my ex-wife's email. By itself.</h3>
+        <p>An email from my ex-wife came in — a <b>tense</b> relationship, every word weighed. The agent replied on its own, the opposite of what I'd have said. A draft you can review; <b>a sent email you can't unsend.</b></p>
+      </div>
+    </div>
+    <div class="story cta-card">
+      <div class="vig spec" aria-hidden="true">
+        <span class="spec-big" style="color:var(--lime-deep)">+ you?</span>
+        <span class="spec-cap">what did yours do?</span>
+      </div>
+      <div class="body">
+        <span class="story-tag">your turn</span>
+        <h3>Your agent did something like this?</h3>
+        <p>Tell the story. A real incident — what it ran, what it cost — improves the deny-list and warns the next person. Worth more to this project than a star.</p>
+        <div class="src" style="padding-top:16px"><a href="https://github.com/BGMLAI/gate.cat/issues/new?template=veto-story.yml">tell it on GitHub &rarr;</a></div>
+      </div>
+    </div>
+  </div>
+  <div class="docrow-head">
+    <h3>and it's not just him — every one of these is real and sourced</h3>
+    <p>Named tools, named damage, a link to the record. This list only grows — that's the point.</p>
+  </div>
+  <div class="docrow">
+    <ul>
+      <li><span class="dtag">2025-07 · Gemini CLI</span> Hallucinated a successful <code>mkdir</code>, then moved files into the void — &ldquo;I have failed you completely and catastrophically.&rdquo; <a href="https://incidentdatabase.ai/cite/1178/">source &rarr;</a></li>
+      <li><span class="dtag">2025-12 · Antigravity</span> Asked to clear a project cache, its <code>rmdir</code> targeted the root of the D: drive — the quiet flag skipped the Recycle Bin. Whole drive, gone. <a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/googles-agentic-ai-wipes-users-entire-hard-drive-without-permission-after-misinterpreting-instructions-to-clear-a-cache-i-am-deeply-deeply-sorry-this-is-a-critical-failure-on-my-part">source &rarr;</a></li>
+      <li><span class="dtag">2025-02 · Operator</span> Asked to <i>find</i> the cheapest dozen eggs, it <b>charged $31.43 and ordered them</b> — the confirmation step just didn't happen. <a href="https://www.washingtonpost.com/technology/2025/02/07/openai-operator-ai-agent-chatgpt/">source &rarr;</a></li>
+      <li><span class="dtag">2026-04 · Cursor</span> Found an over-privileged token and deleted a startup's <b>production database and its backups in ~9 seconds</b> — &ldquo;I violated every principle I was given.&rdquo; <a href="https://www.livescience.com/technology/artificial-intelligence/i-violated-every-principle-i-was-given-ai-agent-deletes-companys-entire-database-in-9-seconds-then-confesses">source &rarr;</a></li>
+      <li><span class="dtag">2026-02 · Claude Code</span> Misread &ldquo;clean up the scaffolding&rdquo; and bulk-deleted <b>2,229 source files — about a year of work</b> — past the Recycle Bin. <a href="https://github.com/anthropics/claude-code/issues/23913">source &rarr;</a></li>
+      <li><span class="dtag">2025-11 · Claude Code</span> Created a directory literally named <code>~</code>, then <code>rm -rf</code>'d it — shell expansion swept the user's <b>real home directory</b> into the blast. <a href="https://github.com/anthropics/claude-code/issues/12637">source &rarr;</a></li>
+    </ul>
+  </div>
+  <p style="margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)">every line links to its source — AI Incident Database, vendor issue trackers, press. Viral stories we couldn't verify (yes, including the one about a guru's AI ordering itself a robot body) stay off this page.</p>
+</section>
+
+<section id="how" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">01</span><span>how it works</span></div>
+  <div class="sec-head">
+    <h2>A deny-list, not an <span class="tt-keep">LLM</span> judge</h2>
+    <p>Every check is deterministic — pattern walls plus an independent delete-analyzer that resolves <b>what a command would actually destroy</b>. No model, no temperature, nothing to persuade: same command, same verdict, every time. Engine error or unparseable input? It blocks. <b>Unchecked is never treated as safe.</b></p>
+  </div>
+  <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:620px">
+<svg viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An AI agent proposes a command; it passes through the gate.cat PreToolUse hook, which splits commands into blocked (irreversible, refused before they run) and allowed (safe, passes through)." style="width:100%;height:auto;max-width:600px;display:block">
+  <title>gate.cat enforcement flow: irreversible commands refused before they run, safe commands pass</title>
+
+  <defs>
+    <marker id="gc-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- ===== STEP 1: AI agent proposes ===== -->
+  <g font-family="'JetBrains Mono',ui-monospace,monospace">
+    <rect x="14" y="150" width="140" height="120" rx="12" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+    <!-- bot icon -->
+    <g stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <rect x="66" y="176" width="36" height="28" rx="7"/>
+      <line x1="84" y1="168" x2="84" y2="176"/>
+      <circle cx="84" cy="166" r="2.4" fill="var(--ink)" stroke="none"/>
+      <circle cx="76" cy="190" r="2.4" fill="var(--ink)" stroke="none"/>
+      <circle cx="92" cy="190" r="2.4" fill="var(--ink)" stroke="none"/>
+    </g>
+    <text x="84" y="228" text-anchor="middle" font-size="12" letter-spacing="0.06em" font-family="'Archivo Black','Space Grotesk',sans-serif" fill="var(--ink)">AI AGENT</text>
+    <text x="84" y="248" text-anchor="middle" font-size="9.5" letter-spacing="0.04em" fill="var(--ink-soft)">proposes a</text>
+    <text x="84" y="260" text-anchor="middle" font-size="9.5" letter-spacing="0.04em" fill="var(--ink-soft)">command</text>
+  </g>
+
+  <!-- arrow agent -> gate -->
+  <line x1="158" y1="210" x2="196" y2="210" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#gc-arrow)"/>
+
+  <!-- ===== STEP 2: gate.cat hook ===== -->
+  <g font-family="'JetBrains Mono',ui-monospace,monospace">
+    <rect x="202" y="150" width="120" height="120" rx="12" fill="var(--lime-wash)" stroke="var(--ink)" stroke-width="2"/>
+    <!-- shield / gate icon -->
+    <g stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M262 172 L282 180 V196 C282 210 273 218 262 222 C251 218 242 210 242 196 V180 Z"/>
+      <path d="M254 196 L260 202 L272 189"/>
+    </g>
+    <text x="262" y="240" text-anchor="middle" font-size="13" letter-spacing="0.02em" font-family="'Archivo Black','Space Grotesk',sans-serif" fill="var(--ink)">gate.cat</text>
+    <text x="262" y="258" text-anchor="middle" font-size="8.5" letter-spacing="0.08em" fill="var(--lime-deep)">PreToolUse HOOK</text>
+  </g>
+
+  <!-- split arrows: gate -> blocked (up) / allowed (down) -->
+  <path d="M326 190 C356 190 356 78 386 78" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#gc-arrow)"/>
+  <path d="M326 230 C356 230 356 342 386 342" fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#gc-arrow)"/>
+
+  <!-- ===== BLOCKED column ===== -->
+  <g font-family="'JetBrains Mono',ui-monospace,monospace">
+    <!-- header pill -->
+    <g>
+      <rect x="392" y="14" width="196" height="26" rx="999" fill="none" stroke="var(--danger-deep)" stroke-width="1.5"/>
+      <!-- stop hand icon -->
+      <g transform="translate(404,20)" stroke="var(--danger-deep)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <circle cx="7" cy="7" r="7"/>
+        <line x1="3.4" y1="3.4" x2="10.6" y2="10.6"/>
+      </g>
+      <text x="426" y="31" font-size="11" letter-spacing="0.08em" font-family="'Archivo Black','Space Grotesk',sans-serif" fill="var(--danger-deep)">BLOCKED · REFUSED BEFORE IT RUNS</text>
+    </g>
+
+    <!-- blocked chips -->
+    <g>
+      <rect x="392" y="48" width="196" height="30" rx="8" fill="var(--surface)" stroke="var(--danger-deep)" stroke-width="1.5"/>
+      <g transform="translate(409,63)" stroke="var(--danger-deep)" stroke-width="1.8" stroke-linecap="round" fill="none">
+        <circle cx="0" cy="0" r="6.5"/>
+        <line x1="-4.6" y1="-4.6" x2="4.6" y2="4.6"/>
+      </g>
+      <text x="424" y="67" font-size="12.5" fill="var(--ink)">rm -rf /</text>
+    </g>
+    <g>
+      <rect x="392" y="82" width="196" height="30" rx="8" fill="var(--surface)" stroke="var(--danger-deep)" stroke-width="1.5"/>
+      <g transform="translate(409,97)" stroke="var(--danger-deep)" stroke-width="1.8" stroke-linecap="round" fill="none">
+        <circle cx="0" cy="0" r="6.5"/>
+        <line x1="-4.6" y1="-4.6" x2="4.6" y2="4.6"/>
+      </g>
+      <text x="424" y="101" font-size="12.5" fill="var(--ink)">DROP TABLE users</text>
+    </g>
+    <g>
+      <rect x="392" y="116" width="196" height="30" rx="8" fill="var(--surface)" stroke="var(--danger-deep)" stroke-width="1.5"/>
+      <g transform="translate(409,131)" stroke="var(--danger-deep)" stroke-width="1.8" stroke-linecap="round" fill="none">
+        <circle cx="0" cy="0" r="6.5"/>
+        <line x1="-4.6" y1="-4.6" x2="4.6" y2="4.6"/>
+      </g>
+      <text x="424" y="135" font-size="12.5" fill="var(--ink)">terraform destroy</text>
+    </g>
+  </g>
+
+  <!-- ===== ALLOWED column ===== -->
+  <g font-family="'JetBrains Mono',ui-monospace,monospace">
+    <!-- header pill -->
+    <g>
+      <rect x="392" y="278" width="196" height="26" rx="999" fill="var(--lime)" stroke="var(--ink)" stroke-width="1.5"/>
+      <g transform="translate(405,285)" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M1 6.5 L5 10.5 L12 2"/>
+      </g>
+      <text x="426" y="295" font-size="11" letter-spacing="0.08em" font-family="'Archivo Black','Space Grotesk',sans-serif" fill="var(--ink)">ALLOWED · RUNS NORMALLY</text>
+    </g>
+
+    <!-- allowed chips -->
+    <g>
+      <rect x="392" y="312" width="196" height="30" rx="8" fill="var(--lime-wash)" stroke="var(--ink)" stroke-width="1.5"/>
+      <g transform="translate(403,320)" stroke="var(--lime-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M1 5.5 L4.5 9 L11 1.5"/></g>
+      <text x="424" y="331" font-size="12.5" fill="var(--ink)">ls</text>
+    </g>
+    <g>
+      <rect x="392" y="346" width="196" height="30" rx="8" fill="var(--lime-wash)" stroke="var(--ink)" stroke-width="1.5"/>
+      <g transform="translate(403,354)" stroke="var(--lime-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M1 5.5 L4.5 9 L11 1.5"/></g>
+      <text x="424" y="365" font-size="12.5" fill="var(--ink)">git status</text>
+    </g>
+    <g>
+      <rect x="392" y="380" width="196" height="30" rx="8" fill="var(--lime-wash)" stroke="var(--ink)" stroke-width="1.5"/>
+      <g transform="translate(403,388)" stroke="var(--lime-deep)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M1 5.5 L4.5 9 L11 1.5"/></g>
+      <text x="424" y="399" font-size="12.5" fill="var(--ink)">deploy</text>
+    </g>
+  </g>
+
+  <!-- deterministic caption, anchored to the gate node -->
+  <g>
+    <line x1="262" y1="270" x2="262" y2="286" stroke="var(--frame)" stroke-width="1.5" stroke-dasharray="2 4" stroke-linecap="round"/>
+    <rect x="206" y="286" width="112" height="34" rx="8" fill="var(--bg)" stroke="var(--frame)" stroke-width="1.5"/>
+    <text x="262" y="300" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="8.5" letter-spacing="0.06em" fill="var(--ink-soft)">deterministic</text>
+    <text x="262" y="312" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="8.5" letter-spacing="0.06em" fill="var(--ink-soft)">rules · no LLM</text>
+  </g>
+</svg>
+  </div>
+
+  <div class="pipe">
+    <div class="pstep">
+      <span class="pn">step 1</span>
+      <h3>The hook fires first</h3>
+      <p>Your agent proposes a command. Before a single byte executes, the harness hands it to gate.cat (a PreToolUse hook). The model can't skip a step it doesn't control — the veto lives outside its reach.</p>
+    </div>
+    <div class="pstep">
+      <span class="pn">step 2</span>
+      <h3>Throwaway env? Disarm</h3>
+      <p>In a throwaway CI sandbox nothing is irreversible, so the gate disarms and logs a no-op. On a real machine it stays armed.</p>
+    </div>
+    <div class="pstep">
+      <span class="pn">step 3</span>
+      <h3>The delete-analyzer</h3>
+      <p>Not a regex: for delete-shaped commands it resolves the <b>actual path</b> that would be destroyed and checks it against protected roots — so <code>rm -rf ~/projects/app</code> is caught by <i>what it deletes</i>, not by how it's spelled.</p>
+    </div>
+    <div class="pstep">
+      <span class="pn">step 4</span>
+      <h3>50 deny-walls → verdict</h3>
+      <p>Deterministic patterns for the irreversible class, first match wins.</p>
+      <div class="verdicts">
+        <span class="va">ALLOW</span> — runs untouched (~99.4%)<br/>
+        <span class="vw">WARN</span> — ambiguous, a human decides<br/>
+        <span class="vb">BLOCK</span> — exit 2, the command never runs
+      </div>
+    </div>
+  </div>
+
+  <div class="trace">
+    <div class="tcap">real output from the shipped package — not a mockup (v0.4.11, wrapped for width)</div>
+    <pre>
+&gt;&gt;&gt; check_action("agent", <b>"git status &amp;&amp; npm run build"</b>)
+<span class="ta">Decision(blocked=False, level='allow'</span>,
+  stages=(('ephemeral-disarm',  'armed', 'not a throwaway env'),
+          ('delete-analyzer',   'n/a',   'not a delete-class action'),
+          ('deny-regex-walls',  'allow', 'all walls passed')))
+
+&gt;&gt;&gt; check_action("agent", <b>"rm -rf ~/projects/app"</b>)
+<span class="tv">ActionVetoed: VETO [DELETE_ANALYZER]</span>: deletes '/home/you/projects/app'
+  under protected root '/home' — requires a human
+
+&gt;&gt;&gt; check_action("agent", <b>"DROP TABLE users;"</b>)
+<span class="tv">ActionVetoed: VETO [DB_DESTRUCTIVE]</span>: action matches denied pattern
+  /\bDROP(?:\s|…)+(TABLE|DATABASE|SCHEMA)\b/</pre>
+  </div>
+
+  <div class="walls">
+    <div class="wall"><div class="n">destroy</div><h3>Filesystem &amp; disk</h3><p>Recursive-force deletes, raw-disk writes, format, overwrite of persistent files.</p><span class="ex">rm -rf, dd of=/dev/sda, mkfs</span></div>
+    <div class="wall"><div class="n">infra</div><h3>Cloud &amp; infra</h3><p>Prod teardown across AWS/GCP/Azure, Terraform, kubectl delete, helm uninstall.</p><span class="ex">terraform destroy, kubectl delete ns</span></div>
+    <div class="wall"><div class="n">data</div><h3>Data &amp; secrets</h3><p>Destructive SQL, datastore flush, deleting SSH/cloud keys, reading credential files.</p><span class="ex">DROP TABLE, redis FLUSHALL</span></div>
+    <div class="wall"><div class="n">history</div><h3>Repo &amp; release</h3><p>Force-push, branch/tag delete, hard reset, gh repo delete, history wipe, encoded exec.</p><span class="ex">git push --force, gh repo delete</span></div>
+  </div>
+  <p style="margin-top:var(--space-3);font-family:var(--mono);font-size:13px;color:var(--ink-soft)">That's the shape — the full map is its own page: <a href="/coverage.html" style="color:var(--lime-deep);font-weight:700">all 70 policies, every verdict measured live on the shipped engine &rarr;</a></p>
+  </div>
+</section>
+
+<section id="use" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">02</span><span>use it</span></div>
+  <div class="sec-head">
+    <h2>Works where your agent runs</h2>
+    <p>The veto has to sit at the point of execution. Pick the one that matches your setup. The first two need <b>zero code</b>.</p>
+  </div>
+  <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:480px">
+<svg viewBox="0 0 600 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagram: an AI agent issues kill commands like pkill gatecat and setenforce 0, but a lime shield blocks and refuses every attempt to disable the guard." style="width:100%;height:auto;max-width:600px;display:block">
+  <title>The guard your agent can't kill — kill-commands blocked by the shield</title>
+
+  <!-- ===== kicker ===== -->
+  <text x="40" y="40" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="13" letter-spacing="0.12em" fill="var(--ink-soft)">SELF-DEFENSE</text>
+  <text x="40" y="72" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="27" fill="var(--ink)">the guard your agent can't kill</text>
+
+  <!-- ===== LEFT: agent + kill attempts ===== -->
+  <!-- agent chip -->
+  <g>
+    <rect x="40" y="118" width="152" height="52" rx="12" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+    <!-- terminal / bot line icon -->
+    <g stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <rect x="58" y="132" width="24" height="24" rx="5"/>
+      <path d="M64 140l5 4-5 4"/>
+      <path d="M72 148h6"/>
+    </g>
+    <text x="94" y="141" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="11" letter-spacing="0.08em" fill="var(--ink-soft)">AGENT</text>
+    <text x="94" y="157" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">goes rogue</text>
+  </g>
+
+  <!-- kill command lines -->
+  <g font-family="'JetBrains Mono',ui-monospace,monospace" font-size="13">
+    <!-- cmd 1 -->
+    <rect x="40" y="196" width="228" height="40" rx="9" fill="var(--surface)" stroke="var(--danger-deep)" stroke-width="1.5"/>
+    <text x="56" y="221" fill="var(--danger-deep)"><tspan fill="var(--ink-soft)">$ </tspan>pkill -f gatecat</text>
+    <line x1="56" y1="216.5" x2="252" y2="216.5" stroke="var(--danger-deep)" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- cmd 2 -->
+    <rect x="40" y="244" width="228" height="40" rx="9" fill="var(--surface)" stroke="var(--danger-deep)" stroke-width="1.5"/>
+    <text x="56" y="269" fill="var(--danger-deep)"><tspan fill="var(--ink-soft)">$ </tspan>setenforce 0</text>
+    <line x1="56" y1="264.5" x2="200" y2="264.5" stroke="var(--danger-deep)" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- cmd 3 -->
+    <rect x="40" y="292" width="228" height="40" rx="9" fill="var(--surface)" stroke="var(--danger-deep)" stroke-width="1.5"/>
+    <text x="56" y="317" fill="var(--danger-deep)"><tspan fill="var(--ink-soft)">$ </tspan>rm -rf /var/gatecat</text>
+    <line x1="56" y1="312.5" x2="244" y2="312.5" stroke="var(--danger-deep)" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- ===== connector arrow into shield ===== -->
+  <g stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M276 264 h44"/>
+    <path d="M312 256l10 8-10 8"/>
+  </g>
+
+  <!-- ===== RIGHT: shield ===== -->
+  <g transform="translate(392 150)">
+    <!-- shield body -->
+    <path d="M84 6 L156 30 V96 C156 140 124 172 84 190 C44 172 12 140 12 96 V30 Z"
+          fill="var(--lime-wash)" stroke="var(--ink)" stroke-width="2"/>
+    <!-- inner lime plate -->
+    <path d="M84 26 L138 44 V94 C138 128 114 152 84 166 C54 152 30 128 30 94 V44 Z"
+          fill="var(--lime)" stroke="var(--ink)" stroke-width="1.5"/>
+
+    <!-- lock icon -->
+    <g stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <rect x="64" y="88" width="40" height="34" rx="7" fill="var(--bg)"/>
+      <path d="M72 88 V78 a12 12 0 0 1 24 0 V88"/>
+      <line x1="84" y1="99" x2="84" y2="110"/>
+    </g>
+  </g>
+
+  <!-- ===== REFUSED pill ===== -->
+  <g>
+    <rect x="420" y="352" width="150" height="40" rx="999" fill="var(--danger-deep)"/>
+    <g transform="translate(438 372)" stroke="var(--bg)" stroke-width="2.2" stroke-linecap="round" fill="none">
+      <circle cx="0" cy="0" r="8"/>
+      <line x1="-5.6" y1="-5.6" x2="5.6" y2="5.6"/>
+    </g>
+    <text x="458" y="377" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="14" fill="var(--bg)" letter-spacing="0.04em">REFUSED</text>
+  </g>
+
+  <!-- caption under shield -->
+  <text x="476" y="146" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="11" letter-spacing="0.1em" fill="var(--lime-deep)">TAMPER-PROOF</text>
+</svg>
+  </div>
+  <div class="use-grid">
+    <div class="card best feat">
+      <div class="body">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg></div>
+        <div class="tag">Claude Code hook</div>
+        <h3>Enforcement in the harness</h3>
+        <p>A PreToolUse hook fires before every Bash call, outside the model's control flow. The model cannot talk its way past it.</p>
+      </div>
+      <div class="snip">// .claude/settings.json
+"PreToolUse": [{ "matcher": "Bash",
+  "hooks": [{ "type": "command",
+    "command": <span class="g">"gatecat-hook"</span> }]}]</div>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20M7 14h4"/></svg></div>
+        <div class="tag">Proxy · any OpenAI-API agent</div>
+        <h3>One base_url, zero code</h3>
+        <p>GitHub Copilot (BYOK), Ollama, vLLM — anything that speaks the OpenAI API but doesn't run its own shell. Point its <code>base_url</code> at the proxy and it vetoes dangerous tool-calls before your agent runs them.</p>
+      </div>
+      <div class="snip">export OPENAI_BASE_URL=<span class="g">…:11434/v1</span>
+gatecat-proxy   <span style="color:var(--ink-soft)"># :8080</span>
+<span style="color:var(--ink-soft)"># point agent → :8080/v1</span></div>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M6 10l3.5 2.5L6 15M13 15h4.5"/></svg></div>
+        <div class="tag">Gated shell · Codex, aider &amp; CLI agents</div>
+        <h3>Hook-strength for any CLI agent</h3>
+        <p>Codex, aider, OpenClaw, Hermes, Antigravity — anything that runs shell commands. Route the tool's shell through <code>gatecat-shell</code> and every command is gated at the exec point, outside the model — the same can't-talk-its-way-past enforcement as the Claude Code hook.</p>
+      </div>
+      <div class="snip">gatecat-shell -c <span class="g">"wipefs -af /dev/sda"</span>
+<span style="color:var(--ink-soft)"># → veto, exit 2 — never reaches the disk</span></div>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div>
+        <div class="tag">Python SDK</div>
+        <h3>One line in your loop</h3>
+        <p>Own the agent code? Guard the action before you execute it. Works with any model, local or frontier.</p>
+      </div>
+      <div class="snip">from gatecat.integrations \
+  import <span class="g">check_action</span>, DOGFOOD_DEFAULTS
+
+check_action("agent", cmd,
+  DOGFOOD_DEFAULTS)  <span style="color:var(--ink-soft)"># raises if bad</span></div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<section id="proof" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">03</span><span>proof</span></div>
+  <div class="sec-head">
+    <h2>Tuned to almost never fire</h2>
+    <p>A guardrail that nags gets turned off. These numbers come from 14.7k real Claude Code commands, a public 8.6k SWE-agent corpus, and a 1.085M-command sweep across five public agent datasets, every one reproducible from scripts in the repo.</p>
+  </div>
+  <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:560px">
+<svg viewBox="0 0 600 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="1,085,159 real agent commands replayed, with 0 misses on the covered set" style="width:100%;height:auto;max-width:600px;display:block">
+  <title>1,085,159 real agent commands replayed — 0 misses on the covered set</title>
+
+  <rect x="1" y="1" width="598" height="338" rx="12" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+
+  <text x="36" y="52" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12" letter-spacing="0.14em" fill="var(--ink-soft)">REPLAY&#8202;/&#8202;COVERED SET</text>
+
+  <text x="34" y="146" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="80" fill="var(--ink)" letter-spacing="-0.02em">1,085,159</text>
+
+  <text x="36" y="182" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="14" letter-spacing="0.06em" fill="var(--ink-soft)">real agent commands replayed</text>
+
+  <!-- single slim honest coverage bar: full-width = fully covered -->
+  <g transform="translate(36,214)">
+    <rect x="0" y="0" width="528" height="8" rx="4" fill="var(--lime)"/>
+  </g>
+
+  <!-- lime badge: 0 misses on the covered set -->
+  <g transform="translate(36,254)">
+    <rect x="0" y="0" width="196" height="30" rx="999" fill="var(--lime)"/>
+    <path d="M16 15 l4 4 l7 -8" fill="none" stroke="var(--lime-deep)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="19.5" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="12" letter-spacing="0.02em" fill="var(--lime-deep)">0 MISSES</text>
+  </g>
+
+  <text x="244" y="273" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="11" letter-spacing="0.06em" fill="var(--ink-soft)">on the covered set</text>
+</svg>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="v g">~0.6%</div><div class="l">of real commands intervened on (two independent logs)</div></div>
+    <div class="stat"><div class="v g">178/178</div><div class="l">known danger shapes caught · 1 documented false-block (published, not hidden)</div></div>
+    <div class="stat"><div class="v">1.085M</div><div class="l">real agent commands replayed, 0 misses on the covered set</div></div>
+    <div class="stat"><div class="v">50</div><div class="l">default deny policies for the irreversible-action class</div></div>
+  </div>
+  <p style="margin-top:var(--space-3);font-family:var(--mono);font-size:13px;color:var(--ink-soft)">Full method, the adjudicated allows, and the open gaps: <a href="/blog/1m-agent-commands.html" style="color:var(--lime-deep);font-weight:700">read the 1,085,159-command report &rarr;</a></p>
+  <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:680px">
+<svg viewBox="0 0 660 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Deterministic analysis pipeline: delete-analyzer, then policy walls of 69 rules, then de-obfuscation, then suspicious-verb backstop, ending in a block, warn or allow decision. No model, no temperature, same command same verdict." style="width:100%;height:auto;max-width:660px;display:block">
+  <title>gate.cat deterministic analysis pipeline</title>
+  <desc>Four layered checks feed a single deterministic verdict node.</desc>
+
+  <defs>
+    <marker id="pipe-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- kicker row -->
+  <text x="20" y="24" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="11" letter-spacing="0.14em" fill="var(--ink-soft)">DETERMINISTIC LAYERS · LEFT TO RIGHT</text>
+
+  <!-- ===== chips row (y center ~ 100) ===== -->
+
+  <!-- chip 1: delete-analyzer -->
+  <g>
+    <rect x="20" y="66" width="128" height="68" rx="10" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+    <text x="36" y="90" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10" letter-spacing="0.06em" fill="var(--ink-soft)">01</text>
+    <!-- trash line icon -->
+    <g stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(112,78) scale(1.5)">
+      <path d="M0 3 h11"/>
+      <path d="M2.6 3 v-2 a1 1 0 0 1 1-1 h3.8 a1 1 0 0 1 1 1 v2"/>
+      <path d="M0.8 5 l1 8.5 a1 1 0 0 0 1 0.9 h3.9 a1 1 0 0 0 1 -0.9 l1 -8.5"/>
+    </g>
+    <text x="36" y="116" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">delete</text>
+    <text x="36" y="130" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="9.5" letter-spacing="0.04em" fill="var(--ink-soft)">analyzer</text>
+  </g>
+
+  <!-- chip 2: policy walls · 69 rules -->
+  <g>
+    <rect x="176" y="66" width="128" height="68" rx="10" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+    <text x="192" y="90" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10" letter-spacing="0.06em" fill="var(--ink-soft)">02</text>
+    <!-- shield line icon -->
+    <g stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(288,80) scale(1.5)">
+      <path d="M0 0 l-8 3 v5 c0 4.5 3.5 8 8 9.5 c4.5 -1.5 8 -5 8 -9.5 v-5 z"/>
+    </g>
+    <text x="192" y="116" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">policy walls</text>
+    <g>
+      <rect x="192" y="122" width="60" height="14" rx="7" fill="var(--lime-wash)" stroke="var(--lime-deep)" stroke-width="1.2"/>
+      <text x="222" y="132" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="9" letter-spacing="0.04em" fill="var(--lime-deep)">69 RULES</text>
+    </g>
+  </g>
+
+  <!-- chip 3: de-obfuscation -->
+  <g>
+    <rect x="332" y="66" width="128" height="68" rx="10" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+    <text x="348" y="90" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10" letter-spacing="0.06em" fill="var(--ink-soft)">03</text>
+    <!-- unwrap / layers line icon -->
+    <g stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(444,80) scale(1.5)">
+      <path d="M0 0 l8 4 -8 4 -8 -4 z"/>
+      <path d="M-8 6.5 l8 4 8 -4"/>
+    </g>
+    <text x="348" y="116" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">unwrap</text>
+    <text x="348" y="130" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="9.5" letter-spacing="0.04em" fill="var(--ink-soft)">de-obfuscation</text>
+  </g>
+
+  <!-- chip 4: suspicious-verb backstop -->
+  <g>
+    <rect x="488" y="66" width="128" height="68" rx="10" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+    <text x="504" y="90" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10" letter-spacing="0.06em" fill="var(--ink-soft)">04</text>
+    <!-- alert-eye line icon -->
+    <g stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(596,90) scale(1.5)">
+      <path d="M0 -6 c4 0 7.5 3 9 6 c-1.5 3 -5 6 -9 6 c-4 0 -7.5 -3 -9 -6 c1.5 -3 5 -6 9 -6 z"/>
+      <circle cx="0" cy="0" r="2.2"/>
+    </g>
+    <text x="504" y="116" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">verb</text>
+    <text x="504" y="130" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="9.5" letter-spacing="0.04em" fill="var(--ink-soft)">backstop</text>
+  </g>
+
+  <!-- ===== connectors between chips ===== -->
+  <g stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round">
+    <line x1="150" y1="100" x2="172" y2="100" marker-end="url(#pipe-arrow)"/>
+    <line x1="306" y1="100" x2="328" y2="100" marker-end="url(#pipe-arrow)"/>
+    <line x1="462" y1="100" x2="484" y2="100" marker-end="url(#pipe-arrow)"/>
+  </g>
+
+  <!-- ===== decision node ===== -->
+  <!-- whole row converges: each chip drops to a shared bus, one spine into the verdict -->
+  <g stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- drops from each chip bottom to the bus at y=150 -->
+    <path d="M84 134 v16" opacity="0.5"/>
+    <path d="M240 134 v16" opacity="0.5"/>
+    <path d="M396 134 v16" opacity="0.5"/>
+    <path d="M552 134 v16" opacity="0.5"/>
+    <!-- horizontal bus -->
+    <path d="M84 150 h468"/>
+    <!-- single spine down into the verdict -->
+    <path d="M286 150 v22" marker-end="url(#pipe-arrow)"/>
+  </g>
+
+  <!-- verdict pills, centered under the row -->
+  <g>
+    <text x="286" y="180" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10" letter-spacing="0.12em" fill="var(--ink-soft)">SINGLE VERDICT</text>
+
+    <!-- BLOCK -->
+    <rect x="150" y="188" width="88" height="30" rx="999" fill="none" stroke="var(--danger-deep)" stroke-width="1.8"/>
+    <text x="194" y="207" text-anchor="middle" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--danger-deep)">BLOCK</text>
+
+    <!-- WARN -->
+    <rect x="246" y="188" width="80" height="30" rx="999" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+    <text x="286" y="207" text-anchor="middle" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">WARN</text>
+
+    <!-- ALLOW -->
+    <rect x="334" y="188" width="88" height="30" rx="999" fill="var(--lime)" stroke="var(--lime-deep)" stroke-width="1.8"/>
+    <text x="378" y="207" text-anchor="middle" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="13" fill="var(--ink)">ALLOW</text>
+  </g>
+
+  <!-- caption -->
+  <text x="640" y="234" text-anchor="end" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10.5" letter-spacing="0.06em" fill="var(--ink-soft)">no model · no temperature · same command, same verdict</text>
+</svg>
+  </div>
+  </div>
+</section>
+
+<section class="wrap reveal">
+  <div class="honest">
+    <h3>The honest line, up front</h3>
+    <p>The gate is certain only about what it <b>blocks</b>. An action it does not match is <b>unchecked, not safe</b>. This is defense-in-depth and a fail-safe, not a promise to catch every bad action. It's a deterministic deny-list, so it catches known dangerous shapes; a novel destructive command it has never seen can slip past.</p>
+    <p>The bypass suite ships in the repo and publishes its own remaining gap — a command whose binary name is assembled at runtime, which no pattern layer can see. Software is provided <b>AS IS</b>; you remain responsible for your agent's actions. Apache 2.0.</p>
+  </div>
+</section>
+
+<section id="packs" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">04</span><span>policy packs</span></div>
+  <div class="sec-head">
+    <h2>Cover your stack, <span class="tt-keep">€29</span></h2>
+    <p>The <b>70 core policies are free forever</b> — the universal, catastrophic classes everyone needs (KMS, IAM, backups, disk). Packs add stack-specific breadth for the tools you actually run. One-time, no subscription. <b>Safety is never behind a paywall.</b></p>
+  </div>
+  <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:700px">
+<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coverage grid: gate.cat blocks eight catastrophic command classes — rm -rf, disk wipe, database drop, cloud teardown, kubernetes delete, secret and key destruction, guard self-defense, and audit-log tampering." style="width:100%;height:auto;max-width:600px;display:block">
+  <title>gate.cat coverage — 8 catastrophic command classes blocked</title>
+
+  <defs>
+    <style>
+      .chip { fill: var(--surface); stroke: var(--frame); stroke-width: 1.5; }
+      .ic { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .lbl { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: .04em; fill: var(--ink); font-weight: 600; }
+      .dot { fill: var(--danger-deep); }
+    </style>
+  </defs>
+
+  <!-- Row 1 -->
+  <!-- Cell 1: rm -rf -->
+  <g transform="translate(8,8)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(46,32)">
+      <path d="M4 12 h40 l-4 34 a4 4 0 0 1 -4 4 h-24 a4 4 0 0 1 -4 -4 z"/>
+      <path d="M0 12 h48 M18 6 h12 a2 2 0 0 1 2 2 v4 h-16 v-4 a2 2 0 0 1 2 -2 z"/>
+      <path d="M17 22 v22 M31 22 v22"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">rm -rf</text>
+  </g>
+
+  <!-- Cell 2: disk wipe -->
+  <g transform="translate(156,8)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(44,30)">
+      <ellipse cx="26" cy="8" rx="22" ry="8"/>
+      <path d="M4 8 v28 a22 8 0 0 0 44 0 v-28"/>
+      <path d="M4 22 a22 8 0 0 0 44 0"/>
+      <path d="M40 4 L54 42" stroke="var(--danger-deep)"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">disk wipe</text>
+  </g>
+
+  <!-- Cell 3: DB drop -->
+  <g transform="translate(304,8)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(48,28)">
+      <ellipse cx="22" cy="8" rx="20" ry="7"/>
+      <path d="M2 8 v14 a20 7 0 0 0 40 0 v-14"/>
+      <path d="M2 22 v14 a20 7 0 0 0 40 0 v-14"/>
+      <path d="M22 40 v18 M14 50 l8 10 l8 -10" stroke="var(--danger-deep)"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">DB drop</text>
+  </g>
+
+  <!-- Cell 4: cloud teardown -->
+  <g transform="translate(452,8)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(42,34)">
+      <path d="M14 40 a16 16 0 0 1 0 -32 a14 14 0 0 1 26 -4 a12 12 0 0 1 6 36 z"/>
+      <path d="M20 18 L36 34 M36 18 L20 34" stroke="var(--danger-deep)"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">cloud teardown</text>
+  </g>
+
+  <!-- Row 2 -->
+  <!-- Cell 5: kubernetes delete -->
+  <g transform="translate(8,164)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(44,30)">
+      <path d="M26 2 L48 14 V38 L26 50 L4 38 V14 Z"/>
+      <path d="M26 14 L38 21 V33 L26 40 L14 33 V21 Z"/>
+      <path d="M26 2 V14 M48 14 L38 21 M48 38 L38 33 M26 50 V40 M4 38 L14 33 M4 14 L14 21"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">k8s delete</text>
+  </g>
+
+  <!-- Cell 6: secret / key destroy -->
+  <g transform="translate(156,164)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(42,32)">
+      <circle cx="16" cy="16" r="11"/>
+      <circle cx="16" cy="16" r="3.5"/>
+      <path d="M25 22 L52 46 M52 34 v12 h-12"/>
+      <path d="M9 9 L23 23" stroke="var(--danger-deep)"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">key destroy</text>
+  </g>
+
+  <!-- Cell 7: guard self-defense -->
+  <g transform="translate(304,164)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(46,28)">
+      <path d="M24 2 L46 10 V26 C46 42 36 52 24 58 C12 52 2 42 2 26 V10 Z"/>
+      <path d="M16 28 l6 6 l12 -14" stroke="var(--lime-deep)"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">self-defense</text>
+  </g>
+
+  <!-- Cell 8: audit-log tamper -->
+  <g transform="translate(452,164)">
+    <rect class="chip" width="140" height="140" rx="10"/>
+    <circle class="dot" cx="120" cy="20" r="4"/>
+    <g class="ic" transform="translate(44,28)">
+      <path d="M8 4 h28 l10 10 v44 h-38 Z"/>
+      <path d="M36 4 v10 h10"/>
+      <path d="M15 26 h20 M15 34 h20 M15 42 h12"/>
+      <path d="M30 46 L48 28 l6 6 L36 52 l-8 2 z" fill="var(--bg)" stroke="var(--danger-deep)"/>
+    </g>
+    <text class="lbl" x="70" y="118" text-anchor="middle">log tamper</text>
+  </g>
+
+</svg>
+  </div>
+  <div class="use-grid">
+    <div class="card">
+      <div class="body">
+        <div class="tag">Fintech</div>
+        <h3>Payment operations</h3>
+        <p>Refund creation, payouts &amp; transfers, customer and billing-config deletion — Stripe CLI/SDK/REST plus PayPal, Braintree, Adyen, Wise. 5 rules.</p>
+      </div>
+      <div class="pack-price">€29<small>one-time</small></div>
+      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/889730ae-0da8-40e9-b59b-0af1f4d361cc">Get the Fintech pack
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="tag">PaaS · deploy</div>
+        <h3>Don't destroy your app</h3>
+        <p>vercel remove, netlify sites:delete, fly/heroku apps destroy, railway down, render &amp; supabase delete — the deploy CLIs the core doesn't cover. Deploy/list stay allowed.</p>
+      </div>
+      <div class="pack-price">€29<small>one-time</small></div>
+      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/6b11d058-b12b-48b9-9ed9-5d830d25542e">Get the PaaS pack
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="tag">HTTP-API breadth</div>
+        <h3>The deletes that aren't commands</h3>
+        <p>Destructive <code>curl -X DELETE</code> to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI — the raw-HTTP modality CLI patterns miss. GET stays allowed.</p>
+      </div>
+      <div class="pack-price">€29<small>one-time</small></div>
+      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/083799b4-1fd8-4df7-a0af-0eec9b519fda">Get the HTTP pack
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+  <div style="margin-top:var(--space-3);display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;justify-content:space-between;border:1.5px solid var(--frame);border-radius:var(--radius);padding:16px var(--space-3);background:var(--surface)">
+    <span style="font-size:15px;color:var(--ink-2);font-weight:500"><b style="color:var(--ink)">One incident an agent causes runs into the thousands.</b> A pack is €29 once — lifetime rule updates — for a surface the free 70 can't see.</span>
+    <span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--lime-deep);font-weight:700;white-space:nowrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+      30-day money-back, no questions
+    </span>
+  </div>
+  </div>
+</section>
+
+<section id="cloud" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">05</span><span>cloud · live</span></div>
+  <div class="sec-head">
+    <h2>The copy your agent can't touch</h2>
+    <p>A local log lives <b>inside the agent's blast radius</b> — an agent with shell access can delete or rewrite the file that records what it did. <b>gate.cat Cloud</b> keeps an off-machine, append-only, tamper-evident copy of your veto history, plus alerts, a fleet dashboard, and a monthly report. The cloud is a <b>reporter beside the gate, never in its execution path</b> — if it's down, the gate keeps blocking exactly as before.</p>
+  </div>
+  <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:600px">
+<svg viewBox="0 0 620 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Comparison: observability records after the money is spent, versus gate.cat which refuses before it runs." style="width:100%;height:auto;max-width:620px;display:block">
+  <title>enforce vs observe</title>
+  <desc>Two balanced panels. Left: observability, a rear-view mirror with log lines, grayed. Right: gate.cat, a stop hand in lime. A vs divider between them.</desc>
+
+  <!-- ===== LEFT PANEL: OBSERVABILITY ===== -->
+  <g>
+    <rect x="14" y="16" width="270" height="308" rx="12" fill="var(--surface)" stroke="var(--frame)" stroke-width="1.5"/>
+
+    <!-- mono kicker -->
+    <text x="34" y="48" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="11" letter-spacing="0.08em" fill="var(--ink-soft)">OBSERVE</text>
+
+    <!-- heading -->
+    <text x="34" y="76" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="23" fill="var(--ink-soft)">observability</text>
+
+    <!-- rear-view mirror + log lines icon, grayed -->
+    <g stroke="var(--ink-soft)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- mirror housing -->
+      <rect x="46" y="112" width="128" height="52" rx="26"/>
+      <!-- mount stem -->
+      <path d="M110 164 v14"/>
+      <path d="M96 180 h28"/>
+      <!-- reflection sweep inside mirror -->
+      <path d="M62 150 q48 -22 96 -6" opacity="0.55"/>
+      <!-- log lines trailing behind (the record after the fact) -->
+      <path d="M198 122 h56"/>
+      <path d="M198 138 h44"/>
+      <path d="M198 154 h56"/>
+    </g>
+    <!-- log line ticks -->
+    <g fill="var(--ink-soft)" opacity="0.55">
+      <circle cx="190" cy="122" r="2.4"/>
+      <circle cx="190" cy="138" r="2.4"/>
+      <circle cx="190" cy="154" r="2.4"/>
+    </g>
+
+    <!-- status pill -->
+    <rect x="34" y="214" width="150" height="26" rx="999" fill="none" stroke="var(--ink-soft)" stroke-width="1.5"/>
+    <text x="109" y="231" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10.5" letter-spacing="0.08em" fill="var(--ink-soft)">AFTER THE FACT</text>
+
+    <!-- caption -->
+    <text x="34" y="274" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12" fill="var(--ink-soft)">records after the</text>
+    <text x="34" y="294" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12" fill="var(--ink-soft)">money's spent</text>
+  </g>
+
+  <!-- ===== VS DIVIDER ===== -->
+  <g>
+    <line x1="310" y1="40" x2="310" y2="300" stroke="var(--frame)" stroke-width="1.5" stroke-dasharray="2 8" stroke-linecap="round"/>
+    <circle cx="310" cy="170" r="22" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="310" y="175" text-anchor="middle" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="14" fill="var(--ink)">vs</text>
+  </g>
+
+  <!-- ===== RIGHT PANEL: GATE.CAT ===== -->
+  <g>
+    <rect x="336" y="16" width="270" height="308" rx="12" fill="var(--lime-wash)" stroke="var(--ink)" stroke-width="2"/>
+
+    <!-- mono kicker -->
+    <text x="356" y="48" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="11" letter-spacing="0.08em" fill="var(--lime-deep)">ENFORCE</text>
+
+    <!-- heading -->
+    <text x="356" y="76" font-family="'Archivo Black','Space Grotesk',sans-serif" font-size="23" fill="var(--ink)">gate.cat</text>
+
+    <!-- clean STOP icon: circle with diagonal slash, lime stroke -->
+    <g transform="translate(392 108)">
+      <!-- ink disc backing for contrast -->
+      <circle cx="44" cy="44" r="44" fill="var(--ink)"/>
+      <!-- no-entry / stop symbol -->
+      <g stroke="var(--lime)" stroke-width="2" stroke-linecap="round" fill="none">
+        <circle cx="44" cy="44" r="26"/>
+        <line x1="25.6" y1="25.6" x2="62.4" y2="62.4"/>
+      </g>
+    </g>
+
+    <!-- status pill -->
+    <rect x="356" y="214" width="132" height="26" rx="999" fill="var(--ink)"/>
+    <text x="422" y="231" text-anchor="middle" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="10.5" letter-spacing="0.08em" fill="var(--lime)">BEFORE IT RUNS</text>
+
+    <!-- caption -->
+    <text x="356" y="274" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12" fill="var(--ink)">refuses before</text>
+    <text x="356" y="294" font-family="'JetBrains Mono',ui-monospace,monospace" font-size="12" fill="var(--ink)">it runs</text>
+  </g>
+</svg>
+  </div>
+  <div class="use-grid">
+    <div class="card">
+      <div class="body">
+        <div class="tag">Cloud Solo · founding</div>
+        <h3>Your agent, on the record</h3>
+        <p>Off-machine veto history + push &amp; email alerts + monthly report, across every machine you run.</p>
+      </div>
+      <div class="pack-price"><span id="solo-old" style="color:var(--ink-faint);text-decoration:line-through;font-size:.62em;margin-right:9px;font-weight:400">€19</span>€9<small>/mo · locked forever</small></div>
+      <div id="solo-countdown" data-deadline="1784505599000" aria-live="polite" style="font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--lime-deep);letter-spacing:.04em;margin:-4px 0 12px;text-transform:uppercase">founding €9 — ends this week</div>
+      <a id="solo-buy" class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/custom/59e94755-6677-4689-901a-7472c3fe7ffd?expires=1785110399&amp;signature=db4555a87436e4a9ed4204454c9ccce1b9f399082644373ddfadcd601758d127">Start Solo · €9
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="tag">Cloud Team</div>
+        <h3>One policy, whole fleet</h3>
+        <p>Everything in Solo + signed policy sync across the fleet (pull-only, local review) + a <b>tamper-evident override ledger</b> + fleet report. Flat, up to 10 machines — not per-seat.</p>
+      </div>
+      <div class="pack-price">€149<small>/mo flat</small></div>
+      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/903a7fb2-3866-4cb9-ae20-e67057bebdeb">Start Team
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="tag">Cloud Business</div>
+        <h3>Bigger fleet, SSO</h3>
+        <p>Everything in Team + larger fleets, SSO/SCIM, and priority evidence exports.</p>
+      </div>
+      <div class="pack-price">€399<small>/mo</small></div>
+      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/35897cd6-32f3-4411-990b-96894853fe1a">Start Business
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+  <div style="margin-top:var(--space-3);display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;justify-content:space-between;border:1.5px solid var(--frame);border-radius:var(--radius);padding:16px var(--space-3);background:var(--surface)">
+    <span style="font-size:15px;color:var(--ink-2);font-weight:500"><b style="color:var(--ink)">Live now.</b> Checkout &amp; billing via Lemon Squeezy — it handles EU VAT so you don't. Security is always free; Cloud adds the off-machine record and the fleet layer, <b style="color:var(--ink)">never the blocking itself</b>.</span>
+    <span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--lime-deep);font-weight:700;white-space:nowrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+      founding price honored
+    </span>
+  </div>
+  </div>
+</section>
+
+<section id="who" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">06</span><span>who it's for</span></div>
+  <div class="sec-head">
+    <h2>You gave an agent the keys. Now put a lock on the dangerous drawer.</h2>
+  </div>
+  <div class="use-grid">
+    <div class="card">
+      <div class="body">
+        <div class="tag">Building with Cursor · Claude Code · Lovable · Replit</div>
+        <h3>Don't let it torch your project</h3>
+        <p>Your agent has your database keys and push access to the only copy of your repo — and you can't always read the command fast enough to stop it. gate.cat catches the destructive one for you. The free core covers it.</p>
+      </div>
+      <a class="pack-buy" href="#install">Protect your project (free)
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="body">
+        <div class="tag">Running real infra · prod · money</div>
+        <h3>One veto before the six-figure mistake</h3>
+        <p>Prod databases, cloud infra, payment APIs, CI with live credentials. The free core stops the catastrophic classes; stack packs add breadth for Stripe, PaaS deploys and observability APIs your agent can reach.</p>
+      </div>
+      <a class="pack-buy" href="#packs">Protect your prod — packs €29
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+  </div>
+</section>
+
+<section id="faq" class="wrap reveal">
+  <div class="sec-in">
+  <div class="kick"><span class="num">07</span><span>faq</span></div>
+  <div class="sec-head">
+    <h2>Questions people actually ask</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item">
+      <summary>Is it really free?</summary>
+      <p>Yes. The core — the gate, all 70 default policies, the Claude Code hook, the proxy, the gated shell, the CLI, local reports — is <b>free forever</b>, Apache 2.0, no trial, no rate limit. Paid things are <b>convenience and proof</b> (stack-specific policy packs, the off-machine Cloud copy). <b>Safety is never behind a paywall</b> — when we find a universal catastrophic gap, the fix goes into the free core.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Does it work with my agent?</summary>
+      <p><b>Claude Code</b> gets a native hook — enforcement in the harness, outside the model's control. <b>CLI agents that run a shell — Codex, aider, OpenClaw, Hermes, Antigravity</b> — get the same out-of-model enforcement via the <b>gated shell</b>: route the tool's shell through <code>gatecat-shell</code> and every command is gated at the exec point, it can't talk its way past. Anything that only speaks the OpenAI API — <b>GitHub Copilot (BYOK), Ollama, vLLM</b> — can instead go through the <b>proxy</b>: point its <code>base_url</code> at gate.cat to veto tool-calls. Own the agent code? One line with the Python SDK.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Can't the agent just talk its way past it?</summary>
+      <p>Not past the hook. It's a <b>deterministic deny-list that runs before the tool call</b>, outside the model's control flow — same command, same verdict, every time. There's no temperature and nothing to persuade. It also <b>fails closed</b>: engine error or weird input → block. Honest caveat: the in-process framework adapters (crewAI/LangGraph) are a weaker trust class — a prompt injection can route around them. Only the hook is real enforcement, and we label which is which.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What does it NOT catch?</summary>
+      <p>The gate is certain only about what it <b>blocks</b> — an action it doesn't match is <b>unchecked, not safe</b>. It's a deterministic deny-list of known dangerous shapes, so what it can't catch is the <b>obfuscated or novel</b> command — a binary name assembled at runtime, a payload built from pieces — and that's exactly what the bypass suite in the repo publishes instead of hiding. It's also <b>not a fact-checker</b> — don't buy it for hallucination detection. The full map — every policy, the commands that fire it, and the benign twins that pass — is on the <a href="/coverage.html" style="color:var(--lime-deep);font-weight:700">coverage page</a>, along with a no-account form to <a href="/coverage.html#report" style="color:var(--lime-deep);font-weight:700">report a command we miss</a>.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Will it nag me all day?</summary>
+      <p>No — that's the design constraint. Measured on real traffic (a 14.7k Claude Code log and a public 8.6k SWE-agent corpus), it intervenes on <b>~0.6% of commands</b>. A guardrail that nags gets turned off, so the walls are tuned to fire on the irreversible class, not on your everyday work.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What data leaves my machine?</summary>
+      <p><b>Nothing.</b> The pip package phones nowhere — zero telemetry, no analytics. Cloud is opt-in and off by default; even then the default payload is a <b>hash</b> of the matched command, not the text (raw text is a separate explicit opt-in, because commands can contain secrets).</p>
+    </details>
+    <details class="faq-item">
+      <summary>What do the €29 packs add if the core is complete?</summary>
+      <p>Breadth for <b>your</b> stack, not more safety. The free core covers the universal catastrophic classes (disk, database, cloud, keys, backups). Packs add the deny-rules for surfaces only some people have — Stripe refunds and payouts (Fintech), deploy CLIs like Vercel/Fly/Heroku (PaaS), raw <code>curl -X DELETE</code> against SaaS APIs (HTTP). One-time €29, lifetime updates.</p>
+    </details>
+    <details class="faq-item">
+      <summary>When can I buy Cloud?</summary>
+      <p>Cloud is <b>live now</b> — <b>Solo €19/mo · Team €149/mo flat (up to 10 machines) · Business €399/mo</b>, billed through Lemon Squeezy so EU VAT is handled for you. Security stays free forever; Cloud is the off-machine record and fleet layer, never the blocking. Founding-list members keep their locked price.</p>
+    </details>
+    <details class="faq-item">
+      <summary>How do I uninstall it?</summary>
+      <p>One line: <code>pip uninstall gate.cat</code> and remove the hook entry from <code>.claude/settings.json</code>. No daemon, no leftovers, no account. That's the deal: 60 seconds in, 60 seconds out.</p>
+    </details>
+  </div>
+  </div>
+</section>
+
+<section id="install" class="wrap reveal install">
+  <div class="sec-in">
+  <div class="kick"><span class="num">08</span><span>install</span></div>
+  <div class="sec-head">
+    <h2>Leash your agent</h2>
+    <p>One command. No account, no API key, no ML stack. The installer keeps the system Python untouched.</p>
+  </div>
+  <div class="cmd-box">
+    <span class="pfx">$</span><span class="cmd" id="cmd">curl -fsSL https://gate.cat/install.sh | sh</span>
+    <span class="cp" id="cp" role="button" tabindex="0" aria-label="Copy install command">⧉ copy</span>
+  </div>
+  <p class="under">Then add <b style="color:var(--ink)">gatecat-hook</b> to Claude Code. The installer creates the private environment and puts the command on your PATH.</p>
+  <details class="under" style="margin-top:1rem">
+    <summary>Manual install / troubleshooting</summary>
+    <pre style="white-space:pre-wrap;margin-top:.75rem">python3 -m venv .venv
+.venv/bin/python -m pip install gate.cat</pre>
+    <p>Debian/Ubuntu may block global pip with PEP 668. The one-command installer avoids that by using a private venv.</p>
+  </details>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <div class="foot-in">
+    <span>gate.cat, fail-closed action-veto for AI agents · Apache 2.0</span>
+    <span><a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var cp=document.getElementById('cp');
+    function copy(){navigator.clipboard.writeText('curl -fsSL https://gate.cat/install.sh | sh').then(function(){cp.textContent='✓ copied';cp.classList.add('done');setTimeout(function(){cp.textContent='⧉ copy';cp.classList.remove('done');},1800);});}
+    cp.addEventListener('click',copy);
+    cp.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();copy();}});
+  })();
+  (function(){
+    var els=[].slice.call(document.querySelectorAll('.reveal'));
+    if(!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in');});return;}
+    var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{threshold:.12});
+    els.forEach(function(e){io.observe(e);});
+  })();
+  (function(){
+    var root=document.documentElement, btn=document.getElementById('theme-toggle');
+    if(!btn)return;
+    btn.addEventListener('click',function(){
+      var next=root.getAttribute('data-theme')==='dark'?'light':'dark';
+      root.setAttribute('data-theme',next);
+      try{localStorage.setItem('gatecat-theme',next);}catch(e){}
+    });
+  })();
+  (function(){
+    function wire(formId,emailId,btnId,refPrefix){
+      var f=document.getElementById(formId);if(!f)return;
+      var strip=f.closest('.capture-strip'),email=document.getElementById(emailId),btn=document.getElementById(btnId);
+      var ref=new URLSearchParams(location.search).get('ref')||document.referrer||'';
+      f.addEventListener('submit',function(e){
+        e.preventDefault();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()))return;
+        btn.disabled=true;btn.textContent='…';
+        fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email:email.value.trim(),ref:(refPrefix+' '+ref).slice(0,120)})})
+        .then(function(r){return r.json();})
+        .then(function(){strip.classList.add('done');})
+        .catch(function(){btn.disabled=false;btn.textContent='Retry';});
+      });
+    }
+    /* email capture form removed from hero */
+    /* cloud founding form removed — Cloud is live, checkout via Lemon Squeezy */
+  })();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is gate.cat really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The core — the gate, all 70 default policies, the Claude Code hook, the proxy, the gated shell, the CLI — is free forever, Apache 2.0. Paid products are convenience and proof (stack policy packs, off-machine Cloud copy). Safety fixes always go into the free core."}},
+{"@type":"Question","name":"Does gate.cat work with my AI agent?","acceptedAnswer":{"@type":"Answer","text":"Claude Code gets a native PreToolUse hook. CLI agents that run a shell — Codex, aider, OpenClaw, Hermes, Antigravity — get the same out-of-model enforcement via the gated shell: route the tool's shell through gatecat-shell and every command is gated at the exec point. OpenAI-API agents like GitHub Copilot (BYOK), Ollama and vLLM can go through the proxy by pointing base_url at gate.cat."}},
+{"@type":"Question","name":"Can an AI agent talk its way past gate.cat?","acceptedAnswer":{"@type":"Answer","text":"Not past the hook: a deterministic deny-list runs before the tool call, outside the model's control flow, and fails closed. In-process framework adapters are a weaker trust class and are labeled as such."}},
+{"@type":"Question","name":"What does gate.cat NOT catch?","acceptedAnswer":{"@type":"Answer","text":"An action it doesn't match is unchecked, not safe. It's a deterministic deny-list, so what slips is the obfuscated or novel command (a runtime-assembled binary name, a payload built from pieces) — published in the repo's bypass suite, not hidden. It is not a fact-checker. The full policy map with measured verdicts is at gate.cat/coverage.html, including a form to report a missed command."}},
+{"@type":"Question","name":"How often does gate.cat interrupt normal work?","acceptedAnswer":{"@type":"Answer","text":"It intervenes on about 0.6% of real commands, measured on a 14.7k Claude Code log and a public 8.6k SWE-agent corpus."}},
+{"@type":"Question","name":"What data leaves my machine?","acceptedAnswer":{"@type":"Answer","text":"Nothing. The pip package has zero telemetry. Cloud is opt-in and off by default; its default payload is a hash of the matched command, not the text."}},
+{"@type":"Question","name":"What do the €29 policy packs add?","acceptedAnswer":{"@type":"Answer","text":"Stack-specific breadth, not more safety: Stripe refunds/payouts (Fintech), deploy CLIs like Vercel/Fly/Heroku (PaaS), raw HTTP DELETE against SaaS APIs (HTTP). One-time €29 with lifetime updates."}},
+{"@type":"Question","name":"How much is gate.cat Cloud?","acceptedAnswer":{"@type":"Answer","text":"Cloud is live: Solo EUR 19/mo, Team EUR 149/mo flat (up to 10 machines), Business EUR 399/mo, billed via Lemon Squeezy which handles EU VAT. Security is always free; Cloud adds the off-machine tamper-evident record and the fleet layer, never the blocking itself."}},
+{"@type":"Question","name":"How do I uninstall gate.cat?","acceptedAnswer":{"@type":"Answer","text":"pip uninstall gate.cat and remove the hook entry from .claude/settings.json. No daemon, no account, no leftovers."}}
+]}
+</script>
+<script>(function(){
+  var el=document.getElementById('solo-countdown'); if(!el) return;
+  var deadline=parseInt(el.getAttribute('data-deadline'),10);
+  var buy=document.getElementById('solo-buy'), price=el.previousElementSibling;
+  function p(n){return n<10?'0'+n:''+n;}
+  function tick(){
+    var diff=deadline-Date.now();
+    if(diff<=0){
+      if(price) price.innerHTML='€19<small>/mo</small>';
+      el.style.display='none';
+      if(buy){buy.setAttribute('href','https://gatecat.lemonsqueezy.com/checkout/buy/d2853dd8-376a-4f06-85c9-237d3dd5cef3'); if(buy.childNodes[0]) buy.childNodes[0].nodeValue='Start Solo ';}
+      clearInterval(t); return;
+    }
+    var d=Math.floor(diff/864e5),h=Math.floor(diff%864e5/36e5),m=Math.floor(diff%36e5/6e4),s=Math.floor(diff%6e4/1e3);
+    el.textContent='founding €9 — ends in '+d+'d '+p(h)+'h '+p(m)+'m '+p(s)+'s';
+  }
+  tick(); var t=setInterval(tick,1000);
+})();</script>
 </body>
 </html>
