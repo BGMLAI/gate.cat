@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>gate.cat coverage — all 38 default policies, every verdict verified live</title>
-<meta name="description" content="The full technical map of what gate.cat blocks: the 4-stage pipeline, the delete-analyzer, all 38 default deny policies with real commands and their measured verdicts, what stays opt-in, and what the gate cannot catch. Every example verified against the shipped engine." />
+<title>gate.cat coverage snapshot — 38 policies measured on v0.4.11</title>
+<meta name="description" content="A historical measured snapshot of 38 gate.cat policies on engine v0.4.11: real commands, live verdicts, opt-in boundaries and known gaps. Current releases contain additional policies." />
 <meta property="og:title" content="gate.cat coverage — every wall, every verdict" />
 <meta property="og:description" content="All 38 default policies with real blocked commands and their benign twins — every verdict measured on the shipped engine, not asserted." />
 <meta property="og:type" content="website" />
@@ -197,7 +197,7 @@
 
 <header class="hero wrap">
   <h1>every wall,<br/>every verdict.</h1>
-  <p class="sub">This is the full technical map of the gate: the pipeline a command walks through, <b>all 38 default policies</b> with real commands and their <b>measured</b> verdicts, what stays opt-in, and — just as important — what the gate cannot catch. <b>Every example on this page was run against the shipped engine v0.4.11</b>; the page is generated from those verdicts, not written from documentation.</p>
+  <p class="sub">This is a <b>historical measured snapshot</b>: 38 default policies with real commands and measured verdicts, what stayed opt-in, and what the gate could not catch. <b>Every example on this page was run against engine v0.4.11</b>; current releases contain additional policies. The page preserves those measured verdicts instead of presenting unrerun examples as current.</p>
   <div class="badges" aria-label="Coverage numbers">
     <span class="badge"><b>38</b> default policies</span>
     <span class="badge"><b>29</b> block · <b>9</b> warn</span>
@@ -820,9 +820,9 @@ check_action("agent", cmd,
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"TechArticle",
- "headline":"gate.cat coverage — all 38 default policies, every verdict verified live",
+ "headline":"gate.cat coverage snapshot — 38 policies measured on v0.4.11",
  "url":"https://gate.cat/coverage.html",
- "about":"The full technical map of the gate.cat action-veto: pipeline stages, delete-analyzer, 38 default deny policies with measured verdicts on real commands, opt-in presets, and published limits.",
+ "about":"A historical measured snapshot of the gate.cat action-veto on engine v0.4.11: pipeline stages, delete-analyzer, 38 default deny policies with verdicts on real commands, opt-in presets, and published limits.",
  "isPartOf":{"@type":"WebSite","name":"gate.cat","url":"https://gate.cat/"}}
 </script>
 </body>

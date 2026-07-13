@@ -441,7 +441,7 @@
     <a class="btn btn-ghost" href="https://github.com/BGMLAI/gate.cat">★ Star on GitHub</a>
   </div>
   <div class="badges" aria-label="Measured results">
-    <span class="badge"><b>178/178</b> known danger shapes neutralized</span>
+    <span class="badge"><b>178/178</b> claimed bypass-suite dangers caught</span>
     <span class="badge"><b>1.085M</b> real agent commands replayed</span>
     <span class="badge">fires on just <b>~0.6%</b> of commands</span>
   </div>
@@ -736,7 +736,7 @@
     </div>
     <div class="pstep">
       <span class="pn">step 4</span>
-      <h3>50 deny-walls → verdict</h3>
+      <h3>71 default policy walls → verdict</h3>
       <p>Deterministic patterns for the irreversible class, first match wins.</p>
       <div class="verdicts">
         <span class="va">ALLOW</span> — runs untouched (~99.4%)<br/>
@@ -770,7 +770,7 @@
     <div class="wall"><div class="n">data</div><h3>Data &amp; secrets</h3><p>Destructive SQL, datastore flush, deleting SSH/cloud keys, reading credential files.</p><span class="ex">DROP TABLE, redis FLUSHALL</span></div>
     <div class="wall"><div class="n">history</div><h3>Repo &amp; release</h3><p>Force-push, branch/tag delete, hard reset, gh repo delete, history wipe, encoded exec.</p><span class="ex">git push --force, gh repo delete</span></div>
   </div>
-  <p style="margin-top:var(--space-3);font-family:var(--mono);font-size:13px;color:var(--ink-soft)">That's the shape — the full map is its own page: <a href="/coverage.html" style="color:var(--lime-deep);font-weight:700">all 70 policies, every verdict measured live on the shipped engine &rarr;</a></p>
+  <p style="margin-top:var(--space-3);font-family:var(--mono);font-size:13px;color:var(--ink-soft)">That's the shape — inspect a measured historical coverage snapshot and the current limitations: <a href="/coverage.html" style="color:var(--lime-deep);font-weight:700">38 policies with live verdicts, plus the published gaps &rarr;</a></p>
   </div>
 </section>
 
@@ -945,7 +945,7 @@ check_action("agent", cmd,
   </div>
   <div class="stats">
     <div class="stat"><div class="v g">~0.6%</div><div class="l">of real commands intervened on (two independent logs)</div></div>
-    <div class="stat"><div class="v g">178/178</div><div class="l">known danger shapes caught · 1 documented false-block (published, not hidden)</div></div>
+    <div class="stat"><div class="v g">178/178</div><div class="l">claimed bypass-suite dangers caught · 1 named gap · 1/129 benign false-blocked</div></div>
     <div class="stat"><div class="v">1.085M</div><div class="l">real agent commands replayed, 0 misses on the covered set</div></div>
     <div class="stat"><div class="v">50</div><div class="l">default deny policies for the irreversible-action class</div></div>
   </div>
@@ -1079,7 +1079,7 @@ check_action("agent", cmd,
   <div class="kick"><span class="num">04</span><span>policy packs</span></div>
   <div class="sec-head">
     <h2>Cover your stack, <span class="tt-keep">€29</span></h2>
-    <p>The <b>70 core policies are free forever</b> — the universal, catastrophic classes everyone needs (KMS, IAM, backups, disk). Packs add stack-specific breadth for the tools you actually run. One-time, no subscription. <b>Safety is never behind a paywall.</b></p>
+    <p>The <b>71 core policies are free forever</b> — the universal, catastrophic classes everyone needs (KMS, IAM, backups, disk). Packs add stack-specific breadth for the tools you actually run. One-time, no subscription. <b>Safety is never behind a paywall.</b></p>
   </div>
   <div class="viz-fig" style="margin:var(--space-4) auto 0;max-width:700px">
 <svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coverage grid: gate.cat blocks eight catastrophic command classes — rm -rf, disk wipe, database drop, cloud teardown, kubernetes delete, secret and key destruction, guard self-defense, and audit-log tampering." style="width:100%;height:auto;max-width:600px;display:block">
@@ -1229,7 +1229,7 @@ check_action("agent", cmd,
     </div>
   </div>
   <div style="margin-top:var(--space-3);display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;justify-content:space-between;border:1.5px solid var(--frame);border-radius:var(--radius);padding:16px var(--space-3);background:var(--surface)">
-    <span style="font-size:15px;color:var(--ink-2);font-weight:500"><b style="color:var(--ink)">One incident an agent causes runs into the thousands.</b> A pack is €29 once — lifetime rule updates — for a surface the free 70 can't see.</span>
+    <span style="font-size:15px;color:var(--ink-2);font-weight:500"><b style="color:var(--ink)">One incident an agent causes runs into the thousands.</b> A pack is €29 once — lifetime rule updates — for stack-specific surfaces outside the free core.</span>
     <span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--lime-deep);font-weight:700;white-space:nowrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
       30-day money-back, no questions
@@ -1331,12 +1331,12 @@ check_action("agent", cmd,
   <div class="use-grid">
     <div class="card">
       <div class="body">
-        <div class="tag">Cloud Solo · founding</div>
+        <div class="tag">Cloud Solo · launch list</div>
         <h3>Your agent, on the record</h3>
         <p>Off-machine veto history + push &amp; email alerts + monthly report, across every machine you run.</p>
       </div>
       <div class="pack-price">€19<small>/mo</small></div>
-      <a id="solo-buy" class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/d2853dd8-376a-4f06-85c9-237d3dd5cef3">Start Solo
+      <a id="solo-buy" class="pack-buy" href="mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Solo%20launch">Join Solo launch list
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
     <div class="card">
@@ -1346,7 +1346,7 @@ check_action("agent", cmd,
         <p>Everything in Solo + signed policy sync across the fleet (pull-only, local review) + a <b>tamper-evident override ledger</b> + fleet report. Flat, up to 10 machines — not per-seat.</p>
       </div>
       <div class="pack-price">€149<small>/mo flat</small></div>
-      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/903a7fb2-3866-4cb9-ae20-e67057bebdeb">Start Team
+      <a class="pack-buy" href="mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Team%20launch">Join Team launch list
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
     <div class="card">
@@ -1356,15 +1356,15 @@ check_action("agent", cmd,
         <p>Everything in Team + larger fleets, SSO/SCIM, and priority evidence exports.</p>
       </div>
       <div class="pack-price">€399<small>/mo</small></div>
-      <a class="pack-buy" href="https://gatecat.lemonsqueezy.com/checkout/buy/35897cd6-32f3-4411-990b-96894853fe1a">Start Business
+      <a class="pack-buy" href="mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Business%20launch">Join Business launch list
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
   </div>
   <div style="margin-top:var(--space-3);display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;justify-content:space-between;border:1.5px solid var(--frame);border-radius:var(--radius);padding:16px var(--space-3);background:var(--surface)">
-    <span style="font-size:15px;color:var(--ink-2);font-weight:500"><b style="color:var(--ink)">Live now.</b> Checkout &amp; billing via Lemon Squeezy — it handles EU VAT so you don't. Security is always free; Cloud adds the off-machine record and the fleet layer, <b style="color:var(--ink)">never the blocking itself</b>.</span>
+    <span style="font-size:15px;color:var(--ink-2);font-weight:500"><b style="color:var(--ink)">Cloud launch list is open.</b> Checkout opens after the final live billing-lifecycle verification. Security is always free; Cloud adds the off-machine record and the fleet layer, <b style="color:var(--ink)">never the blocking itself</b>.</span>
     <span style="display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;color:var(--lime-deep);font-weight:700;white-space:nowrap">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
-      founding price honored
+      no payment before fulfillment is verified
     </span>
   </div>
   </div>
@@ -1408,7 +1408,7 @@ check_action("agent", cmd,
   <div class="faq-list">
     <details class="faq-item">
       <summary>Is it really free?</summary>
-      <p>Yes. The core — the gate, all 70 default policies, the Claude Code hook, the proxy, the gated shell, the CLI, local reports — is <b>free forever</b>, Apache 2.0, no trial, no rate limit. Paid things are <b>convenience and proof</b> (stack-specific policy packs, the off-machine Cloud copy). <b>Safety is never behind a paywall</b> — when we find a universal catastrophic gap, the fix goes into the free core.</p>
+      <p>Yes. The core — the gate, all 71 default policies, the Claude Code hook, the proxy, the gated shell, the CLI, local reports — is <b>free forever</b>, Apache 2.0, no trial, no rate limit. Paid things are <b>convenience and proof</b> (stack-specific policy packs, the off-machine Cloud copy). <b>Safety is never behind a paywall</b> — when we find a universal catastrophic gap, the fix goes into the free core.</p>
     </details>
     <details class="faq-item">
       <summary>Does it work with my agent?</summary>
@@ -1420,7 +1420,7 @@ check_action("agent", cmd,
     </details>
     <details class="faq-item">
       <summary>What does it NOT catch?</summary>
-      <p>The gate is certain only about what it <b>blocks</b> — an action it doesn't match is <b>unchecked, not safe</b>. It's a deterministic deny-list of known dangerous shapes, so what it can't catch is the <b>obfuscated or novel</b> command — a binary name assembled at runtime, a payload built from pieces — and that's exactly what the bypass suite in the repo publishes instead of hiding. It's also <b>not a fact-checker</b> — don't buy it for hallucination detection. The full map — every policy, the commands that fire it, and the benign twins that pass — is on the <a href="/coverage.html" style="color:var(--lime-deep);font-weight:700">coverage page</a>, along with a no-account form to <a href="/coverage.html#report" style="color:var(--lime-deep);font-weight:700">report a command we miss</a>.</p>
+      <p>The gate is certain only about what it <b>blocks</b> — an action it doesn't match is <b>unchecked, not safe</b>. It's a deterministic deny-list of known dangerous shapes, so what it can't catch is the <b>obfuscated or novel</b> command — a binary name assembled at runtime, a payload built from pieces — and that's exactly what the bypass suite in the repo publishes instead of hiding. It's also <b>not a fact-checker</b> — don't buy it for hallucination detection. A measured 38-policy historical snapshot and the current limitations are on the <a href="/coverage.html" style="color:var(--lime-deep);font-weight:700">coverage page</a>, along with a no-account form to <a href="/coverage.html#report" style="color:var(--lime-deep);font-weight:700">report a command we miss</a>.</p>
     </details>
     <details class="faq-item">
       <summary>Will it nag me all day?</summary>
@@ -1436,7 +1436,7 @@ check_action("agent", cmd,
     </details>
     <details class="faq-item">
       <summary>When can I buy Cloud?</summary>
-      <p>Cloud is <b>live now</b> — <b>Solo €19/mo · Team €149/mo flat (up to 10 machines) · Business €399/mo</b>, billed through Lemon Squeezy so EU VAT is handled for you. Security stays free forever; Cloud is the off-machine record and fleet layer, never the blocking. Founding-list members keep their locked price.</p>
+      <p>The Cloud service is deployed and its launch list is open at <b>Solo €19/mo · Team €149/mo flat (up to 10 machines) · Business €399/mo</b>. Checkout opens only after the live billing lifecycle — provision, renewal and revocation — passes its final production verification. Security stays free forever; Cloud is the off-machine record and fleet layer, never the blocking.</p>
     </details>
     <details class="faq-item">
       <summary>How do I uninstall it?</summary>
@@ -1515,19 +1515,19 @@ check_action("agent", cmd,
       });
     }
     /* email capture form removed from hero */
-    /* cloud founding form removed — Cloud is live, checkout via Lemon Squeezy */
+    /* Cloud launch list uses explicit mail links until live billing verification passes. */
   })();
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"Is gate.cat really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The core — the gate, all 70 default policies, the Claude Code hook, the proxy, the gated shell, the CLI — is free forever, Apache 2.0. Paid products are convenience and proof (stack policy packs, off-machine Cloud copy). Safety fixes always go into the free core."}},
+{"@type":"Question","name":"Is gate.cat really free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The core — the gate, all 71 default policies, the Claude Code hook, the proxy, the gated shell, the CLI — is free forever, Apache 2.0. Paid products are convenience and proof (stack policy packs, off-machine Cloud copy). Safety fixes always go into the free core."}},
 {"@type":"Question","name":"Does gate.cat work with my AI agent?","acceptedAnswer":{"@type":"Answer","text":"Claude Code gets a native PreToolUse hook. CLI agents that run a shell — Codex, aider, OpenClaw, Hermes, Antigravity — get the same out-of-model enforcement via the gated shell: route the tool's shell through gatecat-shell and every command is gated at the exec point. OpenAI-API agents like GitHub Copilot (BYOK), Ollama and vLLM can go through the proxy by pointing base_url at gate.cat."}},
 {"@type":"Question","name":"Can an AI agent talk its way past gate.cat?","acceptedAnswer":{"@type":"Answer","text":"Not past the hook: a deterministic deny-list runs before the tool call, outside the model's control flow, and fails closed. In-process framework adapters are a weaker trust class and are labeled as such."}},
-{"@type":"Question","name":"What does gate.cat NOT catch?","acceptedAnswer":{"@type":"Answer","text":"An action it doesn't match is unchecked, not safe. It's a deterministic deny-list, so what slips is the obfuscated or novel command (a runtime-assembled binary name, a payload built from pieces) — published in the repo's bypass suite, not hidden. It is not a fact-checker. The full policy map with measured verdicts is at gate.cat/coverage.html, including a form to report a missed command."}},
+{"@type":"Question","name":"What does gate.cat NOT catch?","acceptedAnswer":{"@type":"Answer","text":"An action it doesn't match is unchecked, not safe. It's a deterministic deny-list, so what slips is the obfuscated or novel command (a runtime-assembled binary name, a payload built from pieces) — published in the repo's bypass suite, not hidden. It is not a fact-checker. A measured historical coverage snapshot and the current limitations are at gate.cat/coverage.html, including a form to report a missed command."}},
 {"@type":"Question","name":"How often does gate.cat interrupt normal work?","acceptedAnswer":{"@type":"Answer","text":"It intervenes on about 0.6% of real commands, measured on a 14.7k Claude Code log and a public 8.6k SWE-agent corpus."}},
 {"@type":"Question","name":"What data leaves my machine?","acceptedAnswer":{"@type":"Answer","text":"Nothing. The pip package has zero telemetry. Cloud is opt-in and off by default; its default payload is a hash of the matched command, not the text."}},
 {"@type":"Question","name":"What do the €29 policy packs add?","acceptedAnswer":{"@type":"Answer","text":"Stack-specific breadth, not more safety: Stripe refunds/payouts (Fintech), deploy CLIs like Vercel/Fly/Heroku (PaaS), raw HTTP DELETE against SaaS APIs (HTTP). One-time €29 with lifetime updates."}},
-{"@type":"Question","name":"How much is gate.cat Cloud?","acceptedAnswer":{"@type":"Answer","text":"Cloud is live: Solo EUR 19/mo, Team EUR 149/mo flat (up to 10 machines), Business EUR 399/mo, billed via Lemon Squeezy which handles EU VAT. Security is always free; Cloud adds the off-machine tamper-evident record and the fleet layer, never the blocking itself."}},
+{"@type":"Question","name":"How much is gate.cat Cloud?","acceptedAnswer":{"@type":"Answer","text":"The Cloud launch list is open at Solo EUR 19/mo, Team EUR 149/mo flat (up to 10 machines), and Business EUR 399/mo. Checkout opens after the final live billing lifecycle verification. Security is always free; Cloud adds the off-machine tamper-evident record and the fleet layer, never the blocking itself."}},
 {"@type":"Question","name":"How do I uninstall gate.cat?","acceptedAnswer":{"@type":"Answer","text":"pip uninstall gate.cat and remove the hook entry from .claude/settings.json. No daemon, no account, no leftovers."}}
 ]}
 </script>

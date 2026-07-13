@@ -51,11 +51,12 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 | Evidence log self-hosted in **your** infra | — | — | — | ✅ | ✅ |
 | Support | community | email | priority | dedicated | dedicated + custom policies |
 | Price | €0 forever | €19/mo | €149/mo flat | €399/mo | custom |
-| | | [**Start Solo →**](https://gatecat.lemonsqueezy.com/checkout/buy/d2853dd8-376a-4f06-85c9-237d3dd5cef3) | [**Start Team →**](https://gatecat.lemonsqueezy.com/checkout/buy/903a7fb2-3866-4cb9-ae20-e67057bebdeb) | [**Start Business →**](https://gatecat.lemonsqueezy.com/checkout/buy/35897cd6-32f3-4411-990b-96894853fe1a) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
+| | | [**Join Solo launch list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Solo%20launch) | [**Join Team launch list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Team%20launch) | [**Join Business launch list →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Cloud%20Business%20launch) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
 
-Checkout and billing are handled by Lemon Squeezy, including EU VAT. Cancel
-anytime. **30-day full refund, no questions asked.** Cloud activation is
-zero-touch: payment provisions the API key used by the encrypted reporter.
+The Cloud launch list is open, but checkout stays paused until a production
+Lemon Squeezy lifecycle smoke verifies provisioning, renewal and revocation.
+Once open, billing includes EU VAT handling, cancellation at any time and a
+**30-day full refund, no questions asked.**
 
 ## Policy Packs — €29 one-time (available now)
 
