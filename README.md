@@ -1,6 +1,11 @@
 # gate.cat
 
-> **Install:** `pip install gate-cat` — then a veto in two lines:
+> **Install:** run the user-local installer below — it creates a private venv and works on PEP 668 systems too:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/BGMLAI/gate.cat/master/install.sh -o /tmp/gatecat-install.sh
+> sh /tmp/gatecat-install.sh
+> ```
+> Or use the manual venv path: `python3 -m venv .venv && .venv/bin/python -m pip install gate.cat`.
 > ```python
 > from gatecat import check_action                     # deny-list gate
 > check_action("agent", "terraform destroy -auto-approve")  # -> raises ActionVetoed
