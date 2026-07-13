@@ -1034,7 +1034,7 @@ wheels = [
 
 [[package]]
 name = "gate-cat"
-version = "0.4.11"
+version = "0.4.15"
 source = { editable = "." }
 
 [package.optional-dependencies]
@@ -1064,6 +1064,9 @@ cache = [
     { name = "onnxruntime", version = "1.24.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "onnxruntime", version = "1.27.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "tokenizers" },
+]
+cloud = [
+    { name = "cryptography" },
 ]
 crewai = [
     { name = "crewai" },
@@ -1118,6 +1121,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'all'", specifier = ">=0.20.0" },
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.20.0" },
     { name = "crewai", marker = "extra == 'crewai'", specifier = ">=0.80,<2" },
+    { name = "cryptography", marker = "extra == 'cloud'", specifier = ">=41.0.0" },
     { name = "fastapi", marker = "extra == 'dev'", specifier = ">=0.110.0" },
     { name = "fastapi", marker = "extra == 'proxy'", specifier = ">=0.110.0" },
     { name = "hnswlib", marker = "extra == 'all'", specifier = ">=0.8.0" },
@@ -1156,7 +1160,7 @@ requires-dist = [
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'proxy'", specifier = ">=0.27.0" },
 ]
-provides-extras = ["cache", "ml", "openai", "anthropic", "image", "voice", "proxy", "crewai", "langgraph", "all", "dev"]
+provides-extras = ["cache", "ml", "openai", "anthropic", "image", "voice", "proxy", "cloud", "crewai", "langgraph", "all", "dev"]
 
 [[package]]
 name = "google-re2"

@@ -1,11 +1,16 @@
 # gate.cat
 
-> **Install:** `pip install gate-cat` — then a veto in two lines:
+> **Install:** run the user-local installer below — it creates a private venv and works on PEP 668 systems too:
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/BGMLAI/gate.cat/master/install.sh -o /tmp/gatecat-install.sh
+> sh /tmp/gatecat-install.sh
+> ```
+> Or use the manual venv path: `python3 -m venv .venv && .venv/bin/python -m pip install gate.cat`.
 > ```python
 > from gatecat import check_action                     # deny-list gate
 > check_action("agent", "terraform destroy -auto-approve")  # -> raises ActionVetoed
 > ```
-> The distribution is `gate.cat` (PyPI normalizes it, so `pip install gate-cat`);
+> The distribution is `gate.cat` (PyPI also accepts the normalized spelling `gate-cat`);
 > the import module is `gatecat`. 0.2.x used `import cacheback` — see `MIGRATION.md`.
 > Honest line, up front: the gate is certain only about what it **blocks**. An
 > action it does not match is *unchecked*, not *safe*.
@@ -53,7 +58,7 @@ a single byte executes — a real terminal, `pip install gate-cat`, no montage:
 ## Install
 
 ```bash
-pip install gate-cat                  # core
+pip install gate.cat                  # core (inside a venv)
 pip install "gate-cat[openai]"      # + OpenAI wrapper
 pip install "gate-cat[anthropic]"   # + Anthropic wrapper
 pip install "gate-cat[proxy]"       # + proxy server (FastAPI)
