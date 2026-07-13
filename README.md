@@ -262,15 +262,15 @@ What we ask back — this project runs on one currency:
   CHANGELOG, and the bypass suite grows from exactly these reports. …and if the
   gate ever blocks something dumb before it happened, a ⭐ helps other people find this.
 
-## Pricing (announced — checkout opens when the hosted layer ships)
+## Pricing
 
 **The local gate is free forever — including local reports.** The paid layer,
 **gate.cat Cloud**, is the off-machine copy of your veto history — the one an
 agent with shell access can't delete or rewrite (a local log is inside its
-blast radius). Announced prices: **Solo $9/mo · Team $199/mo flat (up to 10
-devs) · audit-readiness pilots by invoice**. We deliberately don't take money
-until fulfillment is zero-touch; the founding list locks the price:
-[PRICING.md](PRICING.md).
+blast radius). Launch prices: **Solo €19/mo · Team €149/mo flat (up to 10
+machines) · Business €399/mo**. Checkout and EU VAT are handled by Lemon
+Squeezy; the local gate remains free forever. Full boundaries and policy-pack
+pricing: [PRICING.md](PRICING.md).
 
 ## Verify the numbers
 

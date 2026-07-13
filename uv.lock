@@ -1034,7 +1034,7 @@ wheels = [
 
 [[package]]
 name = "gate-cat"
-version = "0.4.15"
+version = "0.4.16"
 source = { editable = "." }
 
 [package.optional-dependencies]

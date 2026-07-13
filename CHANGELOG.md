@@ -3,6 +3,23 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [0.4.16] -- full launch consistency + secret-exfil hardening (2026-07-13)
+
+### Added
+- `SECRET_EXFIL`, a default-on hard block for secret-file dereferences flowing
+  into network or mail sinks in one action. Private keys, credential files and
+  real `.env` files are covered; public keys, templates and ordinary sends stay
+  allowed. The opt-in `EMAIL_SEND` preset remains separate.
+- PEP 668-safe Linux and Windows user-local installers.
+
+### Launch
+- Reconciled the 0.4.15 product/Cloud branch with the public landing branch.
+- Made Lemon Squeezy pricing consistent across the landing, README and pricing
+  page: Solo €19/mo, Team €149/mo flat, Business €399/mo; packs €29 one-time.
+- Replaced the self-contradictory `curl | sh` landing CTA with a download-then-run
+  installer command that gate.cat does not itself veto.
+
+
 ## [0.4.15] -- free-core agent-control layer (2026-07-12)
 
 Ships the local, free features built alongside 0.4.14 (held back from that
