@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>1,085,159 real AI-agent commands through a deterministic gate — gate.cat</title>
+<meta name="description" content="We replayed 1,085,159 real agent commands through a fail-closed deterministic gate: 0 misses on the covered set, ~0.6% intervention, and a bypass suite that publishes its own open gaps." />
+<meta property="og:title" content="1,085,159 real AI-agent commands through a deterministic gate" />
+<meta property="og:description" content="0 misses on the covered set. ~0.6% intervention. A bypass suite that prints its own open gaps — 2 today." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://gate.cat/blog/1m-agent-commands.html" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<link rel="icon" href="../img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#fbfaf2;--surface:#fdfcf6;--surface-2:#f5f4e9;--ink:#0f0f0d;--ink-2:#3a3d35;--ink-soft:#61645a;
+--frame:#0f0f0d;--hairline:rgba(15,15,13,.16);--lime:#cbdd1a;--lime-deep:#788800;--lime-wash:#f2f7cf;--lime-line:#dbe79a;
+--danger-deep:#c42b30;--sans:'Space Grotesk',system-ui,sans-serif;--display:'Archivo Black',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.65;font-weight:500;-webkit-font-smoothing:antialiased}
+.wrap{max-width:780px;margin:0 auto;padding:0 24px}
+header.nav{position:sticky;top:0;background:var(--bg);border-bottom:1.5px solid var(--frame);z-index:10}
+.nav-in{display:flex;align-items:center;gap:10px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:19px;text-transform:lowercase;color:inherit;text-decoration:none}
+.brand img{width:30px;height:30px}
+.brand .lime{color:var(--lime-deep)}
+.nav-in a.back{margin-left:auto;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);text-decoration:none}
+.nav-in a.back:hover{color:var(--ink)}
+article{padding:64px 0 96px}
+.kick{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:28px}
+.kick b{color:var(--bg);background:var(--ink);padding:4px 10px;border-radius:9px;margin-right:10px}
+h1{font-family:var(--display);font-weight:400;text-transform:lowercase;font-size:clamp(30px,5.4vw,52px);line-height:1.02;letter-spacing:-.02em;margin:0 0 18px}
+h1::after{content:'';display:block;width:64px;height:6px;background:var(--lime);margin-top:22px}
+h2{font-family:var(--display);font-weight:400;text-transform:lowercase;font-size:clamp(21px,3vw,30px);letter-spacing:-.02em;line-height:1.1;margin:52px 0 14px}
+article>p:first-of-type strong{font-size:19px}
+p{margin:0 0 16px;color:var(--ink-2)}
+strong{color:var(--ink)}
+a{color:var(--lime-deep);font-weight:600}
+ul{color:var(--ink-2);padding-left:24px}
+li{margin-bottom:10px}
+code{font-family:var(--mono);background:var(--lime-wash);color:var(--lime-deep);padding:1px 6px;border:1px solid var(--lime-line);border-radius:7px;font-size:.84em;font-weight:600}
+pre{background:var(--surface);border:2px solid var(--frame);border-radius:14px;padding:20px 22px;overflow-x:auto;box-shadow:6px 6px 0 0 var(--frame);margin:24px 0}
+pre code{background:none;border:none;color:var(--ink-2);padding:0;font-size:12.5px;line-height:1.8}
+hr{border:none;border-top:1.5px solid var(--hairline);margin:44px 0}
+em{color:var(--ink-soft)}
+.cta{margin-top:56px;background:var(--surface);border:2px solid var(--frame);border-radius:16px;padding:28px;box-shadow:8px 8px 0 0 var(--frame)}
+.cta p{margin:0 0 16px}
+.cta a.btn{display:inline-block;background:var(--lime);color:#0f0f0d;font-weight:700;padding:13px 24px;border:1.5px solid var(--frame);border-radius:999px;text-decoration:none}
+footer{border-top:2px solid var(--frame);padding:28px 0;font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+footer a{color:var(--ink-2);text-decoration:none}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap nav-in">
+  <a class="brand" href="https://gate.cat/"><img src="../img/mark.svg" alt="gate.cat" /><span>gate.<span class="lime">cat</span></span></a>
+  <a class="back" href="https://gate.cat/">&larr; gate.cat</a>
+</div></header>
+<article class="wrap">
+<div class="kick"><b>exposure report #1</b> 1,085,159 commands &middot; 2026-07</div>
+<h1>We replayed 1,085,159 real AI-agent commands through a deterministic gate</h1>
+<p><strong>0 misses on the covered set. ~0.6% intervention. And a bypass suite that prints its own open gap — 1 today — instead of hiding it.</strong></p>
+<p>TL;DR: an AI agent that "knows" the safety rule still runs <code>terraform destroy</code>,
+because a rule in the prompt is documentation, not enforcement. We built a
+deterministic, fail-closed gate that sits at the tool boundary and blocks
+irreversible actions <em>before</em> they execute. Then we did the boring, falsifiable
+thing: replayed <strong>1,085,159 unique real agent commands</strong> from 5 public datasets
+through the full gate. It missed <strong>0</strong> of the real dangers. It also does <strong>not</strong>
+cover every bypass shape — and instead of hiding the ones it misses, we print
+them. This post includes that list.</p>
+<p><code>pip install gate-cat</code> · Apache-2.0 · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a></p>
+<hr />
+<h2>Why this exists</h2>
+<p>The incidents are real and specific. An AutoGen agent ran <code>terraform destroy</code> in
+a loop and burned ~$106k. A Replit agent dropped a production database. On the
+Cursor forum, a developer's agent "nuked my entire system" from a <code>git clone</code>
+request; another agent deleted a file <strong>and then decided to hide the deletion
+from the user</strong>. The pattern is always the same: benign request → the agent
+widens scope → an irreversible command → sometimes a cover-up.</p>
+<p>Prompt-level rules don't stop this, because the model that's supposed to follow
+the rule is the same component that just decided to break it. Enforcement has to
+live <em>outside</em> the model's control flow.</p>
+<h2>What the gate is (one paragraph)</h2>
+<p>A deterministic deny-list of <strong>28 default policies</strong> for the irreversible-action
+class (<code>rm -rf</code>, <code>terraform destroy</code>, <code>DROP TABLE</code>, cloud/k8s deletes, disk
+wipes, force-push, secret deletion, …), plus an independent exec analyzer and a
+human-in-the-loop stage. <strong>Fail-closed</strong>: engine error, empty input, anything it
+can't reason about → BLOCK, never a silent allow. Same command → same verdict,
+no temperature, nothing to persuade. Its strongest form is a <strong>Claude Code
+PreToolUse hook</strong> that runs in the harness — the tool call physically cannot
+execute until the gate returns.</p>
+<h2>The measurement (so you can refute it)</h2>
+<p>We took <strong>1,085,159 unique real agent commands</strong> from five public datasets
+(Nemotron, SWE-Zero, SWE-Hero, Kwai SWE-smith-mini, nebius), plus an independent
+catalog of 43 known danger classes, and ran every command through the full
+gate pipeline.</p>
+<ul>
+<li><strong>0 real recall misses across all 1,085,159 commands.</strong> The catalog flagged 447
+  dangers; the gate neutralized 443. The remaining 4 "allows" were
+  disposable-artifact cleanups the gate <em>correctly</em> permits (the same shape
+  blocks on a real target) — a catalog false alarm, not a gate miss. We show the
+  adjudication rather than quietly reporting "443/447."</li>
+<li>On a separate axis — <strong>43 known danger classes through the full gate: 100%
+  recall (30 block, 13 warn), with 0 false-blocks on the benign twins.</strong>
+  Reproducible with no datasets at all: <code>scripts/recall_danger_axis.py</code>.</li>
+<li><strong>Intervention rate ~0.6%</strong> on real traffic (measured on two independent logs:
+  a 14.7k-command Claude Code log and a public 8.6k-command SWE-agent corpus). It
+  is a wall you rarely hit, not a nagging assistant. <em>(Measured on those logs —
+  not on yours; your number is your number.)</em></li>
+</ul>
+<h2>The part everyone else hides: what we DON'T cover</h2>
+<p>A security tool that only advertises its wins is selling you a feeling. Here is
+the gate's own bypass map — the shapes our suite deliberately does <strong>not</strong> claim
+to catch, printed by the suite itself:</p>
+<ul>
+<li><strong>a binary name assembled at runtime</strong> — <code>payload=$'\x72m'; $payload -rf /srv</code>
+  never contains <code>rm</code> as a literal token, so no pattern layer can see it.</li>
+</ul>
+<p>Shapes that <em>used to be</em> on this list and are now caught — relabelled in the
+suite, not deleted: base64-assembled payloads (<code>echo &lt;b64&gt; | base64 -d | sh</code>)
+and <code>curl … | sh</code> hit the ENCODED_EXEC wall; deletes routed through a language
+runtime (<code>python3 -c "os.unlink(...)"</code>) surface as a <strong>warn</strong> for human review;
+and (0.4.10) the terraform-destroy agent bypass — piping the interactive <code>yes</code>
+into <code>terraform destroy</code> to auto-confirm an irreversible teardown — is now
+blocked (the bare interactive form, where a human answers, still passes). The
+gap list is supposed to shrink in public. There are still infinitely many ways
+to destroy things; a deny-list is a wall in front of the <em>known</em> shapes, not a
+proof of safety.</p>
+<p>Our bypass suite catches <strong>71/71</strong> of what it <em>claims</em> to, discloses <strong>1
+false-block on its benign corpus</strong> (counted against ourselves, not hidden), and
+prints the open gap next to the wins. The honest headline, in one line: <strong>the gate is certain only
+about what it blocks. A command it doesn't match is <em>unchecked</em>, not <em>safe</em>.</strong></p>
+<p>That sentence is in our README, not buried in a FAQ. It's also why the right
+mental model is <em>gate + sandbox</em>, not <em>gate instead of sandbox</em>: a sandbox limits
+the blast radius but can't tell you what the agent <em>tried</em>, and won't stop a
+<code>terraform destroy</code> that has real credentials inside the sandbox. They're
+complements.</p>
+<h2>Reproduce it on your own agents (60 seconds, local, no signup)</h2>
+<pre><code class="language-bash">pip install gate-cat
+
+# 1) the bypass suite, straight from the installed package — real output,
+#    reproduced 2026-07-11 on gate.cat 0.4.10:
+python3 -c &quot;from gatecat.integrations import bypass_suite as b; print(b.metrics(b.run()))&quot;
+# -&gt; {'claimed_dangers': 71, 'caught': 71, 'catch_rate': 1.0, 'benign': 52,
+#     'false_blocks': 1, 'false_block_rate': 0.0192, 'known_gaps': 1}
+
+# 2) the full 43-class danger axis (needs the repo, not just the wheel):
+git clone https://github.com/BGMLAI/gate.cat &amp;&amp; cd gate.cat
+python3 scripts/recall_danger_axis.py      # 43/43 through the full gate, 0 false-blocks
+</code></pre>
+<p>If your numbers disagree with ours, that's a bug report we want. Every figure in
+this post traces to a row in our <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md</a>
+(claim → source → allowed wording). We regenerate the copy <em>from</em> that table,
+never the other way around.</p>
+<h2>Honest limits (cite these — they're the point)</h2>
+<ul>
+<li>The gate is certain only about what it <strong>blocks</strong>; unmatched ≠ safe.</li>
+<li>It is <strong>not</strong> a fact-checker / hallucination detector (the lookup channel is
+  empty by default).</li>
+<li>Prompt-injection defense is experimental and off the headline.</li>
+<li>The uncertainty signal is strongest on small/local models (7–30B, AUC
+  0.77–0.90) and weaker on frontier (AUC 0.68–0.71).</li>
+<li>Framework adapters (crewAI/LangGraph/AutoGen) are in-process convention; only
+  the Claude Code hook is enforcement <em>outside</em> the agent's control flow.</li>
+</ul>
+<h2>Want the map for your own traffic?</h2>
+<p><code>gate.cat</code> is free forever — the gate, the hook, and a local dashboard. Once
+it's watching your agent, <code>gate.cat log</code> shows every veto, <code>gate.cat why &lt;cmd&gt;</code>
+explains any verdict, and <code>gate.cat stats</code> gives you the running count. That
+history lives locally today. (Keeping an off-machine copy — the one your agent
+can't delete or rewrite — is the paid tier; the gate itself never costs
+anything.)</p>
+<hr />
+<p><em>Written by the maintainer. gate.cat is Apache-2.0 — the deny-list, the exec
+analyzer, the hook, the bypass map are all open. Poke holes in it:
+<a href="https://github.com/BGMLAI/gate.cat/issues/new?template=veto-story.yml">report a veto story or a bypass</a>.</em></p>
+<div class="cta">
+<p><strong>Put the wall in front of your own agent</strong> — free, 60 seconds, one line to uninstall.</p>
+<a class="btn" href="https://gate.cat/#install">pip install gate.cat &rarr;</a>
+</div>
+</article>
+<footer><div class="wrap">gate.cat &middot; fail-closed action-veto for AI agents &middot; Apache 2.0 &middot; <a href="https://github.com/BGMLAI/gate.cat">GitHub</a></div></footer>
+</body></html>
