@@ -113,6 +113,8 @@ Before posting beyond owned channels, verify all of the following:
 - `gate.cat` serves the reviewed 0.4.16 landing and two-step installer command.
 - Public PyPI clean install returns 0.4.16.
 - Cloud health returns 200.
-- Lemon Squeezy has a live-mode webhook for creation, update and expiration.
-- A production-mode signed lifecycle smoke provisions and revokes a test key.
+- Stripe has a live-mode webhook for checkout completion, subscription updates
+  and cancellation while Lemon Squeezy account review is pending.
+- Production rejects an invalid Stripe signature and accepts a correctly signed
+  non-mutating event; automated tests cover idempotent provisioning and revocation.
 - Each live post URL is added to GitHub issue #9 with timestamp and owner.

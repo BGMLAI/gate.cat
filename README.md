@@ -268,8 +268,8 @@ What we ask back — this project runs on one currency:
 **gate.cat Cloud**, is the off-machine copy of your veto history — the one an
 agent with shell access can't delete or rewrite (a local log is inside its
 blast radius). Launch prices: **Solo €19/mo · Team €149/mo flat (up to 10
-machines) · Business €399/mo**. The launch list is open; checkout opens after
-the final production billing-lifecycle verification. The local gate remains
+machines) · Business €399/mo**. Stripe checkout is live with automatic
+activation and subscription lifecycle handling. The local gate remains
 free forever. Full boundaries and policy-pack pricing: [PRICING.md](PRICING.md).
 
 ## Verify the numbers

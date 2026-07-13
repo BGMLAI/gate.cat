@@ -13,6 +13,9 @@ All notable changes to `gate.cat` will be documented in this file.
 - PEP 668-safe Linux and Windows user-local installers.
 
 ### Launch
+- Opened temporary Stripe checkout for Cloud (€19/€149/€399 monthly) and policy
+  packs (€29 one-time), including signed lifecycle webhooks and paid-session
+  fulfillment. Lemon Squeezy remains available for a later channel switch.
 - Reconciled the 0.4.15 product/Cloud branch with the public landing branch.
 - Made Lemon Squeezy pricing consistent across the landing, README and pricing
   page: Solo €19/mo, Team €149/mo flat, Business €399/mo; packs €29 one-time.
