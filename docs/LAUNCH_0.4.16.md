@@ -35,7 +35,13 @@ arbitrary programs harmless, and the framework adapters are weaker than an
 out-of-process hook. The free gate is Apache-2.0; optional Cloud stores an
 encrypted off-machine evidence copy.
 
-Install: `pip install gate.cat==0.4.16`
+Install with the reviewed two-step user-local installer (it creates a private
+venv and works on PEP 668 systems):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BGMLAI/gate.cat/master/install.sh -o /tmp/gatecat-install.sh
+sh /tmp/gatecat-install.sh
+```
 
 I would especially value adversarial examples that bypass a named policy or
 benign commands that get blocked. Those become regression tests.
@@ -47,7 +53,7 @@ I shipped gate.cat 0.4.16: a free, local veto layer for AI coding agents.
 71 default policy walls. 1,863 tests. CI on Python 3.11–3.13. The bypass suite
 publishes its own gap.
 
-`pip install gate.cat==0.4.16`
+Safe two-step installer (download, inspect, then run): https://gate.cat
 
 Unmatched means unchecked — not “safe.”
 
@@ -88,7 +94,12 @@ recall/bypass scripts. I am explicitly not claiming that an unmatched command
 is safe; the suite publishes one runtime-assembly bypass and one benign
 false-block.
 
-Install: `pip install gate.cat==0.4.16`
+Install with the reviewed two-step user-local installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/BGMLAI/gate.cat/master/install.sh -o /tmp/gatecat-install.sh
+sh /tmp/gatecat-install.sh
+```
 
 Repo: https://github.com/BGMLAI/gate.cat
 
@@ -105,4 +116,3 @@ Before posting beyond owned channels, verify all of the following:
 - Lemon Squeezy has a live-mode webhook for creation, update and expiration.
 - A production-mode signed lifecycle smoke provisions and revokes a test key.
 - Each live post URL is added to GitHub issue #9 with timestamp and owner.
-
