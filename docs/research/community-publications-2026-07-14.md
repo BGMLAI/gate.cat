@@ -89,6 +89,20 @@ Scope: 70 additional, thread-specific contributions for the gate.cat launch. All
 - LinkedIn comment editors cleared after submission and each submitted text appeared once in the rendered result.
 - No external thread received duplicate text.
 
+## X correction — 2026-07-14
+
+The launch post at `2076801206660337897` accidentally sent both shortened URLs
+to the gate.cat homepage. X also renders the distribution name `gate.cat` as a
+clickable domain, which made the installer CTA look like another homepage link.
+The original post remains as the audit trail; a public reply now provides the
+unambiguous PyPI-normalized command (`python -m pip install gate-cat`) and the
+download-then-inspect installer flow:
+
+- https://x.com/Bobby_prv/status/2076945786936361433
+
+The earlier status `2076800168901349724` no longer exists and is not counted as
+an active publication.
+
 ## Reddit expansion — active (2026-07-14)
 
 Requested expansion: 10 additional, thread-specific Reddit comments across distinct discussions. Each response is value-first and tailored to the incident or workflow described in the target thread.
