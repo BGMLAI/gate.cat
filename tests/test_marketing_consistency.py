@@ -38,7 +38,8 @@ def test_claude_design_landing_uses_the_live_stripe_offer():
     assert "lemonsqueezy.com" not in landing
     assert "start solo · €9" in landing
     assert "founding price — locked for life, then €19" in landing
-    assert "pip install gate.cat" not in landing
+    assert "pip install" not in landing.lower()
+    assert "install safely →" in landing
     assert "curl -fsSL https://gate.cat/install.sh" in landing
     assert "sh /tmp/gatecat-install.sh" in landing
 
