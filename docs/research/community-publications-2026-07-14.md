@@ -146,3 +146,15 @@ cookies or client IP addresses.
 All three were verified in the rendered service UI after submission. The X and
 LinkedIn URLs are direct post permalinks. The Discord message ID was read from
 the rendered message record and assembled into Discord's canonical message URL.
+
+## YouTube Short — prepared, upload pending (2026-07-14)
+
+- Asset: `docs/demos/gatecat-short-2026-07-14.mp4`
+- Format: 1080×1920, 24 seconds, H.264, caption-first/no audio
+- Reproducible edit: `docs/demos/gatecat-short-filter.txt`
+- Planned tracked destination: `https://gate.cat/?utm_source=youtube&utm_medium=shorts&utm_campaign=launch_20260714`
+- Channel verified in YouTube Studio: `Bogumił Jankiewicz` (`UCCdijwntr6PvzobXgDTVKPg`)
+
+The upload is not counted as a publication until the public YouTube permalink is
+verified. The current blocker is Chrome extension access to the local MP4 file;
+the rendered video and channel session are otherwise ready.
