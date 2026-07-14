@@ -24,7 +24,7 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 
 ## How it works
 
-- A deterministic deny-list of **28 default policies** for the irreversible-action
+- A deterministic deny-list of **71 default policies** for the irreversible-action
   class, plus an independent exec analyzer and human-in-the-loop.
 - **Fail-closed**: engine error, empty input, anything it can't reason about → BLOCK,
   never a silent allow.
@@ -65,8 +65,8 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 ## Links
 
 - [Repository & README](https://github.com/BGMLAI/gate.cat): install, quick start, the Claude Code hook config.
-- [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.4).
-- [Pricing (announced)](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md): the gate is free forever including local reports; the paid layer (checkout opens once the hosted service is live) is gate.cat Cloud — an off-machine copy of the veto history the agent cannot rewrite — announced at Solo $9/month, Team $199/month flat up to 10 devs, audit-readiness pilots $7,500/year. Cloud is an optional reporter beside the gate, never in its execution path; hashed events by default.
+- [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.16).
+- [Pricing (live)](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md): the local gate is free forever including local reports. Stripe checkout is live for gate.cat Cloud at Solo €19/month, Team €149/month flat for up to 10 machines, and Business €399/month. Cloud is the optional off-machine copy of veto history the agent cannot rewrite; it is never in the gate's execution path and uses hashed command events by default. Stack-specific Fintech, PaaS, and HTTP-API Breadth policy packs are €29 each, one-time, with lifetime updates.
 - [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md): every public number with its source and allowed wording.
 - [COMPARISON.md](https://github.com/BGMLAI/gate.cat/blob/master/COMPARISON.md): honest positioning vs LangGraph `interrupt`, HumanLayer, Lakera, Guardrails AI.
 - [OBJECTIONS.md](https://github.com/BGMLAI/gate.cat/blob/master/OBJECTIONS.md): the two hardest objections answered in full.

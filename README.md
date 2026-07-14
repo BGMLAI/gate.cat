@@ -246,7 +246,7 @@ an accident of translation.
 Sixty seconds of your time, in exchange for:
 
 - a deterministic gate your agent cannot run `terraform destroy`, `rm -rf`,
-  `DROP TABLE` or `gh repo delete` through — 28 default policies for the
+  `DROP TABLE` or `gh repo delete` through — 71 default policies for the
   irreversible-action class, fail-closed, ~0.6% intervention rate measured on
   real traffic (it won't nag you);
 - a ready-to-paste Claude Code PreToolUse hook — the strongest mode:
@@ -270,7 +270,12 @@ agent with shell access can't delete or rewrite (a local log is inside its
 blast radius). Launch prices: **Solo €19/mo · Team €149/mo flat (up to 10
 machines) · Business €399/mo**. Stripe checkout is live with automatic
 activation and subscription lifecycle handling. The local gate remains
-free forever. Full boundaries and policy-pack pricing: [PRICING.md](PRICING.md).
+free forever. [Start Solo (€19/mo)](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09)
+or buy a one-time €29 policy pack:
+[Fintech](https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c) ·
+[PaaS](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) ·
+[HTTP-API Breadth](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e).
+Full boundaries and tier details: [PRICING.md](PRICING.md).
 
 ## Verify the numbers
 
