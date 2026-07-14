@@ -1,10 +1,10 @@
 # Community publications — 2026-07-14
 
-Scope: 77 verified placements for the gate.cat launch: thread-specific contributions, measured owned-channel posts, and two standards-compliant curated-directory submissions. No duplicated copy was used.
+Scope: 78 verified placements for the gate.cat launch: thread-specific contributions, measured owned-channel posts, and three standards-compliant curated-directory submissions. No duplicated copy was used.
 
 ## Distribution
 
-- GitHub: 68 placements (65 issue comments, 1 discussion follow-up, 2 directory PRs)
+- GitHub: 69 placements (65 issue comments, 1 discussion follow-up, 3 directory PRs)
 - Reddit: 2 comments
 - LinkedIn: 4 comments/posts
 - Discord: 2 verified Cursor `#showcase` placements
@@ -167,8 +167,9 @@ the rendered video and channel session are otherwise ready.
 
 76. ProjectRecon `awesome-ai-agents-security` — submitted to **Agent Firewalls & Gateways (Runtime Protection)**: https://github.com/ProjectRecon/awesome-ai-agents-security/pull/74
 77. `awesome-llm-security` — submitted to **Defensive & Guardrail Tools**: https://github.com/beyefendi/awesome-llm-security/pull/26
+78. `awesome-ai-security` — submitted to **Agent Runtime Security & Sandboxing**: https://github.com/ottosulin/awesome-ai-security/pull/335
 
-Both repositories were searched before submission, explicitly accept pull requests,
+All three repositories were searched before submission, explicitly accept pull requests,
 and contained no existing gate.cat entry. Each PR uses a factual one-line description,
 discloses that the submitter maintains gate.cat, and omits adoption/performance claims.
 The direct PR permalinks were verified in `OPEN` state. They count here as submitted
