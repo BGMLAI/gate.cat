@@ -11,6 +11,7 @@ import pytest
 
 SECRET = "whsec_stripe_test"
 SOLO_PRICE = "price_1Tr0na2Va7XV3fWYCU40u4ZT"
+FOUNDING_SOLO_EUR_PRICE = "price_1Tt2AB2Va7XV3fWYfJL9XCsW"
 
 
 def _load_activate(tmp_path, env=None):
@@ -53,6 +54,11 @@ def test_stripe_signature_accepts_valid_and_rejects_bad(tmp_path, env_vars):
     assert ca.verify_stripe_signature(body, signature)
     assert not ca.verify_stripe_signature(body + b"x", signature)
     assert not ca.verify_stripe_signature(body, "t=1,v1=deadbeef")
+
+
+def test_founding_eur_price_maps_to_solo(tmp_path, env_vars):
+    ca = _load_activate(tmp_path)
+    assert ca.PRICE_TIER[FOUNDING_SOLO_EUR_PRICE] == "solo"
 
 
 def test_stripe_signature_rejects_replay(tmp_path, env_vars):

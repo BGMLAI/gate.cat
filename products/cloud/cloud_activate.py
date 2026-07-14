@@ -44,6 +44,7 @@ STRIPE_SIG_TOLERANCE = 300
 ISSUED = os.environ.get("CLOUD_ISSUED_LOG", "/opt/bgml/gatecat-cloud/issued.jsonl")
 PRICE_TIER = {
     "price_1Tr0na2Va7XV3fWYCU40u4ZT": "solo",   # gate.cat Cloud Solo $9/mo (legacy)
+    "price_1Tt2AB2Va7XV3fWYfJL9XCsW": "solo",   # gate.cat Cloud Solo €9/mo founding
     "price_1Tr0nc2Va7XV3fWYnUa29lL1": "team",   # gate.cat Cloud Team $199/mo (legacy)
     "price_1Tssxx2Va7XV3fWYp5TdkpEI": "solo",   # gate.cat Cloud Solo €19/mo
     "price_1Tssxx2Va7XV3fWYfsmO8kCS": "team",   # gate.cat Cloud Team €149/mo
