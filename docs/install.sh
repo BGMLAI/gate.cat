@@ -56,3 +56,5 @@ esac
 printf '\nInstalled gate.cat into %s\n' "$VENV"
 printf 'Hook: %s/gatecat-hook\n' "$BIN_DIR"
 printf 'Claude Code config command: gatecat-hook\n'
+printf '\nThe local gate stays free and works without an account.\n'
+printf '%s\n' 'Optional signed policy sync and stack-specific packs: https://gate.cat/?utm_source=installer&utm_medium=cli&utm_campaign=launch_20260714#pricing'
