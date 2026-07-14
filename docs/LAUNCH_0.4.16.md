@@ -48,16 +48,21 @@ benign commands that get blocked. Those become regression tests.
 
 ## X / Bluesky / Mastodon
 
-I shipped gate.cat 0.4.16: a free, local veto layer for AI coding agents.
+gate.cat 0.4.16 is a free local veto for AI coding agents: 71 default policy
+walls, Apache-2.0.
 
-71 default policy walls. 1,863 tests. CI on Python 3.11–3.13. The bypass suite
-publishes its own gap.
+Install:
+`python -m pip install gate-cat`
 
-Safe two-step installer (download, inspect, then run): https://gate.cat
+Or inspect first:
+https://raw.githubusercontent.com/BGMLAI/gate.cat/master/install.sh
 
-Unmatched means unchecked — not “safe.”
+Unmatched means unchecked—not safe.
 
-https://gate.cat
+> X copy note: use the PyPI-normalized `gate-cat` spelling in commands. Writing
+> `gate.cat` after `pip install` makes X auto-link the package name to the
+> homepage and can turn the installer CTA into a second, misleading homepage
+> link.
 
 ## LinkedIn
 
