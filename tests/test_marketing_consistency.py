@@ -41,3 +41,22 @@ def test_claude_design_landing_uses_the_live_stripe_offer():
     assert "pip install gate.cat" not in landing
     assert "curl -fsSL https://gate.cat/install.sh" in landing
     assert "sh /tmp/gatecat-install.sh" in landing
+
+
+def test_landing_tracks_cookieless_funnel_events():
+    landing = (ROOT / "docs" / "index.html").read_text()
+
+    for event in (
+        "page_view",
+        "install_copy",
+        "checkout_click",
+        "github_click",
+        "pypi_click",
+    ):
+        assert f'track("{event}"' in landing
+
+    assert "navigator.sendBeacon" in landing
+    assert "utm_source" in landing
+    assert "utm_medium" in landing
+    assert "utm_campaign" in landing
+    assert "document.cookie" not in landing
