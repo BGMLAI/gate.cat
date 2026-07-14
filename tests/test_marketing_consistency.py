@@ -33,7 +33,8 @@ def test_claude_design_landing_uses_the_live_stripe_offer():
     landing = (ROOT / "docs" / "index.html").read_text()
 
     assert "your agent runs shell commands" in landing
-    assert "https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09" in landing
+    assert "https://buy.stripe.com/14AaEQ6BncTmctGbrU67S0f" in landing
     assert landing.count("https://buy.stripe.com/") == 6
     assert "lemonsqueezy.com" not in landing
-    assert "€9" not in landing
+    assert "start solo · €9" in landing
+    assert "founding price — locked for life, then €19" in landing
