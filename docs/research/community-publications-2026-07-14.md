@@ -1,13 +1,13 @@
 # Community publications — 2026-07-14
 
-Scope: 70 additional, thread-specific contributions for the gate.cat launch. All entries were submitted and verified after publication. No duplicated copy was used.
+Scope: 70 thread-specific contributions plus one Cursor Discord showcase post for the gate.cat launch. All entries were submitted and verified after publication. No duplicated copy was used.
 
 ## Distribution
 
 - GitHub: 65 comments
 - Reddit: 2 comments
 - LinkedIn: 3 comments
-- Discord: Cursor server join remains at hCaptcha; no CAPTCHA interaction was attempted without explicit confirmation.
+- Discord: 1 verified Cursor `#showcase` post
 
 ## Publication ledger
 
@@ -81,12 +81,14 @@ Scope: 70 additional, thread-specific contributions for the gate.cat launch. All
 68. https://github.com/google-gemini/gemini-cli/issues/28278#issuecomment-4964337492
 69. https://github.com/google-gemini/gemini-cli/issues/28277#issuecomment-4964337482
 70. https://github.com/google-gemini/gemini-cli/issues/27374#issuecomment-4964337447
+71. Discord — Cursor `#showcase`, “gate.cat — fail-closed veto for destructive Cursor agent commands”: https://discord.com/channels/1074847526655643750/1351160086432845864/threads/1526507410502582412
 
 ## Verification
 
 - GitHub API returned a permalink for every comment.
 - Reddit comments appeared in the rendered thread after submission.
 - LinkedIn comment editors cleared after submission and each submitted text appeared once in the rendered result.
+- Discord rendered the new showcase thread with its title, screenshot, copy, and single gate.cat link.
 - No external thread received duplicate text.
 
 ## X correction — 2026-07-14
