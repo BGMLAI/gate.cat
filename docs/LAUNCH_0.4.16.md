@@ -12,6 +12,25 @@ Every post must preserve the product boundary: gate.cat is certain only about
 what it blocks. An unmatched action is unchecked, not verified safe. The local
 gate is free and Apache-2.0; Cloud is optional.
 
+## Production landing delivery — critical
+
+`https://gate.cat` is currently served by Nginx from the VPS file
+`/opt/bgml/static/gatecat/index.html`. GitHub Pages builds from `master:/docs`,
+but it is only a mirror and **does not deploy the public domain**.
+
+For every landing change:
+
+1. merge the reviewed `docs/index.html` change to `master`;
+2. back up the current VPS file;
+3. copy the merged `docs/index.html` to
+   `/opt/bgml/static/gatecat/index.html`;
+4. verify that the public response SHA-256 equals the merged artifact;
+5. verify the rendered public page in a browser, including installer commands
+   and checkout URLs.
+
+Never report a landing deployment complete from the GitHub Pages workflow
+alone. The 2026-07-14 regression was caused by drift between these two copies.
+
 ## Show HN
 
 **Title:** Show HN: gate.cat – a local veto layer for AI coding agents
