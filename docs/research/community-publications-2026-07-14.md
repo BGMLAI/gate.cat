@@ -142,10 +142,13 @@ cookies or client IP addresses.
     - tracked destination: `https://gate.cat/?utm_source=linkedin&utm_medium=social&utm_campaign=launch_20260714`
 74. Cursor Discord `#showcase` — installer, price, and measurement update in the existing gate.cat thread: https://discord.com/channels/1074847526655643750/1526507410502582412/1526521040803725392
     - tracked destination: `https://gate.cat/?utm_source=discord&utm_medium=community&utm_campaign=launch_20260714`
+75. GitHub Discussion #12 — paid-layer clarification and direct offer follow-up: https://github.com/BGMLAI/gate.cat/discussions/12#discussioncomment-17634292
+    - tracked destination: `https://gate.cat/?utm_source=github&utm_medium=discussion&utm_campaign=launch_20260714`
 
-All three were verified in the rendered service UI after submission. The X and
+All four were verified in the rendered service UI or GitHub API after submission. The X and
 LinkedIn URLs are direct post permalinks. The Discord message ID was read from
 the rendered message record and assembled into Discord's canonical message URL.
+The GitHub URL is the canonical discussion-comment permalink returned by the API.
 
 ## YouTube Short — prepared, upload pending (2026-07-14)
 
