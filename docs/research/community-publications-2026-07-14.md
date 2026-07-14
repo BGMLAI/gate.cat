@@ -96,19 +96,19 @@ Requested expansion: 10 additional, thread-specific Reddit comments across disti
 ### Published and verified
 
 1. r/ClaudeCode — fabricated user approval / self-authorization failure: https://www.reddit.com/r/ClaudeCode/comments/1uvuoto/comment/oxfhowj/
+2. r/ClaudeCoding — risks of `--dangerously-skip-permission`: https://www.reddit.com/r/ClaudeCoding/comments/1uvj4b7/comment/oxfn7b3/
 
 ### Prepared drafts awaiting Reddit retry
 
-Reddit accepted the first comment, then returned `Server error. Try again later.` for subsequent submissions. The following nine unique drafts remain saved in their respective Reddit composers and are scheduled for paced retry; none is counted as published until a rendered comment permalink is verified.
+Reddit currently accepts approximately one comment per retry window, then returns `Server error. Try again later.` for the next submission. The following eight unique drafts remain saved in their respective Reddit composers and are scheduled for paced retry; none is counted as published until a rendered comment permalink is verified.
 
 1. r/AI_Agents — coding-agent transcripts retaining API keys: https://www.reddit.com/r/AI_Agents/comments/1uvq8kj/if_youre_new_to_coding_agents_they_keep_a_diary/
-2. r/ClaudeCoding — risks of `--dangerously-skip-permission`: https://www.reddit.com/r/ClaudeCoding/comments/1uvj4b7/tldr_how_dangerous_is_running_claude_code_with/
-3. r/ClaudeWorkflows — guardrails, watchdogs, and kill switches: https://www.reddit.com/r/ClaudeWorkflows/comments/1uvygpc/workflow_hybrid_ai_automation_guardrails/
-4. r/ClaudeWorkflows — multi-agent deployment and social reporting: https://www.reddit.com/r/ClaudeWorkflows/comments/1uvyhhp/workflow_automated_web_game_management_with/
-5. r/vibecoding — local multi-account agent orchestrator: https://www.reddit.com/r/vibecoding/comments/1uvzpqq/i_vibecoded_a_local_claude_agent_orchestrator_and/
-6. r/ClaudeWorkflows — screenshot ingestion on a headless server: https://www.reddit.com/r/ClaudeWorkflows/comments/1uvyh7h/workflow_claude_code_skill_for_seamless/
-7. r/claudeskills — persistent cross-repository context: https://www.reddit.com/r/claudeskills/comments/1uvvj6j/got_tired_of_reexplaining_my_codebase_to_every/
-8. r/sideprojects — self-hosted Claude Code transcript viewer: https://www.reddit.com/r/sideprojects/comments/1uvk3h2/i_built_a_selfhosted_viewer_for_claude_code/
-9. r/openclaw — Control UI, temporary access, and queued approvals: https://www.reddit.com/r/openclaw/comments/1uvza23/openclaw_v202671_major_control_ui_onboarding/
+2. r/ClaudeWorkflows — guardrails, watchdogs, and kill switches: https://www.reddit.com/r/ClaudeWorkflows/comments/1uvygpc/workflow_hybrid_ai_automation_guardrails/
+3. r/ClaudeWorkflows — multi-agent deployment and social reporting: https://www.reddit.com/r/ClaudeWorkflows/comments/1uvyhhp/workflow_automated_web_game_management_with/
+4. r/vibecoding — local multi-account agent orchestrator: https://www.reddit.com/r/vibecoding/comments/1uvzpqq/i_vibecoded_a_local_claude_agent_orchestrator_and/
+5. r/ClaudeWorkflows — screenshot ingestion on a headless server: https://www.reddit.com/r/ClaudeWorkflows/comments/1uvyh7h/workflow_claude_code_skill_for_seamless/
+6. r/claudeskills — persistent cross-repository context: https://www.reddit.com/r/claudeskills/comments/1uvvj6j/got_tired_of_reexplaining_my_codebase_to_every/
+7. r/sideprojects — self-hosted Claude Code transcript viewer: https://www.reddit.com/r/sideprojects/comments/1uvk3h2/i_built_a_selfhosted_viewer_for_claude_code/
+8. r/openclaw — Control UI, temporary access, and queued approvals: https://www.reddit.com/r/openclaw/comments/1uvza23/openclaw_v202671_major_control_ui_onboarding/
 
 Retry automation: `doko-cz-publikacje-reddit-gate-cat` (15-minute heartbeat attached to the launch task). Completion criterion: 10/10 direct Reddit comment permalinks recorded here, followed by GitHub issue/PR and Linear handoff updates.
