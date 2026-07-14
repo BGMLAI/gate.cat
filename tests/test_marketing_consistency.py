@@ -27,3 +27,13 @@ def test_readme_exposes_a_direct_paid_path():
     assert "https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c" in readme
     assert "https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d" in readme
     assert "https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e" in readme
+
+
+def test_claude_design_landing_uses_the_live_stripe_offer():
+    landing = (ROOT / "docs" / "index.html").read_text()
+
+    assert "your agent runs shell commands" in landing
+    assert "https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09" in landing
+    assert landing.count("https://buy.stripe.com/") == 6
+    assert "lemonsqueezy.com" not in landing
+    assert "€9" not in landing
