@@ -62,3 +62,9 @@ def test_landing_tracks_cookieless_funnel_events():
     assert "utm_medium" in landing
     assert "utm_campaign" in landing
     assert "document.cookie" not in landing
+
+
+def test_landing_html_cannot_keep_stale_install_copy():
+    nginx_site = (ROOT / "ops" / "nginx" / "gatecat.site.conf").read_text()
+
+    assert 'add_header Cache-Control "no-cache, no-store, must-revalidate" always;' in nginx_site
