@@ -1,0 +1,21 @@
+[1:v]fps=30,scale=1000:-2:flags=lanczos,setsar=1[demo];
+[0:v]drawbox=x=40:y=570:w=1000:h=560:color=0x151512:t=fill,
+drawbox=x=40:y=570:w=1000:h=560:color=0xCBDD1A:t=4[base];
+[base][demo]overlay=x=(W-w)/2:y=640:shortest=0[screen];
+[screen]
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='gate.cat':fontcolor=0xCBDD1A:fontsize=54:x=54:y=50,
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='FAIL-CLOSED ACTION VETO':fontcolor=0xA5A59B:fontsize=25:x=56:y=120,
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='YOUR AI AGENT CAN TALK':fontcolor=white:fontsize=62:x=(w-text_w)/2:y=220:enable='between(t,0,4)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='PAST A WARNING.':fontcolor=0xFF3347:fontsize=74:x=(w-text_w)/2:y=310:enable='between(t,0,4)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='DETERMINISTIC VETO.':fontcolor=0xCBDD1A:fontsize=72:x=(w-text_w)/2:y=230:enable='between(t,4,14)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='BEFORE EXECUTION.':fontcolor=white:fontsize=68:x=(w-text_w)/2:y=320:enable='between(t,4,14)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='178 / 178':fontcolor=0xCBDD1A:fontsize=104:x=(w-text_w)/2:y=200:enable='between(t,14,20)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='destructive cases blocked':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=330:enable='between(t,14,20)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='local  |  fail-closed  |  open source':fontcolor=0xA5A59B:fontsize=32:x=(w-text_w)/2:y=405:enable='between(t,14,20)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='INSTALL SAFELY':fontcolor=0xCBDD1A:fontsize=92:x=(w-text_w)/2:y=220:enable='between(t,20,24)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:text='gate.cat':fontcolor=white:fontsize=72:x=(w-text_w)/2:y=340:enable='between(t,20,24)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='download  ->  inspect  ->  run':fontcolor=0xA5A59B:fontsize=36:x=(w-text_w)/2:y=440:enable='between(t,20,24)',
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='The model proposes. The gate decides.':fontcolor=white:fontsize=40:x=(w-text_w)/2:y=1270,
+drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='No model call in the blocking path.':fontcolor=0xA5A59B:fontsize=32:x=(w-text_w)/2:y=1340,
+drawbox=x=40:y=1780:w=1000:h=8:color=0x35352F:t=fill,
+drawbox=x=40:y=1780:w='1000*t/24':h=8:color=0xCBDD1A:t=fill[v]

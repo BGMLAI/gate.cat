@@ -128,3 +128,33 @@ Reddit currently accepts approximately one comment per retry window, then return
 8. r/openclaw — Control UI, temporary access, and queued approvals: https://www.reddit.com/r/openclaw/comments/1uvza23/openclaw_v202671_major_control_ui_onboarding/
 
 Retry automation: `doko-cz-publikacje-reddit-gate-cat` (15-minute heartbeat attached to the launch task). Completion criterion: 10/10 direct Reddit comment permalinks recorded here, followed by GitHub issue/PR and Linear handoff updates.
+
+## Measured owned-channel launch — 2026-07-14
+
+The following publications were made after the cookieless funnel endpoint went
+live. Each channel uses a separate UTM source; the landing records page views,
+installer-copy actions, checkout clicks, GitHub clicks, and PyPI clicks without
+cookies or client IP addresses.
+
+72. X — deterministic-veto launch post: https://x.com/Bobby_prv/status/2076960946178736285
+    - tracked destination: `https://gate.cat/?utm_source=x&utm_medium=social&utm_campaign=launch_20260714`
+73. LinkedIn — founder post, with tracked landing URL in the first comment: https://www.linkedin.com/feed/update/urn:li:share:7482727482018742272
+    - tracked destination: `https://gate.cat/?utm_source=linkedin&utm_medium=social&utm_campaign=launch_20260714`
+74. Cursor Discord `#showcase` — installer, price, and measurement update in the existing gate.cat thread: https://discord.com/channels/1074847526655643750/1526507410502582412/1526521040803725392
+    - tracked destination: `https://gate.cat/?utm_source=discord&utm_medium=community&utm_campaign=launch_20260714`
+
+All three were verified in the rendered service UI after submission. The X and
+LinkedIn URLs are direct post permalinks. The Discord message ID was read from
+the rendered message record and assembled into Discord's canonical message URL.
+
+## YouTube Short — prepared, upload pending (2026-07-14)
+
+- Asset: `docs/demos/gatecat-short-2026-07-14.mp4`
+- Format: 1080×1920, 24 seconds, H.264, caption-first/no audio
+- Reproducible edit: `docs/demos/gatecat-short-filter.txt`
+- Planned tracked destination: `https://gate.cat/?utm_source=youtube&utm_medium=shorts&utm_campaign=launch_20260714`
+- Channel verified in YouTube Studio: `Bogumił Jankiewicz` (`UCCdijwntr6PvzobXgDTVKPg`)
+
+The upload is not counted as a publication until the public YouTube permalink is
+verified. The current blocker is Chrome extension access to the local MP4 file;
+the rendered video and channel session are otherwise ready.
