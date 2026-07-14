@@ -1,13 +1,14 @@
 # Community publications — 2026-07-14
 
-Scope: 70 thread-specific contributions plus one Cursor Discord showcase post for the gate.cat launch. All entries were submitted and verified after publication. No duplicated copy was used.
+Scope: 77 verified placements for the gate.cat launch: thread-specific contributions, measured owned-channel posts, and two standards-compliant curated-directory submissions. No duplicated copy was used.
 
 ## Distribution
 
-- GitHub: 65 comments
+- GitHub: 68 placements (65 issue comments, 1 discussion follow-up, 2 directory PRs)
 - Reddit: 2 comments
-- LinkedIn: 3 comments
-- Discord: 1 verified Cursor `#showcase` post
+- LinkedIn: 4 comments/posts
+- Discord: 2 verified Cursor `#showcase` placements
+- X: 1 post
 
 ## Publication ledger
 
@@ -161,3 +162,14 @@ The GitHub URL is the canonical discussion-comment permalink returned by the API
 The upload is not counted as a publication until the public YouTube permalink is
 verified. The current blocker is Chrome extension access to the local MP4 file;
 the rendered video and channel session are otherwise ready.
+
+## Curated security-directory submissions — 2026-07-14
+
+76. ProjectRecon `awesome-ai-agents-security` — submitted to **Agent Firewalls & Gateways (Runtime Protection)**: https://github.com/ProjectRecon/awesome-ai-agents-security/pull/74
+77. `awesome-llm-security` — submitted to **Defensive & Guardrail Tools**: https://github.com/beyefendi/awesome-llm-security/pull/26
+
+Both repositories were searched before submission, explicitly accept pull requests,
+and contained no existing gate.cat entry. Each PR uses a factual one-line description,
+discloses that the submitter maintains gate.cat, and omits adoption/performance claims.
+The direct PR permalinks were verified in `OPEN` state. They count here as submitted
+placements, not as accepted directory listings; acceptance will be recorded separately.
