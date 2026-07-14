@@ -69,7 +69,7 @@ thing: replayed <strong>1,085,159 unique real agent commands</strong> from 5 pub
 through the full gate. It missed <strong>0</strong> of the real dangers. It also does <strong>not</strong>
 cover every bypass shape — and instead of hiding the ones it misses, we print
 them. This post includes that list.</p>
-<p><code>pip install gate-cat</code> · Apache-2.0 · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a></p>
+<p><a href="https://gate.cat/#install">inspectable two-step installer</a> · Apache-2.0 · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a></p>
 <hr />
 <h2>Why this exists</h2>
 <p>The incidents are real and specific. An AutoGen agent ran <code>terraform destroy</code> in
@@ -137,11 +137,12 @@ the blast radius but can't tell you what the agent <em>tried</em>, and won't sto
 <code>terraform destroy</code> that has real credentials inside the sandbox. They're
 complements.</p>
 <h2>Reproduce it on your own agents (60 seconds, local, no signup)</h2>
-<pre><code class="language-bash">pip install gate-cat
+<pre><code class="language-bash">python3 -m venv .venv
+.venv/bin/python -m pip install gate-cat
 
 # 1) the bypass suite, straight from the installed package — real output,
 #    reproduced 2026-07-11 on gate.cat 0.4.10:
-python3 -c &quot;from gatecat.integrations import bypass_suite as b; print(b.metrics(b.run()))&quot;
+.venv/bin/python -c &quot;from gatecat.integrations import bypass_suite as b; print(b.metrics(b.run()))&quot;
 # -&gt; {'claimed_dangers': 71, 'caught': 71, 'catch_rate': 1.0, 'benign': 52,
 #     'false_blocks': 1, 'false_block_rate': 0.0192, 'known_gaps': 1}
 
@@ -177,7 +178,7 @@ analyzer, the hook, the bypass map are all open. Poke holes in it:
 <a href="https://github.com/BGMLAI/gate.cat/issues/new?template=veto-story.yml">report a veto story or a bypass</a>.</em></p>
 <div class="cta">
 <p><strong>Put the wall in front of your own agent</strong> — free, 60 seconds, one line to uninstall.</p>
-<a class="btn" href="https://gate.cat/#install">pip install gate.cat &rarr;</a>
+<a class="btn" href="https://gate.cat/#install">install safely &rarr;</a>
 </div>
 </article>
 <footer><div class="wrap">gate.cat &middot; fail-closed action-veto for AI agents &middot; Apache 2.0 &middot; <a href="https://github.com/BGMLAI/gate.cat">GitHub</a></div></footer>
