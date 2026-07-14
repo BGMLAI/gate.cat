@@ -56,6 +56,8 @@ def test_landing_tracks_cookieless_funnel_events():
         assert f'track("{event}"' in landing
 
     assert "navigator.sendBeacon" in landing
+    assert 'cache: "no-store"' in landing
+    assert "(new Image()).src = url" in landing
     assert "utm_source" in landing
     assert "utm_medium" in landing
     assert "utm_campaign" in landing

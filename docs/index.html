@@ -239,9 +239,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         const url = `/events?${data.toString()}`;
         try {
-          if (navigator.sendBeacon) navigator.sendBeacon(url, "");
-          else fetch(url, { method: "POST", keepalive: true, credentials: "omit" });
-        } catch (_) {}
+          fetch(url, {
+            method: "POST",
+            keepalive: true,
+            credentials: "omit",
+            cache: "no-store",
+          }).catch(() => {
+            if (navigator.sendBeacon) navigator.sendBeacon(url, "");
+            else (new Image()).src = url;
+          });
+        } catch (_) {
+          try { (new Image()).src = url; } catch (_) {}
+        }
       };
 
       track("page_view");
