@@ -270,11 +270,20 @@ agent with shell access can't delete or rewrite (a local log is inside its
 blast radius). Launch prices: **Solo €19/mo · Team €149/mo flat (up to 10
 machines) · Business €399/mo**. Stripe checkout is live with automatic
 activation and subscription lifecycle handling. The local gate remains
-free forever. [Start Solo (€19/mo)](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09)
+free forever.
+[Start Solo (€19/mo)](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09) ·
+[Team — €149/mo flat, up to 10 machines](https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a) ·
+[Business (€399/mo)](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) —
 or buy a one-time €29 policy pack:
 [Fintech](https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c) ·
 [PaaS](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) ·
 [HTTP-API Breadth](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e).
+
+**Running agents across a team?** One rogue agent's blast radius is the whole
+team's. The team plan adds a shared off-machine veto history no single agent can
+delete, fleet alerts, and signed policy sync — walked through on the dedicated
+page: **[the team plan → gate.cat/teams.html](https://gate.cat/teams.html)**.
+
 Full boundaries and tier details: [PRICING.md](PRICING.md).
 
 ## Verify the numbers
