@@ -286,6 +286,11 @@ page: **[the team plan → gate.cat/teams.html](https://gate.cat/teams.html)**.
 
 Full boundaries and tier details: [PRICING.md](PRICING.md).
 
+**Teach AI coding, or write a dev newsletter?** There's a partner program —
+30% recurring, for the lifetime of the subscription, on every paid plan someone
+starts from your link. The core stays free, so you recommend real value, not a
+paywall: **[partner program → gate.cat/partners.html](https://gate.cat/partners.html)**.
+
 ## Verify the numbers
 
 Every public number traces to a row in [FACTS.md](FACTS.md) (claim → source →
