@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gate.cat — 20-second veto demo</title>
+<style>
+  html,body{margin:0;background:#010409;color:#c9d1d9;
+    font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:860px;margin:0 auto;padding:40px 20px 64px;text-align:center}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+  p.sub{color:#7d8590;margin:0 0 28px;font-size:16px}
+  .frame{width:100%;max-width:780px;margin:0 auto;display:block;
+    border-radius:16px;box-shadow:0 24px 60px -20px rgba(0,0,0,.8)}
+  .cta{margin-top:30px}
+  code{background:#161b22;border:1px solid #232a33;border-radius:8px;
+    padding:9px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    color:#e6edf3;font-size:16px;display:inline-block}
+  .note{color:#586069;font-size:13px;margin-top:22px}
+</style>
+<div class="wrap">
+  <h1>Your agent runs shell commands. gate.cat blocks the catastrophic ones — before they run.</h1>
+  <p class="sub">Deterministic, fail-closed. It vetoes <code style="font-size:14px;padding:2px 7px">rm&nbsp;-rf</code>, disk wipes and secret exfil, and gets out of the way for everything safe.</p>
+  <!-- animated SVG embeds as an image: no JS, no external deps -->
+  <img class="frame" src="veto-demo.svg" alt="Terminal demo: agent runs 'rm -rf ~/project', gate.cat vetoes it (DELETE_ANALYZER) before it runs; a benign 'rm build/tmp.log' is allowed.">
+  <div class="cta"><code>pip install gate.cat</code></div>
+  <p class="note">Every line above is real gate.cat engine output. See the live catch log at gate.cat.</p>
+</div>

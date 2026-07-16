@@ -283,6 +283,8 @@ def _decide(command: str) -> int:
         decision = _gate(command)
     except ActionVetoed as exc:
         sys.stderr.write(str(exc) + "\n")  # already ASCII-safe
+        from gatecat._nudge import maybe_nudge_after_veto
+        maybe_nudge_after_veto()  # one-time Team hint; best-effort, post-decision
         return BLOCK
     except SystemExit:
         raise

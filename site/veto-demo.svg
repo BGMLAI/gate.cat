@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 470" width="780" height="470" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" role="img" aria-label="Terminal demo: an AI agent runs 'rm -rf ~/project', gate.cat blocks it before it runs with VETO DELETE_ANALYZER, while a benign 'rm build/tmp.log' is allowed through.">
+  <title>gate.cat blocks a catastrophic agent command before it runs</title>
+  <desc>An AI coding agent tries to run 'rm -rf ~/project'. gate.cat vetoes it (DELETE_ANALYZER) before execution — files stay safe. A harmless 'rm build/tmp.log' is allowed, showing gate.cat is a precise deny-list, not a nag.</desc>
+  <style>
+    /* one 13s loop, all elements gated to their slice; text disappears before restart */
+    .a2   { animation: a2   13s linear infinite; opacity:0 }
+    .aVeto{ animation: aVeto 13s linear infinite; opacity:0 }
+    .aRea { animation: aRea 13s linear infinite; opacity:0 }
+    .aPay { animation: aPay 13s linear infinite; opacity:0 }
+    .aDiv { animation: aDiv 13s linear infinite; opacity:0 }
+    .a45  { animation: a45  13s linear infinite; opacity:0 }
+    .t1   { animation: t1   13s linear infinite; }
+    .t2   { animation: t2   13s linear infinite; }
+    .cur1 { animation: cur1 13s linear infinite, blink 1.05s steps(1) infinite; }
+    .cur2 { animation: cur2 13s linear infinite, blink 1.05s steps(1) infinite; }
+
+    @keyframes a2   {0%,1.5%{opacity:0}3%,94%{opacity:1}96%,100%{opacity:0}}
+    @keyframes aVeto{0%,14%{opacity:0}15.5%,94%{opacity:1}96%,100%{opacity:0}}
+    @keyframes aRea {0%,17%{opacity:0}18.5%,94%{opacity:1}96%,100%{opacity:0}}
+    @keyframes aPay {0%,21%{opacity:0}22.5%,94%{opacity:1}96%,100%{opacity:0}}
+    @keyframes aDiv {0%,32%{opacity:0}33.5%,94%{opacity:1}96%,100%{opacity:0}}
+    @keyframes a45  {0%,44%{opacity:0}45.5%,94%{opacity:1}96%,100%{opacity:0}}
+    /* left-to-right reveal ("typing") */
+    @keyframes t1 {0%,3%{clip-path:inset(0 100% 0 0)}13%,95.4%{clip-path:inset(0 0 0 0)}95.5%,100%{clip-path:inset(0 100% 0 0)}}
+    @keyframes t2 {0%,35%{clip-path:inset(0 100% 0 0)}43%,95.4%{clip-path:inset(0 0 0 0)}95.5%,100%{clip-path:inset(0 100% 0 0)}}
+    /* carets: visible only while their line types */
+    @keyframes cur1{0%,3%{opacity:0}3.01%,13%{opacity:1}13.01%,100%{opacity:0}}
+    @keyframes cur2{0%,35%{opacity:0}35.01%,43%{opacity:1}43.01%,100%{opacity:0}}
+    @keyframes blink{0%,50%{fill-opacity:1}50.01%,100%{fill-opacity:0}}
+  </style>
+
+  <!-- window -->
+  <rect x="8" y="8" width="764" height="454" rx="14" fill="#0d1117" stroke="#232a33" stroke-width="1.5"/>
+  <rect x="8" y="8" width="764" height="42" rx="14" fill="#161b22"/>
+  <rect x="8" y="36" width="764" height="14" fill="#161b22"/>
+  <circle cx="34" cy="29" r="6" fill="#ff5f57"/>
+  <circle cx="56" cy="29" r="6" fill="#febc2e"/>
+  <circle cx="78" cy="29" r="6" fill="#28c840"/>
+  <text x="390" y="34" text-anchor="middle" font-size="14" fill="#7d8590">agent shell — gate.cat armed</text>
+
+  <!-- content -->
+  <g font-size="18">
+    <!-- line 1: agent context (dim) -->
+    <text class="a2" x="34" y="86" fill="#7d8590"># your AI agent is cleaning the workspace…</text>
+
+    <!-- line 2: the catastrophic command (typed) -->
+    <g class="a2">
+      <text x="34" y="120" fill="#3fb950">$</text>
+      <text class="t1" x="52" y="120" fill="#e6edf3">rm -rf <tspan fill="#ff7b72" font-weight="bold">~/project</tspan></text>
+      <rect class="cur1" x="234" y="106" width="9" height="18" fill="#e6edf3"/>
+    </g>
+
+    <!-- the veto -->
+    <rect class="aVeto" x="24" y="140" width="4" height="86" rx="2" fill="#f85149"/>
+    <text class="aVeto" x="40" y="164" font-weight="bold" fill="#f85149">⛔  VETO  [DELETE_ANALYZER]</text>
+    <text class="aRea" x="40" y="192" font-size="15" fill="#9aa4af">deletes ~/project under a protected root — requires a human</text>
+    <text class="aPay" x="40" y="218" font-size="15" fill="#3fb950">↳ blocked <tspan font-weight="bold">before it ran</tspan>. your files are safe.</text>
+
+    <!-- divider: safe work still flows -->
+    <text class="aDiv" x="34" y="272" fill="#7d8590"># meanwhile, safe work is never in the way —</text>
+
+    <!-- benign command: allowed -->
+    <g class="a45">
+      <text x="34" y="306" fill="#3fb950">$</text>
+      <text class="t2" x="52" y="306" fill="#e6edf3">rm build/tmp.log</text>
+      <rect class="cur2" x="196" y="292" width="9" height="18" fill="#e6edf3"/>
+    </g>
+    <text class="a45" x="40" y="336" font-size="15" fill="#3fb950">✓ allowed · removed build/tmp.log</text>
+  </g>
+
+  <!-- footer brand strip -->
+  <rect x="8" y="414" width="764" height="48" rx="14" fill="#0b0f14"/>
+  <rect x="8" y="414" width="764" height="20" fill="#0b0f14"/>
+  <text x="34" y="444" font-size="14" fill="#c9d1d9" font-weight="bold">gate.cat<tspan font-weight="normal" fill="#7d8590"> — fail-closed guard for AI coding agents</tspan></text>
+  <text x="746" y="444" text-anchor="end" font-size="14" fill="#3fb950">pip install gate.cat</text>
+</svg>

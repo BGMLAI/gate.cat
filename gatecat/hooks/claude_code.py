@@ -197,6 +197,8 @@ def main() -> int:
         decision = check_action(SOURCE, action, policies, cwd=cwd, env=env)
     except ActionVetoed as exc:
         print(str(exc), file=sys.stderr)  # already ASCII-safe
+        from gatecat._nudge import maybe_nudge_after_veto
+        maybe_nudge_after_veto()  # one-time Team hint; best-effort, post-decision
         return BLOCK
     except Exception as exc:  # engine crashed mid-evaluation: fail closed
         print(_ascii(f"gate.cat VETO [ENGINE_ERROR]: evaluation failed "
