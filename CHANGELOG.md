@@ -3,6 +3,17 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [0.4.17] -- one-time post-veto Team hint (2026-07-16)
+
+### Added
+- A one-time, opt-out Team hint printed to stderr after the first genuinely
+  enforced veto on a machine. Points to Team plans (off-machine record of vetoes
+  + teammate alerts). Once per machine (`~/.gatecat/.nudged`), silenced by
+  `GATECAT_NO_NUDGE=1` (or `GATECAT_QUIET`). Best-effort and fully outside the
+  veto decision path -- it can never change a verdict or exit code. No policy,
+  recall, or bypass changes.
+
+
 ## [0.4.16] -- full launch consistency + secret-exfil hardening (2026-07-13)
 
 ### Added
