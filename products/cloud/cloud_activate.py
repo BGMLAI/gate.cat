@@ -26,6 +26,29 @@ _spec = _il.spec_from_file_location(
     "cloud_server", os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloud_server.py"))
 cloud_server = _il.module_from_spec(_spec); _spec.loader.exec_module(cloud_server)
 
+# Affiliate / referral tracking (self-hosted commission ledger). Loaded the same
+# spec-based way as cloud_server so it resolves whether cloud_activate is imported
+# as a package module or exec'd from a file path (tests do the latter). Affiliate
+# accrual is ALWAYS best-effort: any failure here must NEVER block activation.
+_aff_spec = _il.spec_from_file_location(
+    "gatecat_affiliate", os.path.join(os.path.dirname(os.path.abspath(__file__)), "affiliate.py"))
+affiliate = _il.module_from_spec(_aff_spec); _aff_spec.loader.exec_module(affiliate)
+
+
+def _affiliate_safe(fn, *args, **kwargs):
+    """Run an affiliate ledger action, swallowing ALL errors. Activation is
+    sacred: the commission ledger is a side-effect that must never raise into
+    the webhook's activation path. On error we log to stderr and continue."""
+    try:
+        return fn(*args, **kwargs)
+    except Exception as exc:  # noqa: BLE001 - deliberately broad; activation-safe
+        try:
+            import sys
+            sys.stderr.write("affiliate ledger error (ignored): %r\n" % (exc,))
+        except Exception:
+            pass
+        return None
+
 # ---------------------------------------------------------------------------
 # PAYMENT CHANNEL SELECTOR (2026-07-12 founder decision).
 # Lemon Squeezy is the DEFAULT sales channel; Stripe is kept behind the selector
@@ -231,15 +254,52 @@ def handle_stripe_event(raw_body: bytes, signature: str,
     obj = ((event.get("data") or {}).get("object") or {})
 
     if event_type == "checkout.session.completed":
-        if obj.get("mode") != "subscription" or obj.get("payment_status") != "paid":
+        if obj.get("payment_status") != "paid":
             return {"ok": True, "ignored": True}
-        was_existing = _already(str(obj.get("id", ""))) is not None
-        try:
-            tier, account, _key = activate(str(obj.get("id", "")))
-        except Exception as exc:
-            return {"ok": False, "error": str(exc)}
-        return {"ok": True, "tier": tier, "account": account,
-                "idempotent": was_existing}
+        mode = obj.get("mode")
+        if mode == "subscription":
+            was_existing = _already(str(obj.get("id", ""))) is not None
+            try:
+                tier, account, _key = activate(str(obj.get("id", "")))
+            except Exception as exc:
+                return {"ok": False, "error": str(exc)}
+            # AFFILIATE (best-effort, never blocks activation). Capture the ref
+            # (subscription_id -> ref) so renewals attribute, then accrue 30% of
+            # this first payment. Ordered capture-then-accrue so the lookup
+            # inside accrue resolves. Wrapped so a ledger failure can't break
+            # the webhook (activation already succeeded above).
+            aff = _affiliate_safe(affiliate.record_referral_stripe, event,
+                                  account or "", tier)
+            _affiliate_safe(affiliate.accrue_from_stripe, event, event_type)
+            return {"ok": True, "tier": tier, "account": account,
+                    "idempotent": was_existing, "affiliate": (aff or {})}
+        if mode == "payment":
+            # One-time pack: no subscription lifecycle to provision here (the
+            # pack fulfiller serves the download). We still book the single 30%
+            # commission immediately if the checkout carried a ref. The referral
+            # is keyed on the session/object id (extract_subscription_id_stripe
+            # falls back to it when there's no subscription).
+            aff = _affiliate_safe(affiliate.record_referral_stripe, event)
+            acc = _affiliate_safe(affiliate.accrue_from_stripe, event, event_type)
+            return {"ok": True, "ignored": True, "mode": "payment",
+                    "affiliate": (acc or aff or {})}
+        return {"ok": True, "ignored": True}
+
+    # Subscription RENEWALS: invoice.paid / invoice.payment_succeeded carry no
+    # client_reference_id -- attribution comes from the stored subscription_id ->
+    # ref map, which is what makes the 30% LIFETIME-recurring. Accrual only; key
+    # provisioning follows the canonical Subscription status below.
+    if event_type in ("invoice.paid", "invoice.payment_succeeded"):
+        acc = _affiliate_safe(affiliate.accrue_from_stripe, event, event_type)
+        return {"ok": True, "ignored": True, "event": event_type,
+                "affiliate": (acc or {})}
+
+    # Refund -> clawback (negative commission). charge.refunded carries the
+    # refunded amount; the subscription is resolved via the stored ref map.
+    if event_type == "charge.refunded":
+        cb = _affiliate_safe(affiliate.clawback_from_stripe, event, event_type)
+        return {"ok": True, "ignored": True, "event": event_type,
+                "affiliate": (cb or {})}
 
     if event_type in ("customer.subscription.updated",
                       "customer.subscription.deleted"):
@@ -281,6 +341,35 @@ def activate_lemonsqueezy(raw_body: bytes, signature: str,
     except Exception:
         return {"ok": False, "error": "bad json"}
     event_name, unique_id, account, variant_id = _ls_extract(payload)
+
+    # ------------------------------------------------------------------
+    # AFFILIATE payment / refund events (do NOT provision or revoke a key --
+    # they only move the commission ledger). Handled here, before the tier
+    # logic, and wrapped so a ledger failure can never break the webhook.
+    # subscription_payment_success  -> 30% accrual (lifetime: ref looked up by
+    #   subscription_id, works on renewals with no custom_data).
+    # subscription_payment_refunded -> negative commission (clawback).
+    # ------------------------------------------------------------------
+    if event_name == "subscription_payment_success":
+        res = _affiliate_safe(affiliate.accrue_commission, payload, event_name)
+        return {"ok": True, "ignored": True, "event": event_name,
+                "affiliate": (res or {})}
+    if event_name in ("subscription_payment_refunded",):
+        res = _affiliate_safe(affiliate.clawback_commission, payload, event_name)
+        return {"ok": True, "ignored": True, "event": event_name,
+                "affiliate": (res or {})}
+    # A cancellation that carries a refund flag/amount also claws back the
+    # commission. A plain cancel (no refund) does NOT -- past paid months are
+    # earned. This does not touch key revocation (that is subscription_expired).
+    if event_name == "subscription_cancelled":
+        _attrs = (payload.get("data") or {}).get("attributes") or {}
+        _refunded = bool(_attrs.get("refunded")) or bool(_attrs.get("refunded_at"))
+        if _refunded:
+            res = _affiliate_safe(affiliate.clawback_commission, payload, event_name)
+            return {"ok": True, "ignored": True, "event": event_name,
+                    "affiliate": (res or {})}
+        return {"ok": True, "ignored": True, "event": event_name}
+
     lifecycle = {"subscription_expired", "subscription_updated"}
     if event_name in lifecycle:
         ident = "ls:" + (unique_id or (account + ":" + variant_id))
@@ -301,6 +390,18 @@ def activate_lemonsqueezy(raw_body: bytes, signature: str,
     tier = ls_variant_tier().get(variant_id)
     if not tier:
         return {"ok": False, "error": f"unmapped variant {variant_id!r}"}
+
+    # AFFILIATE referral capture (best-effort, never blocks activation). Store
+    # subscription_id -> ref_code on this FIRST event so later renewal payments
+    # -- which drop custom_data -- still attribute. Idempotent per subscription.
+    def _capture_referral():
+        ref = affiliate.extract_ref(payload)
+        if not ref:
+            return
+        sub_id = affiliate.extract_subscription_id(payload)
+        affiliate.record_referral(sub_id, ref, account or "", tier)
+    _affiliate_safe(_capture_referral)
+
     ident = "ls:" + (unique_id or (account + ":" + variant_id))
     prev = _already(ident)
     if prev:
@@ -368,12 +469,37 @@ gate.cat cloud verify      # did anything rewrite your local log? off-machine co
 Full boundary: <a href="https://gate.cat/THREAT_MODEL_CLOUD.md">threat model</a>.</p>"""
 
 
+def affiliate_ledger_response(token: str):
+    """Read-only per-code commission totals for MANUAL payouts. Gated by the
+    GATECAT_ADMIN_TOKEN env var. Returns (http_code, body_dict).
+
+    Fail-closed: if the admin token is UNSET, the endpoint refuses (403) rather
+    than exposing the ledger. A wrong/missing token is 401. This holds PII
+    (payout emails live in the affiliates table, not here) so it is admin-only.
+    """
+    admin = os.environ.get("GATECAT_ADMIN_TOKEN", "")
+    if not admin:
+        return 403, {"ok": False, "error": "affiliate ledger disabled "
+                     "(set GATECAT_ADMIN_TOKEN to enable)"}
+    if not token or not hmac.compare_digest(str(token), admin):
+        return 401, {"ok": False, "error": "bad admin token"}
+    try:
+        data = affiliate.ledger()
+    except Exception as exc:  # noqa: BLE001 - report cleanly, never 500 raw
+        return 500, {"ok": False, "error": "ledger read failed: %r" % (exc,)}
+    return 200, {"ok": True, "rate": affiliate.RATE, "by_code": data}
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlparse(self.path)
         if u.path == "/cloud/health":
             self.send_response(200); self.send_header("Content-Type", "application/json")
             self.end_headers(); self.wfile.write(b'{"ok":true}'); return
+        if u.path == "/affiliate/ledger":
+            code, body = affiliate_ledger_response(parse_qs(u.query).get("token", [""])[0])
+            self.send_response(code); self.send_header("Content-Type", "application/json")
+            self.end_headers(); self.wfile.write(json.dumps(body).encode()); return
         if u.path != "/cloud/activate":
             self.send_response(404); self.end_headers(); return
         sid = (parse_qs(u.query).get("session_id", [""])[0])
