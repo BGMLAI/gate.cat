@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My AI agent almost ran rm -rf — how do I stop it? · gate.cat</title>
+<meta name="description" content="An autonomous AI agent can run rm -rf, DROP TABLE or terraform destroy before you can react. gate.cat is a free, deterministic, fail-closed veto that blocks the irreversible command before it executes — a Claude Code hook or a proxy for any local model." />
+<link rel="canonical" href="https://gate.cat/answers/ai-agent-almost-ran-rm-rf.html" />
+<meta property="og:title" content="My AI agent almost ran rm -rf — how do I stop it? · gate.cat" />
+<meta property="og:description" content="An autonomous AI agent can run rm -rf, DROP TABLE or terraform destroy before you can react. gate.cat is a free, deterministic, fail-closed veto that blocks the irreversible command before it executes — a Claude Code hook or a proxy for any local model." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://gate.cat/answers/ai-agent-almost-ran-rm-rf.html" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" href="../img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="answers.css" />
+<script>(function(){try{var t=localStorage.getItem("gatecat-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "gate.cat", "item": "https://gate.cat/"}, {"@type": "ListItem", "position": 2, "name": "Answers", "item": "https://gate.cat/answers/"}, {"@type": "ListItem", "position": 3, "name": "agent almost ran rm -rf", "item": "https://gate.cat/answers/ai-agent-almost-ran-rm-rf.html"}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "my ai agent almost ran <span class=\"tt-keep\">rm -rf</span>. how do I stop it?", "description": "An autonomous AI agent can run rm -rf, DROP TABLE or terraform destroy before you can react. gate.cat is a free, deterministic, fail-closed veto that blocks the irreversible command before it executes \u2014 a Claude Code hook or a proxy for any local model.", "url": "https://gate.cat/answers/ai-agent-almost-ran-rm-rf.html", "author": {"@type": "Organization", "name": "BGML.ai", "url": "https://bgml.ai"}, "publisher": {"@type": "Organization", "name": "gate.cat", "url": "https://gate.cat"}, "about": "AI agent safety, fail-closed action veto, irreversible command prevention"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can't the AI agent just bypass gate.cat?", "acceptedAnswer": {"@type": "Answer", "text": "Not the Claude Code hook: it is a deterministic deny-list that runs before the tool call, outside the model's control flow, and fails closed. The model never sees a decision to argue with. In-process framework adapters are a weaker trust class and are labeled as such."}}, {"@type": "Question", "name": "Will gate.cat block my normal commands?", "acceptedAnswer": {"@type": "Answer", "text": "Rarely. It intervenes on about 0.6% of real commands, measured on a 14.7k-command Claude Code log and a public 8.6k-command SWE-agent corpus. It targets a short list of irreversible shapes, not everyday work."}}, {"@type": "Question", "name": "Does gate.cat work outside Claude Code?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Anything that speaks the OpenAI API \u2014 Codex, GitHub Copilot (BYOK), OpenClaw, Hermes, Antigravity, Ollama, vLLM \u2014 works through the proxy by pointing the agent's base_url at gate.cat. Only Claude Code has a native hook; everything else is proxy-based."}}, {"@type": "Question", "name": "Is it really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The gate, all 38 default policies, the hook, the proxy and the CLI are free forever under Apache 2.0. Safety fixes always land in the free core \u2014 they are never held back for paying users."}}, {"@type": "Question", "name": "What does gate.cat NOT catch?", "acceptedAnswer": {"@type": "Answer", "text": "An action it doesn't match is unchecked, not safe. The bypass suite publishes its open gaps (one today: a runtime-assembled binary name). It is a pattern layer, not a sandbox, and not a fact-checker."}}]}</script>
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="https://gate.cat/"><span class="mk"></span>gate.cat</a>
+  <span class="nav-sp"></span>
+  <a class="nl" href="./">Answers</a>
+  <a class="nl" href="https://gate.cat/#how">How&nbsp;it&nbsp;works</a>
+  <a class="nav-cta" href="https://gate.cat/#install">pip install gate-cat</a>
+  <button class="tog" id="tog" aria-label="Toggle theme">◐</button>
+</div></header>
+<main class="wrap">
+  <nav class="crumb"><a href="https://gate.cat/">gate.cat</a> / <a href="./">answers</a> / agent almost ran rm -rf</nav>
+  <p class="kick">agent safety · irreversible commands</p>
+  <h1>my ai agent almost ran <span class="tt-keep">rm -rf</span>. how do I stop it?</h1>
+  <div class="answer">
+    <div class="lbl">Short answer</div>
+    <p>Put a deterministic wall between the agent and the shell: gate.cat inspects every command <em>before</em> it runs and blocks known-irreversible ones like <code>rm -rf</code>, <code>DROP TABLE</code> and <code>terraform destroy</code>. It fails closed (if in doubt, it stops), runs outside the model's control, and costs nothing.</p>
+    <p>Install it in one line — <code>pip install gate-cat</code> — as a Claude&nbsp;Code hook, or as a proxy in front of any local model.</p>
+  </div>
+  <p class="lede">If an agent <em>almost</em> ran a destroy command, the near-miss is the warning. Next time you may be asleep. The fix is not a better prompt — it's a check the model cannot talk its way past.</p>
+
+<h2>why &ldquo;just tell it not to&rdquo; fails</h2>
+<p>Instructions in a system prompt are a request, not a rule. The author of one real agent framework put it plainly after an agent racked up a <b>$106,000+</b> bill on the wrong cloud account: <em>&ldquo;Prompt-based rules are documentation. They are not enforcement.&rdquo;</em> A model that is told &ldquo;never delete production&rdquo; can still emit the delete — because nothing outside the model is checking.</p>
+<p>This is not hypothetical. An AI coding agent <b>wiped a live production database</b> during a code freeze, right after being told not to. Others have deleted a user's home directory with <code>rm -rf ~</code> and removed thousands of files in a single run.</p>
+
+<h2>what actually stops it: a fail-closed veto</h2>
+<p>gate.cat sits <em>below</em> the model. When the agent tries to run a command, gate.cat matches it against a deterministic deny-list of <b>38 default policies</b> covering the irreversible shapes — recursive delete, disk wipe, database drop, cloud teardown, key/IAM destruction, backup deletion, force-push, and more. A match is blocked and the agent is told why. No match still runs — <b>an unchecked action is &ldquo;not matched&rdquo;, never &ldquo;proven safe&rdquo;.</b></p>
+<p>Two properties make this different from a smarter prompt:</p>
+<ul>
+  <li><b>Deterministic &amp; out-of-band.</b> The check is a regex deny-list running in a Claude&nbsp;Code <code>PreToolUse</code> hook — outside the model's reasoning, so the agent can't reason its way around it.</li>
+  <li><b>Fail-closed.</b> If the gate can't evaluate a command with confidence, it stops rather than waves it through. Safety defaults to &ldquo;no.&rdquo;</li>
+</ul>
+
+<h2>what a block looks like</h2>
+<div class="term"><span class="g"># agent tries to clean up a folder…</span>
+<span class="p">$</span> rm -rf /srv/app
+<span class="r">VETO [FS_DESTROY]</span> matched /\brm\s+-[a-z]*r[a-z]*f/ — recursive force delete
+  &#8226; irreversible, no confirmation, unattended run
+  &#8226; blocked before execution &#183; exit 2
+<span class="g"># the command never reached the shell.</span></div>
+
+<h2>set it up (one line, ~60 seconds)</h2>
+<ol>
+  <li><code>pip install gate-cat</code></li>
+  <li><b>Claude&nbsp;Code:</b> add gate.cat as a <code>PreToolUse</code> hook in <code>.claude/settings.json</code> (the README has the two-line snippet). This is a native hook — the strongest integration.</li>
+  <li><b>Any local model</b> (Ollama, vLLM, LM&nbsp;Studio) or any OpenAI-API agent: point the agent's <code>base_url</code> at the gate.cat proxy. Every tool call passes through the same veto.</li>
+</ol>
+
+<div class="note"><b>Honest limit.</b> gate.cat is a pattern layer, not a sandbox — it reads the command, it does not contain the process. Its bypass suite publishes its own open gaps (one today: a runtime-assembled binary name). For a real blast-radius floor, run the agent inside an OS sandbox <em>and</em> keep the gate in front — the two catch different things. gate.cat is also not a fact-checker; it stops irreversible actions, not wrong ones.</div>
+
+  <h2>frequently asked</h2>
+  <div class="faq">
+    <details><summary>Can&#x27;t the AI agent just bypass gate.cat?</summary><p>Not the Claude Code hook: it is a deterministic deny-list that runs before the tool call, outside the model's control flow, and fails closed. The model never sees a decision to argue with. In-process framework adapters are a weaker trust class and are labeled as such.</p></details>
+    <details><summary>Will gate.cat block my normal commands?</summary><p>Rarely. It intervenes on about 0.6% of real commands, measured on a 14.7k-command Claude Code log and a public 8.6k-command SWE-agent corpus. It targets a short list of irreversible shapes, not everyday work.</p></details>
+    <details><summary>Does gate.cat work outside Claude Code?</summary><p>Yes. Anything that speaks the OpenAI API — Codex, GitHub Copilot (BYOK), OpenClaw, Hermes, Antigravity, Ollama, vLLM — works through the proxy by pointing the agent's base_url at gate.cat. Only Claude Code has a native hook; everything else is proxy-based.</p></details>
+    <details><summary>Is it really free?</summary><p>Yes. The gate, all 38 default policies, the hook, the proxy and the CLI are free forever under Apache 2.0. Safety fixes always land in the free core — they are never held back for paying users.</p></details>
+    <details><summary>What does gate.cat NOT catch?</summary><p>An action it doesn't match is unchecked, not safe. The bypass suite publishes its open gaps (one today: a runtime-assembled binary name). It is a pattern layer, not a sandbox, and not a fact-checker.</p></details>
+  </div>
+
+  <section class="cta">
+  <h2>put a leash on your agent — 60 seconds</h2>
+  <p class="lede">The gate, all 38 default policies, the Claude&nbsp;Code hook and the proxy are free forever (Apache&nbsp;2.0). No account, no daemon, no telemetry.</p>
+  <div class="install"><span class="p">$</span>&nbsp;pip install gate-cat</div>
+  <div class="cap" id="cap-answer-rmrf">
+  <form class="cap-form" id="cf-answer-rmrf">
+    <input id="ce-answer-rmrf" type="email" placeholder="you@company.com" required autocomplete="email" aria-label="Your email" />
+    <button type="submit">Get &ldquo;Veto Catches&rdquo;</button>
+  </form>
+  <p class="cap-note">One email when there's a catch worth showing: a real irreversible command an agent tried, and how the wall stopped it. Opt-in, no spam, no telemetry. The gate itself is free.</p>
+  <p class="cap-done">&#10003; you're on the list — first catch lands soon.</p>
+</div>
+</section>
+
+  <h2>keep reading</h2>
+  <div class="related">
+    <a class="rcard" href="claude-code-deleted-my-file.html"><div class="q">Claude Code deleted my files — recovery &amp; prevention</div><div class="a">What to try first, and how to stop the next deletion before it runs.</div></a>
+    <a class="rcard" href="secure-mcp-server.html"><div class="q">How do I secure an MCP server against destructive tool calls?</div><div class="a">Put a fail-closed veto in front of the tools, not inside the model.</div></a>
+    <a class="rcard" href="audit-evidence-for-ai-agent-actions.html"><div class="q">How do I get an audit trail of what my AI agent did?</div><div class="a">A local, tamper-evident log of every irreversible action, for free.</div></a>
+  </div>
+</main>
+<footer><div class="foot-in">
+  <span>gate.cat — fail-closed action-veto for AI agents · Apache 2.0</span>
+  <span><a href="https://gate.cat/">Home</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://gate.cat/teams.html" id="lnk-teams-foot">For teams</a> · <a href="https://gate.cat/#packs">Policy Packs</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+</div></footer>
+<script>
+(function(){var r=document.getElementById('tog');if(r)r.addEventListener('click',function(){var d=document.documentElement,n=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',n);try{localStorage.setItem('gatecat-theme',n);}catch(e){}});})();
+(function(){
+  var forms=[].slice.call(document.querySelectorAll('.cap-form'));
+  forms.forEach(function(f){
+    var cap=f.closest('.cap'),email=f.querySelector('input'),btn=f.querySelector('button');
+    var ref=new URLSearchParams(location.search).get('ref')||cap.id.replace('cap-','answer-')||'';
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()))return;
+      btn.disabled=true;btn.textContent='…';
+      fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email.value.trim(),ref:(cap.id+' '+ref).slice(0,120)})})
+      .then(function(x){return x.json();}).then(function(){cap.classList.add('done');})
+      .catch(function(){btn.disabled=false;btn.textContent='Retry';});
+    });
+  });
+})();
+</script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   Mirrors the capture on the main landing so a creator link like
+   gate.cat/answers/<page>.html?ref=CODE attributes commission at checkout:
+   1) read ?ref=CODE; store cookie gc_ref (90d, SameSite=Lax) at path=/,
+      so the main site sees the ref when the visitor buys.
+   2) also carry ?ref onto same-site onward links (belt-and-suspenders).
+   Never breaks the page. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+    var ids = ["lnk-teams", "lnk-teams-foot"];
+    for (var i = 0; i < ids.length; i++) {
+      var a = document.getElementById(ids[i]);
+      if (!a) { continue; }
+      var href = a.getAttribute("href");
+      if (!href || href.indexOf("ref=") !== -1) { continue; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + "ref=" + encodeURIComponent(ref));
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+</body>
+</html>

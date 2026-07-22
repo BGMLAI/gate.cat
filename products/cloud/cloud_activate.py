@@ -57,8 +57,12 @@ def _affiliate_safe(fn, *args, **kwargs):
 # path; the channel only controls which is treated as primary / documented.
 # ---------------------------------------------------------------------------
 def payment_channel() -> str:
-    ch = os.environ.get("GATECAT_PAYMENT_CHANNEL", "lemonsqueezy").strip().lower()
-    return "stripe" if ch == "stripe" else "lemonsqueezy"
+    # Default flipped to stripe 2026-07-22 (reverses the 2026-07-12 founder
+    # decision): Lemon Squeezy DECLINED the account application on 2026-07-14,
+    # so Stripe is the only live channel. LS webhook path stays serviceable
+    # behind the env override in case the channel ever reopens.
+    ch = os.environ.get("GATECAT_PAYMENT_CHANNEL", "stripe").strip().lower()
+    return "lemonsqueezy" if ch == "lemonsqueezy" else "stripe"
 
 
 STRIPE_KEY = os.environ.get("STRIPE_KEY", "")

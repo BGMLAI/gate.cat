@@ -59,9 +59,16 @@ def env_vars():
 
 # ---- channel selector -------------------------------------------------------
 
-def test_default_channel_is_lemonsqueezy(tmp_path, env_vars):
+def test_default_channel_is_stripe(tmp_path, env_vars):
+    # LS declined the account application 2026-07-14; stripe is the live
+    # default. The LS path stays reachable via the env override below.
     os.environ.pop("GATECAT_PAYMENT_CHANNEL", None)
     ca = _load_activate(tmp_path)
+    assert ca.payment_channel() == "stripe"
+
+
+def test_channel_selector_keeps_lemonsqueezy(tmp_path, env_vars):
+    ca = _load_activate(tmp_path, {"GATECAT_PAYMENT_CHANNEL": "lemonsqueezy"})
     assert ca.payment_channel() == "lemonsqueezy"
 
 

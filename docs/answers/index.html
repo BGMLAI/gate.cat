@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>gate.cat answers — stopping AI agents before they run irreversible commands</title>
+<meta name="description" content="Plain answers to what people ask after an AI agent does something it can't take back: how to stop rm -rf, secure an MCP server, recover files Claude Code deleted, and get an audit trail of agent actions. gate.cat is a free, fail-closed veto." />
+<link rel="canonical" href="https://gate.cat/answers/" />
+<meta property="og:title" content="gate.cat answers — AI agent safety, in plain terms" />
+<meta property="og:description" content="How to stop an AI agent before it runs the command you can't take back." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://gate.cat/answers/" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" href="../img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="answers.css" />
+<script>(function(){try{var t=localStorage.getItem("gatecat-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"gate.cat answers","url":"https://gate.cat/answers/","about":"AI agent safety, fail-closed action veto, preventing irreversible commands","isPartOf":{"@type":"WebSite","name":"gate.cat","url":"https://gate.cat/"}}</script>
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="https://gate.cat/"><span class="mk"></span>gate.cat</a>
+  <span class="nav-sp"></span>
+  <a class="nl" href="./">Answers</a>
+  <a class="nl" href="https://gate.cat/#how">How&nbsp;it&nbsp;works</a>
+  <a class="nav-cta" href="https://gate.cat/#install">pip install gate-cat</a>
+  <button class="tog" id="tog" aria-label="Toggle theme">◐</button>
+</div></header>
+<main class="wrap">
+  <nav class="crumb"><a href="https://gate.cat/">gate.cat</a> / answers</nav>
+  <p class="kick">answers · agent safety</p>
+  <h1>answers</h1>
+  <p class="lede">Plain answers to what people ask right after an AI agent does something it can't take back. Every answer ends the same way: a deterministic, fail-closed veto that stops the irreversible command <em>before</em> it runs — free, Apache&nbsp;2.0, one line to install.</p>
+
+  <div class="related" style="margin-top:40px">
+    <a class="rcard" href="ai-agent-almost-ran-rm-rf.html"><div class="q">My AI agent almost ran rm -rf — how do I stop it?</div><div class="a">Why prompts don't enforce, and what a fail-closed veto does instead.</div></a>
+    <a class="rcard" href="secure-mcp-server.html"><div class="q">How do I secure an MCP server against destructive tool calls?</div><div class="a">Put the veto in front of the tools, not inside the model.</div></a>
+    <a class="rcard" href="claude-code-deleted-my-file.html"><div class="q">Claude Code deleted my files — recovery &amp; prevention</div><div class="a">What to try first for recovery, then how to stop the next one.</div></a>
+    <a class="rcard" href="audit-evidence-for-ai-agent-actions.html"><div class="q">How do I get an audit trail of what my AI agent did?</div><div class="a">A free local log of every irreversible action, and what it is (and isn't).</div></a>
+    <a class="rcard" href="ai-agent-guardrails-across-a-team.html"><div class="q">How do I enforce guardrails on AI agents across my team?</div><div class="a">Free per machine; a fleet record, alerts and one policy set for the team.</div></a>
+  </div>
+
+  <section class="cta">
+    <h2>the one-line version</h2>
+    <p class="lede">gate.cat inspects every command an AI agent tries and blocks the irreversible ones — recursive delete, database drop, cloud teardown — before they execute. 38 default policies, fail-closed, zero telemetry.</p>
+    <div class="install"><span class="p">$</span>&nbsp;pip install gate-cat</div>
+    <div class="cap" id="cap-answers-hub">
+      <form class="cap-form" id="cf-hub">
+        <input id="ce-hub" type="email" placeholder="you@company.com" required autocomplete="email" aria-label="Your email" />
+        <button type="submit">Get &ldquo;Veto Catches&rdquo;</button>
+      </form>
+      <p class="cap-note">One email when there's a catch worth showing: a real irreversible command an agent tried, and how the wall stopped it. Opt-in, no spam, no telemetry.</p>
+      <p class="cap-done">&#10003; you're on the list — first catch lands soon.</p>
+    </div>
+  </section>
+</main>
+<footer><div class="foot-in">
+  <span>gate.cat — fail-closed action-veto for AI agents · Apache 2.0</span>
+  <span><a href="https://gate.cat/">Home</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://gate.cat/teams.html" id="lnk-teams-foot">For teams</a> · <a href="https://gate.cat/#packs">Policy Packs</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+</div></footer>
+<script>
+(function(){var r=document.getElementById('tog');if(r)r.addEventListener('click',function(){var d=document.documentElement,n=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',n);try{localStorage.setItem('gatecat-theme',n);}catch(e){}});})();
+(function(){
+  var forms=[].slice.call(document.querySelectorAll('.cap-form'));
+  forms.forEach(function(f){
+    var cap=f.closest('.cap'),email=f.querySelector('input'),btn=f.querySelector('button');
+    var ref=new URLSearchParams(location.search).get('ref')||cap.id.replace('cap-','')||'';
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()))return;
+      btn.disabled=true;btn.textContent='…';
+      fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email.value.trim(),ref:(cap.id+' '+ref).slice(0,120)})})
+      .then(function(x){return x.json();}).then(function(){cap.classList.add('done');})
+      .catch(function(){btn.disabled=false;btn.textContent='Retry';});
+    });
+  });
+})();
+</script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   Mirrors the capture on the main landing so a creator link like
+   gate.cat/answers/<page>.html?ref=CODE attributes commission at checkout:
+   1) read ?ref=CODE; store cookie gc_ref (90d, SameSite=Lax) at path=/,
+      so the main site sees the ref when the visitor buys.
+   2) also carry ?ref onto same-site onward links (belt-and-suspenders).
+   Never breaks the page. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+    var ids = ["lnk-teams", "lnk-teams-foot"];
+    for (var i = 0; i < ids.length; i++) {
+      var a = document.getElementById(ids[i]);
+      if (!a) { continue; }
+      var href = a.getAttribute("href");
+      if (!href || href.indexOf("ref=") !== -1) { continue; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + "ref=" + encodeURIComponent(ref));
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+</body>
+</html>

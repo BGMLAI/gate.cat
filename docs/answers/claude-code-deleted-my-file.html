@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Code deleted my files — recovery and how to prevent it · gate.cat</title>
+<meta name="description" content="Claude Code or another AI coding agent deleted your files? Here&#x27;s what to try first for recovery, and how to stop the next deletion with gate.cat — a free, deterministic, fail-closed hook that blocks rm -rf and other irreversible commands before they run." />
+<link rel="canonical" href="https://gate.cat/answers/claude-code-deleted-my-file.html" />
+<meta property="og:title" content="Claude Code deleted my files — recovery and how to prevent it · gate.cat" />
+<meta property="og:description" content="Claude Code or another AI coding agent deleted your files? Here&#x27;s what to try first for recovery, and how to stop the next deletion with gate.cat — a free, deterministic, fail-closed hook that blocks rm -rf and other irreversible commands before they run." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://gate.cat/answers/claude-code-deleted-my-file.html" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" href="../img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="answers.css" />
+<script>(function(){try{var t=localStorage.getItem("gatecat-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "gate.cat", "item": "https://gate.cat/"}, {"@type": "ListItem", "position": 2, "name": "Answers", "item": "https://gate.cat/answers/"}, {"@type": "ListItem", "position": 3, "name": "Claude Code deleted my file", "item": "https://gate.cat/answers/claude-code-deleted-my-file.html"}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "claude code deleted my files. can I recover them &mdash; and prevent it?", "description": "Claude Code or another AI coding agent deleted your files? Here's what to try first for recovery, and how to stop the next deletion with gate.cat \u2014 a free, deterministic, fail-closed hook that blocks rm -rf and other irreversible commands before they run.", "url": "https://gate.cat/answers/claude-code-deleted-my-file.html", "author": {"@type": "Organization", "name": "BGML.ai", "url": "https://bgml.ai"}, "publisher": {"@type": "Organization", "name": "gate.cat", "url": "https://gate.cat"}, "about": "AI agent safety, fail-closed action veto, irreversible command prevention"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can gate.cat recover files that were already deleted?", "acceptedAnswer": {"@type": "Answer", "text": "No \u2014 gate.cat is prevention, not recovery. It blocks the irreversible command before it runs. For files already deleted, use git reflog / git fsck, editor local history, OS snapshots, or backups."}}, {"@type": "Question", "name": "How do I stop Claude Code from deleting files?", "acceptedAnswer": {"@type": "Answer", "text": "Add gate.cat as a PreToolUse hook in .claude/settings.json. It matches commands against 38 default policies and blocks irreversible ones like rm -rf before Claude Code executes them, returning the reason to the agent."}}, {"@type": "Question", "name": "Will the hook get in the way of normal edits?", "acceptedAnswer": {"@type": "Answer", "text": "It intervenes on about 0.6% of real commands, measured on a 14.7k-command Claude Code log. Ordinary file edits and safe deletes pass through; only irreversible shapes are stopped."}}, {"@type": "Question", "name": "Does this work for agents other than Claude Code?", "acceptedAnswer": {"@type": "Answer", "text": "The native hook is Claude Code specific. For other agents (Codex, Copilot BYOK, Ollama, vLLM and any OpenAI-API agent) run gate.cat as a proxy by pointing the agent's base_url at it."}}, {"@type": "Question", "name": "Is gate.cat free, and does it phone home?", "acceptedAnswer": {"@type": "Answer", "text": "It is free forever under Apache 2.0, and the pip package has zero telemetry. Nothing about your commands leaves your machine unless you opt into the (separate, off-by-default) Cloud copy."}}]}</script>
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="https://gate.cat/"><span class="mk"></span>gate.cat</a>
+  <span class="nav-sp"></span>
+  <a class="nl" href="./">Answers</a>
+  <a class="nl" href="https://gate.cat/#how">How&nbsp;it&nbsp;works</a>
+  <a class="nav-cta" href="https://gate.cat/#install">pip install gate-cat</a>
+  <button class="tog" id="tog" aria-label="Toggle theme">◐</button>
+</div></header>
+<main class="wrap">
+  <nav class="crumb"><a href="https://gate.cat/">gate.cat</a> / <a href="./">answers</a> / Claude Code deleted my file</nav>
+  <p class="kick">incident · recovery &amp; prevention</p>
+  <h1>claude code deleted my files. can I recover them &mdash; and prevent it?</h1>
+  <div class="answer">
+    <div class="lbl">Short answer</div>
+    <p>First, stop writing to the affected disk and check your recovery paths in order: <code>git</code> history / <code>git reflog</code>, editor local history, OS trash, filesystem snapshots (Time&nbsp;Machine, APFS/ZFS/btrfs), and backups. Deletion outside those is usually unrecoverable — which is why prevention matters more than recovery.</p>
+    <p>To stop the next one, add gate.cat: a free, deterministic <code>PreToolUse</code> hook that blocks <code>rm -rf</code> and other irreversible commands before Claude&nbsp;Code runs them. <code>pip install gate-cat</code>.</p>
+  </div>
+  <p class="lede">AI coding agents delete files as a normal part of refactoring and cleanup. When one deletes the wrong thing — sometimes thousands of files, sometimes your home directory — the damage is done the instant the command runs. Recovery is a scramble; prevention is a one-liner.</p>
+
+<h2>step 1 — try to recover (in order, act fast)</h2>
+<ol>
+  <li><b>Stop writing to the disk.</b> Every new write lowers the odds an undelete tool can recover an unreferenced file.</li>
+  <li><b>Git.</b> If the files were committed: <code>git checkout -- &lt;path&gt;</code> or restore from history. For lost commits: <code>git reflog</code> then <code>git checkout &lt;sha&gt;</code>. Staged-but-not-committed blobs can sometimes be recovered with <code>git fsck --lost-found</code>.</li>
+  <li><b>Editor local history.</b> VS&nbsp;Code keeps a Local History; JetBrains IDEs keep &ldquo;Local History&rdquo; with per-file timelines — often the fastest win for uncommitted work.</li>
+  <li><b>OS trash &amp; snapshots.</b> Check the trash, then Time&nbsp;Machine (macOS), APFS/ZFS/btrfs snapshots, or Windows File History / Previous Versions.</li>
+  <li><b>Backups.</b> Restore from your last known-good backup and re-apply recent work by hand.</li>
+</ol>
+<div class="note warn"><b>Reality check.</b> A hard <code>rm -rf</code> on files that were never committed, snapshotted or backed up is usually gone for good. There is no reliable undo for an irreversible command that already executed — which is exactly the gap gate.cat closes.</div>
+
+<h2>step 2 — make sure it can't happen again</h2>
+<p>The durable fix is a check the agent runs into <em>before</em> the delete executes. gate.cat is a deterministic deny-list that plugs into Claude&nbsp;Code as a <code>PreToolUse</code> hook. When Claude&nbsp;Code tries an irreversible command, the hook matches it against <b>38 default policies</b>, blocks it, and returns the reason to the agent — which then continues without the destruction.</p>
+<div class="term"><span class="g"># Claude Code, mid-refactor, tries to wipe a directory…</span>
+<span class="p">$</span> rm -rf ~/project/src
+<span class="r">VETO [FS_DESTROY]</span> recursive force delete — blocked before execution
+  &#8226; PreToolUse hook &#183; deterministic &#183; fail-closed &#183; exit 2
+<span class="g"># the files are still there. the agent gets the reason and moves on.</span></div>
+<p>Because the hook runs outside the model, a persuasive prompt can't disable it, and if the gate can't judge a command it stops rather than allows. Setup is two lines in <code>.claude/settings.json</code> after <code>pip install gate-cat</code>.</p>
+
+<div class="note"><b>Belt and suspenders.</b> Keep committing often and keep backups — gate.cat prevents the common irreversible shapes, but an unmatched command is unchecked, not safe. For maximum safety, pair the gate with an OS sandbox so anything the pattern layer doesn't recognize is still contained.</div>
+
+  <h2>frequently asked</h2>
+  <div class="faq">
+    <details><summary>Can gate.cat recover files that were already deleted?</summary><p>No — gate.cat is prevention, not recovery. It blocks the irreversible command before it runs. For files already deleted, use git reflog / git fsck, editor local history, OS snapshots, or backups.</p></details>
+    <details><summary>How do I stop Claude Code from deleting files?</summary><p>Add gate.cat as a PreToolUse hook in .claude/settings.json. It matches commands against 38 default policies and blocks irreversible ones like rm -rf before Claude Code executes them, returning the reason to the agent.</p></details>
+    <details><summary>Will the hook get in the way of normal edits?</summary><p>It intervenes on about 0.6% of real commands, measured on a 14.7k-command Claude Code log. Ordinary file edits and safe deletes pass through; only irreversible shapes are stopped.</p></details>
+    <details><summary>Does this work for agents other than Claude Code?</summary><p>The native hook is Claude Code specific. For other agents (Codex, Copilot BYOK, Ollama, vLLM and any OpenAI-API agent) run gate.cat as a proxy by pointing the agent's base_url at it.</p></details>
+    <details><summary>Is gate.cat free, and does it phone home?</summary><p>It is free forever under Apache 2.0, and the pip package has zero telemetry. Nothing about your commands leaves your machine unless you opt into the (separate, off-by-default) Cloud copy.</p></details>
+  </div>
+
+  <section class="cta">
+  <h2>put a leash on your agent — 60 seconds</h2>
+  <p class="lede">The gate, all 38 default policies, the Claude&nbsp;Code hook and the proxy are free forever (Apache&nbsp;2.0). No account, no daemon, no telemetry.</p>
+  <div class="install"><span class="p">$</span>&nbsp;pip install gate-cat</div>
+  <div class="cap" id="cap-answer-cc">
+  <form class="cap-form" id="cf-answer-cc">
+    <input id="ce-answer-cc" type="email" placeholder="you@company.com" required autocomplete="email" aria-label="Your email" />
+    <button type="submit">Get &ldquo;Veto Catches&rdquo;</button>
+  </form>
+  <p class="cap-note">One email when there's a catch worth showing: a real irreversible command an agent tried, and how the wall stopped it. Opt-in, no spam, no telemetry. The gate itself is free.</p>
+  <p class="cap-done">&#10003; you're on the list — first catch lands soon.</p>
+</div>
+</section>
+
+  <h2>keep reading</h2>
+  <div class="related">
+    <a class="rcard" href="ai-agent-almost-ran-rm-rf.html"><div class="q">My AI agent almost ran rm -rf — how do I stop it?</div><div class="a">A deterministic wall that blocks the command before it runs.</div></a>
+    <a class="rcard" href="audit-evidence-for-ai-agent-actions.html"><div class="q">How do I get an audit trail of what my AI agent did?</div><div class="a">A local, tamper-evident log of every irreversible action, for free.</div></a>
+    <a class="rcard" href="secure-mcp-server.html"><div class="q">How do I secure an MCP server against destructive tool calls?</div><div class="a">Put a fail-closed veto in front of the tools, not inside the model.</div></a>
+  </div>
+</main>
+<footer><div class="foot-in">
+  <span>gate.cat — fail-closed action-veto for AI agents · Apache 2.0</span>
+  <span><a href="https://gate.cat/">Home</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://gate.cat/teams.html" id="lnk-teams-foot">For teams</a> · <a href="https://gate.cat/#packs">Policy Packs</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+</div></footer>
+<script>
+(function(){var r=document.getElementById('tog');if(r)r.addEventListener('click',function(){var d=document.documentElement,n=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',n);try{localStorage.setItem('gatecat-theme',n);}catch(e){}});})();
+(function(){
+  var forms=[].slice.call(document.querySelectorAll('.cap-form'));
+  forms.forEach(function(f){
+    var cap=f.closest('.cap'),email=f.querySelector('input'),btn=f.querySelector('button');
+    var ref=new URLSearchParams(location.search).get('ref')||cap.id.replace('cap-','answer-')||'';
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()))return;
+      btn.disabled=true;btn.textContent='…';
+      fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email.value.trim(),ref:(cap.id+' '+ref).slice(0,120)})})
+      .then(function(x){return x.json();}).then(function(){cap.classList.add('done');})
+      .catch(function(){btn.disabled=false;btn.textContent='Retry';});
+    });
+  });
+})();
+</script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   Mirrors the capture on the main landing so a creator link like
+   gate.cat/answers/<page>.html?ref=CODE attributes commission at checkout:
+   1) read ?ref=CODE; store cookie gc_ref (90d, SameSite=Lax) at path=/,
+      so the main site sees the ref when the visitor buys.
+   2) also carry ?ref onto same-site onward links (belt-and-suspenders).
+   Never breaks the page. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+    var ids = ["lnk-teams", "lnk-teams-foot"];
+    for (var i = 0; i < ids.length; i++) {
+      var a = document.getElementById(ids[i]);
+      if (!a) { continue; }
+      var href = a.getAttribute("href");
+      if (!href || href.indexOf("ref=") !== -1) { continue; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + "ref=" + encodeURIComponent(ref));
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+</body>
+</html>
