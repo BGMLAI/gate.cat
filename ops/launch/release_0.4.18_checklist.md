@@ -17,6 +17,8 @@ T7 (pack hint). Wersja i CHANGELOG już podbite w PR #26.
 - [ ] GitHub release v0.4.18 (tag na commicie merge'a).
 - [ ] Clean install check: `pip install --no-cache-dir gate-cat==0.4.18`
       → `gate.cat --help` działa; F9 w FACTS.md re-pin na 0.4.18.
+- [ ] KOLEJNOŚĆ: najpierw publish na PyPI, DOPIERO POTEM deploy docs/ na VPS —
+      llms.txt w tym release reklamuje 0.4.18, nie może wyprzedzić PyPI.
 
 ## Publication gate (z docs/LAUNCH_0.4.16.md — nadal obowiązuje)
 
