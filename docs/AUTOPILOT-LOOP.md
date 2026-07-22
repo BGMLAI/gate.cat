@@ -27,7 +27,10 @@ początku każdego przebiegu i aktualizuje go na końcu. Kolejność przebiegu:
 5. **Zero publikacji** — PyPI publish, deploy na VPS, posty na HN/socialach robi
    tylko Bogumił; agent przygotowuje paste-ready artefakty w `ops/launch/`.
 6. **Git**: commit + `git push -u origin claude/email-cron-strategy-automation-drmkv4`
-   (retry 2s/4s/8s/16s), nigdy na master; draft PR utrzymywany na bieżąco.
+   (retry 2s/4s/8s/16s), nigdy na master. **BIEŻĄCY PR PĘTLI: #27** (PR #26 zmergowany
+   2026-07-22 21:53 — wszelkie "#26" w promptcie crona czytaj jako "#27"). Po każdym
+   merge'u PR-a pętli: restart brancha od origin/master (`git checkout -B ... origin/master`,
+   force-with-lease) i NOWY draft PR przy pierwszym pushu; zaktualizuj ten wpis.
 7. **Dedupe draftów**: przed `create_draft` sprawdź `list_drafts` + ledger niżej
    + czy w wątku nie ma już naszej odpowiedzi po ostatniej wiadomości rozmówcy.
 8. **Kod = testy zielone** (`python -m pytest -q` dla dotkniętych ścieżek);
