@@ -69,6 +69,7 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 - [ ] **T10 — Higiena prawdy: llms.txt, sitemap 404, Lemon Squeezy "pending"** — docs/llms.txt: 65/65→178/178 (F4) i v0.4.3→0.4.17 (F9); sitemap.xml: usuń/przekieruj 5 martwych wpisów /answers/* (budowa stron odrzucona jako revenue-driver); PRICING.md:56 "review is pending" → LS odrzucone 2026-07-14 + default `payment_channel()` w cloud_activate.py na stripe; sprawdź obietnicę "ships this month" (PRICING.md:50) i jeśli fleet policy nie wejdzie do ~2026-08-01, przygotuj PR łagodzący wording. Acceptance: diff przeciw FACTS.md czysty; PR wyraźnie flaguje odwrócenie decyzji foundera z 2026-07-12 i wymaga sign-off przed merge. _(impact: ~$0 (risk-avoidance), effort: S, DISTRIBUTION+B2B, 4.8/6.7)_
 - [ ] **T11 — Claude Code plugin-marketplace manifest** — `.claude-plugin/marketplace.json` + `plugin.json` opakowujące istniejący PreToolUse hook (examples/veto_integrations/claude_code_hook/); fix sędziów: najpierw WebFetch oficjalnej dokumentacji schematu — nie zgaduj formatu; weryfikacja załadowania = owner po merge, nie agent. Wartość głównie jako linia "one-command install" w poście HN (T4). Acceptance: manifest przechodzi walidację składni JSON wobec udokumentowanego schematu, PR otwarty. _(impact: $0-150 (obniżone przez sędziów), effort: M, DISTRIBUTION, 4.8)_
 - [ ] **T12 — daily_funnel.py testowany na fixture (bez SSH z sandboxa)** — Skrypt parsuje events log przez funnel_report.py i appenduje JSON-line {date, page_view, install_copy, checkout_click, top_sources} do METRICS.log; w środowisku agenta NIE ma klucza VPS, więc acceptance = unit test na fixture w repo + instrukcja uruchomienia tam gdzie jest klucz (wzorzec SSH z scripts/launch_metrics.py). Fix sędziów: to pomiar, nie przychód — niczego nie blokuje i nie twierdzimy "pierwszego realnego snapshotu" z sandboxa. _(impact: $0 (pomiar do iteracji), effort: S, CONVERSION, 4.8)_
+- [x] **T14 — Influencer affiliate outreach (dyspozycja usera 2026-07-22 ~20:40)** — WYKONANE: research (developereducators.com katalog 92 twórców CC, awesome-ai-newsletters, sponsor-pages) → pakiet `influencer-affiliate-outreach.md` dostarczony userowi NA CZACIE (nie w repo — zasada 9): 17 twórców YouTube Tier 1 (Edmund Yong, Simon Scrapes, Jack Roberts, Nate Herk, John Kim, Bart Slodyczka-proxy-fit, Greg Isenberg...), 10 newsletterów Tier 2 (AI Engineering, AI Agents Simplified, Latent Space, Ben's Bites...), Tier 3 mega-kanały po trakcji; 3 szablony (YT/newsletter/follow-up Nick Saraev); protokół ≤15/dzień + obowiązkowa personalizacja. Wysyłka = user/sesja lokalna; odpowiedzi łapie pętla. Wykluczeni już kontaktowani (7 z 15.07).
 - [ ] **T13 — LinkedIn DM do Dimitriosa Kaprilisa (artefakt dla USER-5)** — `ops/launch/dm_dimitrios.md` wg fixu sędziów: najpierw merytoryczna odpowiedź na jego publiczne pytanie o policies (z F1b), dopiero potem oferta bezpłatnego Team + audit-pilot review za zgodę na cytowanie wyniku. Acceptance: paste-ready DM, zero liczb spoza FACTS.md. _(impact: design-partner opcjonalność, effort: S, B2B)_
 
 ## [USER] — czeka na Bogumiła
@@ -121,6 +122,11 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f7acd133235366 | grzegorz@grzegorzlapanowski.pl | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user |
 
 ## LOG PĘTLI
+
+- **2026-07-22 ~20:45 UTC — T14 (na żądanie usera): pakiet outreachu affiliate.**
+  27 celów w 2 tierach + szablony + protokół anty-spamowy; dostarczony na czacie
+  (poza publicznym repo). Follow-up do Nicka Saraeva (kontakt 15.07 bez odpowiedzi)
+  zaplanowany PO publikacji HN (news hook). E-maile YT zbiera sesja lokalna.
 
 - **2026-07-22 20:21 UTC — przebieg #6.** CI na HEAD **ZIELONE 3/3** (run 29949977365)
   → PR #26 gotowy do merge'a. Poczta: tylko alert CI ze starego commita (obsłużony);
