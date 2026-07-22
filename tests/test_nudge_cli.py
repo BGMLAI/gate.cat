@@ -26,6 +26,7 @@ def test_fires_once_with_interventions(tmp_path, monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "7 intervention(s)" in err
     assert "https://gate.cat/teams.html?source=cli" in err
+    assert "gate.cat report" in err  # discovery line for the free local report
     assert "GATECAT_NO_NUDGE=1" in err
     assert os.path.exists(str(tmp_path / ".gatecat" / "nudge_last"))
 

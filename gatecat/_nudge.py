@@ -95,6 +95,7 @@ def maybe_nudge_cli(surface: str, interventions: int) -> None:
             "inside the agent's blast radius.\n"
             "The paid layer is the off-machine, append-only copy of that history "
             "(Solo EUR 19/mo): https://gate.cat/teams.html?source=cli\n"
+            "See exactly what it caught, free and local: gate.cat report\n"
             "(once-a-day notice; silence it: GATECAT_NO_NUDGE=1)\n"
         )
     except Exception:
