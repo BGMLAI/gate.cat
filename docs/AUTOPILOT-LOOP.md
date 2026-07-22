@@ -123,6 +123,10 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
   Następne: T8 (gate.cat report — lokalny raport w kształcie płatnego) — UWAGA: już
   istnieje render_report; T8 = discovery line w T6 (zrobione) → sprawdzić czy T8 nie
   jest w większości zbędne; potem T10 (higiena prawdy).
+- **2026-07-22 19:35 UTC — hotfix #5.** Bump 0.4.18 wywalił test llms.txt (wersja
+  hardcoded w pliku) — poprawione na 0.4.18, 5/5 zielone. Odkrycie: llms.txt już
+  ma 71 policies (odświeżony out-of-band — pewnie lokalna sesja; część T10 done).
+  Checklist release'u: dopisana kolejność publish-przed-deployem (llms.txt).
 
 - **2026-07-22 ~18:45 UTC — przebieg #4b (Chrome + odkrycie).** Na żądanie usera otwarty
   Chromium (headless; TLS przez proxy blokuje renderowanie — curl działa). ODKRYCIE:
