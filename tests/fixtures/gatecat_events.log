@@ -1,0 +1,9 @@
+1.2.3.4 - - [22/Jul/2026:10:00:01 +0000] "GET /px.gif?e=page_view&source=hn&sid=s1 HTTP/1.1" 200 43 "-" "UA"
+1.2.3.4 - - [22/Jul/2026:10:00:09 +0000] "GET /px.gif?e=install_copy&source=hn&sid=s1 HTTP/1.1" 200 43 "-" "UA"
+5.6.7.8 - - [22/Jul/2026:11:30:00 +0000] "GET /px.gif?e=page_view&source=pypi&sid=s2 HTTP/1.1" 200 43 "-" "UA"
+5.6.7.8 - - [22/Jul/2026:11:31:12 +0000] "GET /px.gif?e=checkout_click&source=pypi&sid=s2 HTTP/1.1" 200 43 "-" "UA"
+9.9.9.9 - - [22/Jul/2026:12:00:00 +0000] "GET /px.gif?e=page_view&sid=s3 HTTP/1.1" 200 43 "-" "UA"
+9.9.9.9 - - [22/Jul/2026:12:00:05 +0000] "GET /px.gif?e=smoke_test&source=ci HTTP/1.1" 200 43 "-" "UA"
+7.7.7.7 - - [21/Jul/2026:23:59:59 +0000] "GET /px.gif?e=page_view&source=reddit&sid=s4 HTTP/1.1" 200 43 "-" "UA"
+7.7.7.7 - - [23/Jul/2026:00:00:01 +0000] "GET /px.gif?e=checkout_click&source=reddit&sid=s5 HTTP/1.1" 200 43 "-" "UA"
+this line is not a request and must be ignored
