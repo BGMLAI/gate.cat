@@ -30,6 +30,9 @@ początku każdego przebiegu i aktualizuje go na końcu. Kolejność przebiegu:
    + czy w wątku nie ma już naszej odpowiedzi po ostatniej wiadomości rozmówcy.
 8. **Kod = testy zielone** (`python -m pytest -q` dla dotkniętych ścieżek);
    copy = spójne z FACTS.md. SPRZEDAŻ > kosmetyka.
+9. **Repo jest PUBLICZNE** — żadnych prywatnych adresów e-mail osób trzecich,
+   treści korespondencji ani artefaktów imiennego outreachu w commitach
+   (dotyczy też T13/dm_dimitrios: dostarczać przez czat/SendUserFile, nie repo).
 
 ## CEL I STAN
 
