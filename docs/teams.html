@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>gate.cat Team — one policy, whole fleet, and a veto history no agent can delete</title>
+  <meta name="description" content="gate.cat Team (€149/mo flat, up to 10 machines): shared off-machine veto history, fleet alerts and fleet-wide monthly reports for teams running AI coding agents.">
+  <link rel="icon" href="img/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --bg: #faf9f5; --ink: #0f0f0d; --muted: #5f5e58; --line: #e6e3d8; --accent: #cbdd1a; --card: #ffffff; }
+    body { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 72px; }
+    header { display: flex; align-items: center; gap: 12px; padding: 22px 0; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+    .mark { width: 34px; height: 34px; background: var(--accent); color: var(--ink); font: 700 15px/34px ui-monospace, Menlo, Consolas, monospace; text-align: center; border-radius: 7px; flex: none; }
+    header a { color: var(--ink); text-decoration: none; }
+    header nav { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
+    header nav a { color: var(--muted); }
+    header nav a:hover { color: var(--ink); }
+    h1 { font-size: 34px; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 14px; }
+    h2 { font-size: 22px; letter-spacing: -0.01em; margin: 44px 0 12px; }
+    p.lead { font-size: 18px; color: var(--muted); max-width: 46em; }
+    p { margin-bottom: 12px; }
+    a { color: inherit; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 8px; }
+    .btn { display: inline-block; padding: 12px 22px; border-radius: 9px; font-weight: 600; font-size: 16px; text-decoration: none; border: 1.5px solid var(--ink); }
+    .btn.primary { background: var(--ink); color: #fff; }
+    .btn.primary:hover { background: #2a2a26; }
+    .btn.ghost:hover { background: #f1efe6; }
+    .fine { font-size: 13px; color: var(--muted); }
+    ul { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 8px; }
+    blockquote { border-left: 4px solid var(--accent); background: var(--card); padding: 16px 18px; border-radius: 0 10px 10px 0; margin: 18px 0; color: var(--ink); }
+    .evidence { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 18px 0; }
+    .evidence div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+    .evidence strong { display: block; font-size: 20px; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .evidence span { font-size: 13.5px; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 15px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    tr:last-child td { border-bottom: none; }
+    .honest { background: #f4f2e9; border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 14.5px; color: var(--muted); margin: 26px 0; }
+    footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 18px; font-size: 13.5px; color: var(--muted); }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.93em; background: #f1efe6; padding: 2px 6px; border-radius: 5px; }
+    @media (max-width: 560px) { h1 { font-size: 27px; } header nav { gap: 12px; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a href="/" aria-label="gate.cat home"><div class="mark">g.c</div></a>
+    <a href="/" style="font-weight:700">gate.cat</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/veto-demo.html">Demo</a>
+      <a href="/partners.html">Partners</a>
+      <a href="https://github.com/BGMLAI/gate.cat">GitHub</a>
+    </nav>
+  </header>
+
+  <h1>One rogue agent's blast radius is the whole team's.</h1>
+  <p class="lead">Every developer on your team runs AI coding agents with shell access. gate.cat Team gives the fleet one policy and one veto history that no single agent — and no single machine — can delete.</p>
+
+  <div class="cta-row">
+    <a class="btn primary" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Start Team — €149/mo flat →</a>
+    <a class="btn ghost" href="https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b">Start Business — €399/mo →</a>
+  </div>
+  <p class="fine">Up to 10 machines on Team. Automatic tax handling, cancel anytime, <strong>30-day full refund, no questions asked</strong>. Larger fleet? <a href="mailto:bogumil@bgml.ai?subject=gate.cat%20fleet">Email us</a>.</p>
+
+  <h2>Why the paid layer exists at all</h2>
+  <p>The local gate — the veto engine, the Claude Code hook, the adapters, the CLI dashboard and local reports — is <a href="https://github.com/BGMLAI/gate.cat">Apache-2.0 and free forever</a>. Not a trial; nothing is rate-limited or held back.</p>
+  <p>But a local log lives <strong>inside the agent's blast radius</strong>. An agent with shell access can delete or rewrite the file that records what it did — real incident reports include an agent that deleted a file and then hid it from the user. The paid layer is the <strong>off-machine, append-only copy of your fleet's veto history</strong> — the one thing the agents can't reach — plus alerts and a monthly report generated from it. Same shape as offsite backup: you hope it's boring, and you keep the receipts.</p>
+
+  <blockquote><strong>Architecture promise (load-bearing):</strong> Cloud is an optional <em>reporter</em> beside the gate, never in its execution path. If Cloud is down, unreachable, or cancelled, the gate keeps blocking exactly as before. Policy sharing for teams works pull-only: a signed policy file your machines fetch and apply <strong>after local review</strong> — nothing remote ever executes or decides on your box.</blockquote>
+
+  <h2>What Team adds on top of the free gate</h2>
+  <table>
+    <tr><th>Included</th><th>Detail</th></tr>
+    <tr><td>Off-machine fleet veto history</td><td>Append-only, outside every agent's credentials, with email alerts. By default events carry a <em>hash</em> of the matched command — raw text is a separate, explicit opt-in, because commands can contain secrets.</td></tr>
+    <tr><td>Fleet-wide monthly report</td><td>Generated from the off-machine log. <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/SAMPLE_REPORT.md">A redacted sample from our own real dogfood log — red-team caveats included — is public.</a></td></tr>
+    <tr><td>Shared signed policy file</td><td>One policy for the whole fleet, pull-only, applied after local review (rolling out).</td></tr>
+    <tr><td>Priority support</td><td>Direct line to the person who wrote the engine.</td></tr>
+  </table>
+  <p class="fine">Price anchor, honestly stated: nearest per-seat alternatives price at $39–100 <em>per user per month</em> (market snapshot, 2026-07-08). Flat €149 costs less from the second developer onward and doesn't tax your team's growth up to 10 machines.</p>
+
+  <h2>Measured, not claimed</h2>
+  <div class="evidence">
+    <div><strong>0 real misses</strong><span>across 1,085,159 unique real agent commands through the full gate (the 4 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits). Reproducible — method and artifact in the repo.</span></div>
+    <div><strong>~0.6%</strong><span>of real commands intervened on, measured on two independent logs — the gate gets out of the way.</span></div>
+    <div><strong>1,863 tests</strong><span>pass locally and the 0.4.16 CI matrix is green on Python 3.11–3.13. Coverage is printed by CI on every run.</span></div>
+  </div>
+  <p class="fine">Every number above traces to a row in <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md</a> (claim → source artifact → allowed wording). If your reproduction disagrees, that's a bug report we want.</p>
+
+  <h2>The audit-readiness pilot, precisely</h2>
+  <p>For compliance buyers (Business tier and up) — what you get, and what we deliberately do not claim:</p>
+  <ul>
+    <li><strong>Evidence stays yours:</strong> the veto log is collected append-only in <strong>your</strong> infrastructure (e.g. object storage with write-once retention — we provide the reference setup). We never hold the only copy of your evidence.</li>
+    <li><strong>Signed monthly report</strong> with explicit control mapping (which agent actions are gated, by which policy, with which verdicts) and a compensating-controls memo. Honest framing: this is <strong>management evidence with reproducible artifacts your auditor can sample</strong> — not a substitute for an independent audit.</li>
+    <li><strong>Explicit scope:</strong> coverage claims are limited to the enumerated danger classes in <a href="https://github.com/BGMLAI/gate.cat/blob/master/RECALL.md">RECALL.md</a>. Outside those classes = unchecked, and the report says so on page one.</li>
+    <li><strong>Guarantee rider:</strong> if the full gate passes a command from the covered classes in your logs during the pilot year, the next 12 months are service credit. Covered classes measure 100% recall — the risk is known and honestly bounded to exactly what we claim.</li>
+    <li>We are a solo-founder vendor without SOC2 today. That's why the evidence log is self-hosted and every report is reproducible from your own data — the trust model doesn't require believing us.</li>
+  </ul>
+  <p class="fine">One runaway <code>terraform destroy</code> loop cost a team ~$106k; one agent dropped a production database. The pilot is priced at a fraction of a single incident.</p>
+
+  <div class="cta-row">
+    <a class="btn primary" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Start Team — €149/mo flat →</a>
+    <a class="btn ghost" href="mailto:bogumil@bgml.ai?subject=gate.cat%20audit-readiness%20pilot">Talk about the pilot</a>
+  </div>
+
+  <div class="honest"><strong>Honest limits:</strong> the gate is certain only about what it <strong>blocks</strong> — an unmatched action is <em>unchecked</em>, not <em>safe</em>. Use gate.cat <em>with</em> your sandbox, not instead of one. Cloud records what happened; it does not make the gate smarter. Data retention 12 months, JSON export anytime, delete-account = hard delete. Full boundary, both directions: <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/THREAT_MODEL.md">THREAT_MODEL.md</a>.</div>
+
+  <footer>
+    <a href="/">gate.cat</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md">Full pricing &amp; boundaries</a> · <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md — verify the numbers</a> · <a href="/partners.html">Partner program</a>
+  </footer>
+</div>
+</body>
+</html>

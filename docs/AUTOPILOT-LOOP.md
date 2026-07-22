@@ -46,7 +46,7 @@ Znane fakty operacyjne:
 
 _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczowe fakty zweryfikowane w repo). Uczciwa rama sędziów: żadne pojedyncze zadanie nie domyka $2,000 — realna 30-dniowa gotówka to warm threads + Show HN + odblokowanie martwych linków, na które celuje już wysłany nudge 0.4.17; reszta to konwersja i higiena. Kolejność: oczekiwane $ / effort / time-to-cash._
 
-- [ ] **T1 — Napraw martwe linki lejka: docs/teams.html + docs/partners.html (jeden PR)** — `gatecat/_nudge.py` (shipped w 0.4.17, odpala się po pierwszym realnym veto na każdej maszynie) oraz README.md:285/292 kierują na gate.cat/teams.html i /partners.html, których nie ma w docs/ (żywe 404 — zweryfikowane). Zbuduj obie jako standalone strony na layoucie index.html (bez przebudowy bundla): teams.html = Team €149 value prop + wpleciona verbatim kopia audit-pilot z PRICING.md:109-127 + live Stripe links (Team `buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a`, Business `...7sYdR2e3PcTm2T6cvY67S0b`); partners.html = 30% lifetime-recurring + mailto CTA (affiliate.py nie ma self-serve signup). Do tego `ops/deploy_landing.sh` (artefakt dla USER-2). Acceptance: wpisy w sitemap.xml, każda liczba ma wiersz w FACTS.md/PRICING.md, jeden PR gotowy do merge; live dopiero po USER-2. _(impact: $150-600 (sufit wg sędziów), effort: M, B2B+PRODUCT-LED, 6.7/5.0)_
+- [x] **T1 — Napraw martwe linki lejka: docs/teams.html + docs/partners.html (jeden PR)** — WYKONANE 2026-07-22 przebieg #1: obie strony zbudowane (standalone, paleta index.html, zero JS; wszystkie liczby wg allowed-wording z FACTS.md F1b/F2/F3 + PRICING.md; policy sharing opisane jako "rolling out" zamiast datowanej obietnicy — patrz T10), sitemap.xml uzupełniony, `ops/deploy_landing.sh` gotowy (rsync bez --delete, sha256 verify, curl 200, restart gatecat-fulfill). HTML/XML zwalidowane. Live po USER-2. Oryginalna spec: — `gatecat/_nudge.py` (shipped w 0.4.17, odpala się po pierwszym realnym veto na każdej maszynie) oraz README.md:285/292 kierują na gate.cat/teams.html i /partners.html, których nie ma w docs/ (żywe 404 — zweryfikowane). Zbuduj obie jako standalone strony na layoucie index.html (bez przebudowy bundla): teams.html = Team €149 value prop + wpleciona verbatim kopia audit-pilot z PRICING.md:109-127 + live Stripe links (Team `buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a`, Business `...7sYdR2e3PcTm2T6cvY67S0b`); partners.html = 30% lifetime-recurring + mailto CTA (affiliate.py nie ma self-serve signup). Do tego `ops/deploy_landing.sh` (artefakt dla USER-2). Acceptance: wpisy w sitemap.xml, każda liczba ma wiersz w FACTS.md/PRICING.md, jeden PR gotowy do merge; live dopiero po USER-2. _(impact: $150-600 (sufit wg sędziów), effort: M, B2B+PRODUCT-LED, 6.7/5.0)_
 - [x] **T2 — Gmail draft do Mike'a Privette (Return on Security), wątek 19f669c061fe1503** — WYKONANE 2026-07-22 przy bootstrapie: draft `r-7583389221339500184` w wątku; szczere liczby wyłącznie z FACTS.md (2,528 pobrań/30d, 0 real misses / 1,085,159 komend, revenue day-zero podane wprost), oferta danych do mapy kategorii "Agent Runtime Security". → USER-1: wyślij.
 - [ ] **T3 — Gmail draft do Juliana Goldie: affiliate ≠ sponsoring, wątek 19f675a02242badf** — Julian odpisał cennikiem płatnych sponsoringów, a oferta to darmowy 30% lifetime-recurring affiliate (README:289-292); draftuj do nowszego z dwóch zduplikowanych wątków i odnotuj duplikat. Jedna klaryfikacja bez zobowiązań: zero upfront spend, link do partners.html (po T1) albo sekcji README, decyzję o płatnym sponsoringu zostaw explicite Bogumiłowi. Acceptance: draft w wątku, żadnych obietnic wydatków. _(impact: $0-800 opcjonalność, effort: S, B2B, 6.7)_
 - [ ] **T4 — Odśwież i fact-checkuj paczkę Show HN (+ warunkowy wariant lobste.rs)** — Nie pisz od zera: zweryfikuj istniejący draft z docs/LAUNCH_KIT_2026-07-14.md przeciw FACTS.md (fix sędziów: popraw konflację "4 allowed commands"/false-block wg F4 = 178/178 i 1/129 benign; €19 nie €9; 71 policies wg F9), dopisz first-comment z live checkout links i linią "one-command install" jeśli T11 zmergowane. Zapisz ops/launch/show_hn_ready.md + ops/launch/lobsters_ready.md (lobste.rs jest invite-only — wariant tylko-jeśli-konto). Acceptance: każda liczba ma wiersz w FACTS.md, posty paste-ready bez dalszej edycji. _(impact: odblokowuje $200-1000 przez USER-4, effort: S, DISTRIBUTION, 4.8)_
@@ -64,8 +64,9 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 
 1. **Wyślij draft do Mike'a Privette (2 min, lead się starzeje)** — draft gotowy w Gmailu,
    wątek `19f669c061fe1503` (Re: new security category…). Draft do Juliana dojdzie po T3.
-2. **Zmerguj PR-y i wgraj site + fulfillment na VPS** — bez tego nudge z 0.4.17 codziennie
-   strzela w 404, a T1/T9/T10 zarabiają $0. Artefakt: `ops/deploy_landing.sh` (powstanie z T1).
+2. **Zmerguj PR #26 i wgraj site na VPS** — bez tego nudge z 0.4.17 codziennie
+   strzela w 404, a T1/T9/T10 zarabiają $0. Artefakt GOTOWY: `ops/deploy_landing.sh`
+   (uruchom z maszyny z kluczem VPS; `DRY_RUN=1` na próbę).
 3. **Opublikuj gate-cat 0.4.18 na PyPI** — po release-PR (T5+T6+T7, opcjonalnie T8)
    z checklistą publication-gate z docs/LAUNCH_0.4.16.md; agent nie może publikować.
 4. **Post Show HN — najlepiej PO kroku 2** (ruch ma trafiać na naprawione strony).
@@ -93,6 +94,10 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 
 ## LOG PĘTLI
 
+- **2026-07-22 14:21 UTC — przebieg #1.** Poczta: 0 nowych odpowiedzi (Mike w ledgerze),
+  0 płatności gate.cat; Gmail działa z crona. Backlog: **T1 done** — teams.html,
+  partners.html, sitemap, ops/deploy_landing.sh (walidacja OK). USER-2 odblokowany:
+  deploy-artefakt gotowy. Następny przebieg: T3 (draft do Juliana).
 - **2026-07-22 ~13:00 UTC — bootstrap.** Panel adversarialny multi-model (19 agentów:
   fable + opus + sonnet + haiku; 4 soczewki × 3 sędziów × synteza; 975k tokenów) →
   kolejka T1–T13. Skrzynka przejrzana (30 dni): 0 płatności gate.cat, 2 warm leady
