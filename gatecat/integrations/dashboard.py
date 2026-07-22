@@ -277,6 +277,8 @@ def _cli_nudge(surface: str, records: list[dict]) -> None:
     try:
         from gatecat._nudge import maybe_nudge_cli
         maybe_nudge_cli(surface, _summary(records)["interventions"] if records else 0)
+        from gatecat._pack_hint import maybe_pack_hint
+        maybe_pack_hint()  # shared guard in _nudge: never two hints in one run
     except Exception:
         pass
 
