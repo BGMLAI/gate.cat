@@ -125,6 +125,11 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-22 21:53 UTC — PR #26 ZMERGOWANY przez usera** (29 plików, T1-T10 + release-prep
+  0.4.18 na masterze). Gałąź pętli zrestartowana od origin/master; kolejne commity pójdą
+  w NOWYM draft PR. ODBLOKOWANE: USER-3 (publish 0.4.18 wg ops/launch/release_0.4.18_checklist.md)
+  i deploy docs/ (sitemap, answers w repo == produkcja). W kolejce: T11, T12, T13.
+
 - **2026-07-22 22:21 UTC — przebieg #8.** POCZTA: **kampania wystartowała — mail do
   AI Engineering (corp@systemdrd.com) WYSŁANY 21:18** (user/sesja lokalna); 0 płatności.
   Backlog: **T10 done** — w tym odkrycie: /answers/ (4 artykuły SEO + index) żyją na
