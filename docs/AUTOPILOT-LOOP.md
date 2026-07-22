@@ -16,8 +16,10 @@ początku każdego przebiegu i aktualizuje go na końcu. Kolejność przebiegu:
    bezpośrednio na czacie 2026-07-22 — jeśli user zainstaluje go na VPS i/lub
    doda regułę permissions w ustawieniach Claude Code, protokół przechodzi na
    outbox. Zawsze: tylko odpowiedzi w istniejących wątkach, nigdy cold-outreach.
-2. **Zero cold-outreach** — drafty tylko w istniejących wątkach (odpowiedzi na
-   odpowiedzi) lub do adresów, z którymi Bogumił już korespondował.
+2. **Outreach partnerski: tylko w trybie kampanii zleconej przez usera** (zlecenie
+   2026-07-22): drafty do publicznych kontaktów biznesowych z zatwierdzonej listy,
+   zawsze personalizowane, max 15/dzień; wysyłka po stronie usera/sesji lokalnej.
+   Poza kampanią: drafty tylko w istniejących wątkach.
 3. **Liczby publiczne wyłącznie z FACTS.md** — nowa liczba = najpierw wiersz
    w FACTS.md z artefaktem pomiaru. Żadnych zmyślonych metryk, opinii, klientów.
 4. **Zero wydawania pieniędzy** — żadnych zmian w Stripe (ceny/produkty), żadnych
