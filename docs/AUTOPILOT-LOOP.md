@@ -73,6 +73,12 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 
 ## [USER] — czeka na Bogumiła
 
+**DECYZJA USERA 2026-07-22 ~20:00: "wszystko co się da" — pełna dystrybucja zatwierdzona.**
+Pakiet: `ops/launch/show_hn_ready.md` (HN, repost OK — stary post 2 pkt) +
+`ops/launch/distribution_kit_2026-07-22.md` (r/ClaudeAI, r/LocalLLaMA, r/Python,
+wątek X, 4 PR-y awesome-list) — z kolejnością publikacji w pliku (NIE wszystko
+naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
+
 0. **Decyzja o kanale wysyłki.** Sesja agenta NIE MOŻE wysyłać (konektor bez send;
    klasyfikator zablokował też commit sendera do repo). Opcje: (a) NAJSZYBCIEJ —
    wyślij 2 gotowe drafty ręcznie (punkt 1); (b) zainstaluj dostarczone na czacie
@@ -115,6 +121,13 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 | 19f7acd133235366 | grzegorz@grzegorzlapanowski.pl | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user |
 
 ## LOG PĘTLI
+
+- **2026-07-22 ~20:05 UTC — decyzja usera: pełna dystrybucja.** Zweryfikowano na PyPI:
+  0.4.18 NIE opublikowane (latest = 0.4.17) wbrew przekonaniu usera — release czeka
+  na merge+twine (checklist). Stary post HN 15.07 = 2 pkt → repost dozwolony i
+  zatwierdzony. Przygotowano distribution_kit_2026-07-22.md: 3×Reddit + 8 tweetów
+  + 4 awesome-PR, wszystkie liczby wg F1b/F4/F10/F2, harmonogram anty-spamowy.
+  Pobrania (live pypistats): 2,528/mies., 350/tydz., 46 dziś.
 
 - **2026-07-22 19:21 UTC — przebieg #5.** Poczta: nic nowego; 0 płatności. HN check
   (Algolia): nowego posta BRAK — wisi tylko stary z 15.07 (2 pkt; repost innego tytułu
