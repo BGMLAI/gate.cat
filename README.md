@@ -66,6 +66,11 @@ pip install "gate-cat[all]"         # everything
 ```
 > Quote the extras (`"gate-cat[openai]"`) — zsh treats bare `[...]` as a glob.
 
+**Free forever** — the full local gate, nothing rate-limited. The paid layer is
+optional and off by default: **Cloud Solo €19/mo · Team €149/mo flat (up to 10
+machines) · Business €399/mo · one-time €29 policy packs** — details and honest
+boundaries in [PRICING.md](PRICING.md). Blocking never depends on payment.
+
 ## The hook — the strongest mode
 
 Enforcement in the harness, **outside the model's control flow**: the tool call
@@ -414,7 +419,7 @@ Validated with 100-question benchmark across 5 domains: **0.892 mean quality rat
 Ollama, NIM, OpenRouter, vLLM and LM Studio all speak the OpenAI API, so **one
 proxy in front of them protects them all** — your agent changes one `base_url`,
 writes no code. When the model asks to run a tool, the proxy checks the proposed
-call against the 21 deny policies and **blocks the dangerous ones before the
+call against the 71 default policy walls (plus any policy packs you load) and **blocks the dangerous ones before the
 agent executes them** (`rm -rf`, `terraform destroy`, `DROP TABLE`, disk wipes,
 repo deletion, ...).
 
