@@ -1,92 +1,266 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>gate.cat partner program — 30% recurring, for the lifetime of the subscription</title>
-  <meta name="description" content="Teach AI coding or write a dev newsletter? Earn 30% lifetime-recurring commission on every paid gate.cat plan started from your link. The core stays free, so you recommend real value.">
-  <link rel="icon" href="img/favicon.ico">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --bg: #faf9f5; --ink: #0f0f0d; --muted: #5f5e58; --line: #e6e3d8; --accent: #cbdd1a; --card: #ffffff; }
-    body { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
-    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 72px; }
-    header { display: flex; align-items: center; gap: 12px; padding: 22px 0; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
-    .mark { width: 34px; height: 34px; background: var(--accent); color: var(--ink); font: 700 15px/34px ui-monospace, Menlo, Consolas, monospace; text-align: center; border-radius: 7px; flex: none; }
-    header a { color: var(--ink); text-decoration: none; }
-    header nav { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
-    header nav a { color: var(--muted); }
-    header nav a:hover { color: var(--ink); }
-    h1 { font-size: 34px; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 14px; }
-    h2 { font-size: 22px; letter-spacing: -0.01em; margin: 44px 0 12px; }
-    p.lead { font-size: 18px; color: var(--muted); max-width: 46em; }
-    p { margin-bottom: 12px; }
-    a { color: inherit; }
-    .btn { display: inline-block; padding: 12px 22px; border-radius: 9px; font-weight: 600; font-size: 16px; text-decoration: none; border: 1.5px solid var(--ink); }
-    .btn.primary { background: var(--ink); color: #fff; }
-    .btn.primary:hover { background: #2a2a26; }
-    .fine { font-size: 13px; color: var(--muted); }
-    ul { padding-left: 22px; margin-bottom: 12px; }
-    li { margin-bottom: 8px; }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 15px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
-    th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-    tr:last-child td { border-bottom: none; }
-    .honest { background: #f4f2e9; border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 14.5px; color: var(--muted); margin: 26px 0; }
-    footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 18px; font-size: 13.5px; color: var(--muted); }
-    @media (max-width: 560px) { h1 { font-size: 27px; } header nav { gap: 12px; } }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gate.cat partner program — 30% for life for recommending the tool that stops rm -rf</title>
+<meta name="description" content="Teach AI coding or write a dev newsletter? Recommend gate.cat — the deterministic deny-list that vetoes an AI agent's rm -rf, prod-DB drop and secret exfil before they run — and earn 30% of every payment, for the lifetime of the subscription. The core is free and open source, so you recommend a genuinely useful tool, not a paywall.">
+<link rel="canonical" href="https://gate.cat/partners.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gate.cat/partners.html">
+<meta property="og:site_name" content="gate.cat">
+<meta property="og:title" content="gate.cat partner program — 30% recurring, for life">
+<meta property="og:description" content="Recommend the deterministic kill switch for AI coding agents. 30% of every payment, for the lifetime of the subscription. Free core means you recommend real value, not a paywall.">
+<meta property="og:image" content="https://gate.cat/veto-demo-poster.png">
+<meta property="og:image:width" content="1560">
+<meta property="og:image:height" content="940">
+<meta property="og:image:alt" content="gate.cat vetoing rm -rf before it runs">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="gate.cat partner program — 30% for life">
+<meta name="twitter:description" content="Recommend the deterministic kill switch for AI coding agents. 30% recurring, for life. Free core.">
+<meta name="twitter:image" content="https://gate.cat/veto-demo-poster.png">
+<style>
+  :root{
+    --bg:#fbfaf2; --bg-2:#f3f2e7; --surface:#fdfcf6; --surface-2:#f2f1e6;
+    --ink:#0f0f0d; --ink-2:#3a3d35; --ink-soft:#6a6d62; --ink-faint:#9a9d90;
+    --frame:#0f0f0d; --hairline:rgba(15,15,13,.14);
+    --lime:#cbdd1a; --lime-deep:#5f6d00; --lime-wash:#eef4c6; --lime-line:#d3e08a;
+    --danger:#e5484d; --danger-deep:#c42b30; --danger-wash:#fbe7e8; --danger-line:#f0c4c5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0a0a08; --bg-2:#070706; --surface:#131310; --surface-2:#0f0f0c;
+      --ink:#f6f5ee; --ink-2:#c9c8bf; --ink-soft:#8f8d83; --ink-faint:#5c5a52;
+      --frame:#f6f5ee; --hairline:rgba(246,245,238,.16);
+      --lime:#cbdd1a; --lime-deep:#cbdd1a; --lime-wash:#20240a; --lime-line:#3c4310;
+      --danger:#ff6165; --danger-deep:#ff8a8d; --danger-wash:#25100f; --danger-line:#4a1c1d;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  .bar{border-bottom:1px solid var(--hairline);background:var(--bg-2)}
+  .bar .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;font-size:14px}
+  .brand{font-weight:800;letter-spacing:-.01em}
+  .brand .paw{color:var(--lime-deep)}
+  .bar a.home{color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--ink-faint)}
+  .hero{padding:64px 0 28px}
+  .kicker{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--lime-deep)}
+  h1{font-size:clamp(30px,5.4vw,52px);line-height:1.04;letter-spacing:-.02em;margin:14px 0 0;font-weight:850}
+  h1 .veto{color:var(--danger-deep)}
+  h1 .pct{color:var(--lime-deep)}
+  .sub{font-size:clamp(16px,2.4vw,20px);color:var(--ink-2);margin:20px 0 0;max-width:64ch}
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:750;font-size:15px;
+    padding:13px 22px;border-radius:11px;border:1.5px solid var(--frame);background:var(--ink);color:var(--bg);}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn small{font-weight:600;opacity:.72}
+  .note{font-size:13px;color:var(--ink-soft);margin-top:12px}
+  section{padding:40px 0;border-top:1px solid var(--hairline)}
+  h2{font-size:clamp(21px,3.2vw,28px);letter-spacing:-.01em;margin:0 0 6px;font-weight:800}
+  .lead{color:var(--ink-2);max-width:66ch;margin:0 0 22px}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .step{border:1px solid var(--hairline);background:var(--surface);border-radius:12px;padding:18px 20px}
+  .step .n{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--lime-deep)}
+  .step h3{margin:8px 0 6px;font-size:16px}
+  .step p{margin:0;font-size:14px;color:var(--ink-2)}
+  .step code{background:var(--surface-2);border:1px solid var(--hairline);border-radius:6px;padding:2px 7px;font-size:12.5px}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .feat{border:1px solid var(--hairline);background:var(--surface);border-radius:12px;padding:18px 20px}
+  .feat h3{margin:0 0 6px;font-size:16px}
+  .feat p{margin:0;font-size:14px;color:var(--ink-2)}
+  .feat .k{color:var(--lime-deep);font-weight:800}
+  .stat{display:flex;flex-wrap:wrap;gap:26px;margin-top:6px}
+  .stat .s{font-size:14px;color:var(--ink-2)}
+  .stat .s b{color:var(--ink);font-size:22px;font-weight:850;display:block;letter-spacing:-.01em}
+  .honest{border:1px dashed var(--hairline);border-radius:12px;padding:16px 20px;font-size:13.5px;color:var(--ink-soft);background:var(--surface-2)}
+  .honest b{color:var(--ink-2)}
+  .terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:6px}
+  .tcard{border:1.5px solid var(--frame);border-radius:16px;padding:22px;background:var(--surface)}
+  .tcard .big{font-size:34px;font-weight:850;letter-spacing:-.02em;color:var(--lime-deep)}
+  .tcard .lbl{font-weight:800;font-size:15px;margin-top:4px}
+  .tcard .txt{font-size:13.5px;color:var(--ink-2);margin-top:6px}
+  footer{padding:44px 0 60px;border-top:1px solid var(--hairline);color:var(--ink-soft);font-size:13.5px}
+  footer a{color:var(--ink-2)}
+  .free{background:var(--lime-wash);border:1px solid var(--lime-line);border-radius:12px;padding:16px 20px;font-size:14px;color:var(--ink-2)}
+  .free code{background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:2px 7px}
+</style>
 </head>
 <body>
+
+<div class="bar"><div class="wrap">
+  <span class="brand"><span class="paw">◐</span> gate.cat</span>
+  <a class="home" href="/">← main site</a>
+</div></div>
+
 <div class="wrap">
-  <header>
-    <a href="/" aria-label="gate.cat home"><div class="mark">g.c</div></a>
-    <a href="/" style="font-weight:700">gate.cat</a>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/veto-demo.html">Demo</a>
-      <a href="/teams.html">Teams</a>
-      <a href="https://github.com/BGMLAI/gate.cat">GitHub</a>
-    </nav>
+
+  <header class="hero">
+    <div class="kicker">partner program</div>
+    <h1>Recommend the tool that stops <span class="veto">rm -rf</span>.<br>Earn <span class="pct">30%</span> — for life.</h1>
+    <p class="sub">You teach AI coding, or your newsletter reaches developers who run agents every day. gate.cat is the deterministic deny-list that vetoes an agent's catastrophic shell commands <b>before</b> they run. Share your link, and every paid plan someone starts from it pays you <b>30% of every payment — not just the first, for the whole lifetime of the subscription</b>.</p>
+    <div class="cta-row">
+      <a class="btn" href="/cdn-cgi/l/email-protection#2d4f424a584044416d474c434644485a44034e57125e584f47484e59104a4c5948034e4c59081f1d5d4c5f5943485f081f1d5d5f424a5f4c400b4c405d164f424954106544081f1d6f424a58404441081f6e081d6c081d6c640a49081f1d41444648081f1d4c081f1d4a4c5948034e4c59081f1d5d4c5f5943485f081f1d4144434603081d6c081d6c6e454c43434841081f6b4c58494448434e48081e6c081f1d081d6c69485e445f4849081f1d5f484b081f1d4e424948081f1d0548034a03081f1d5442585f434c404804081e6c081f1d081d6c7d4c54425859081f1d404859454249081f1d057d4c547d4c41081f6b4f4c434604081e6c081f1d081d6c081d6c79454c43465e0c">Get my partner link →</a>
+      <a class="btn ghost" href="/veto-demo.html">Watch the 30-second veto demo →</a>
+    </div>
+    <p class="note">No cost, no minimums, no exclusivity. The blocking core is free and open source (Apache 2.0) — so you're recommending a tool your audience can actually use, not a paywall.</p>
   </header>
 
-  <h1>Recommend the veto. Earn 30% for the lifetime of the subscription.</h1>
-  <p class="lead">Teach AI coding, write a dev newsletter, or make agent-workflow videos? Every paid gate.cat plan someone starts from your link pays you 30% — recurring, for as long as they stay subscribed.</p>
+  <section>
+    <h2>Why this converts for your audience</h2>
+    <p class="lead">Every developer who runs Claude Code, Cursor, Codex or aider has handed a shell to a model. The failure mode is not hypothetical — it is the single thing your audience is quietly afraid of.</p>
+    <div class="grid2">
+      <div class="feat"><h3><span class="k">Real fear, real fix.</span></h3><p>A Cursor agent wiped a production database and every backup in ~9 seconds. Another burned ~$47k in a runaway loop. gate.cat is the deterministic layer that stops exactly those, before they run — an easy, honest recommendation.</p></div>
+      <div class="feat"><h3><span class="k">Free core = trust.</span></h3><p>You send people to something they can install and use for €0. Nobody feels sold to. The paid Cloud/Team layer (off-machine record, fleet alerts) is what earns you commission — and only teams tend to want it.</p></div>
+      <div class="feat"><h3><span class="k">Recurring, not one-shot.</span></h3><p>Attribution is keyed to the subscription, so renewals keep paying you — for as long as they stay subscribed. A single good video or newsletter mention can pay out for months.</p></div>
+      <div class="feat"><h3><span class="k">A demo that sells itself.</span></h3><p>Link the 30-second veto demo. Your audience watches an agent get stopped mid-<code class="mono">rm -rf</code>. The product does the convincing; you just point at it.</p></div>
+    </div>
+  </section>
 
-  <p style="margin-top:22px"><a class="btn primary" href="mailto:bogumil@bgml.ai?subject=gate.cat%20partner%20program&amp;body=Where%20does%20your%20audience%20live%20(newsletter%2C%20YouTube%2C%20course%2C%20...)%3F%0A%0A">Get your partner link →</a></p>
-  <p class="fine">One email, no forms. We set up your tracked link and you get a monthly ledger report.</p>
+  <section>
+    <h2>The terms — plainly</h2>
+    <div class="terms">
+      <div class="tcard"><div class="big">30%</div><div class="lbl">of every payment</div><div class="txt">Solo, Team (€149/mo flat), Business (€399/mo) and one-time policy packs — all pay 30%.</div></div>
+      <div class="tcard"><div class="big">for life</div><div class="lbl">recurring, not first-order</div><div class="txt">Every renewal on a subscription you referred keeps paying, for as long as it stays active.</div></div>
+      <div class="tcard"><div class="big">auto</div><div class="lbl">tracked &amp; accrued</div><div class="txt">Your <code>?ref=code</code> sets a 90-day cookie and rides the checkout automatically. The ledger accrues your commission; refunds claw back, so the numbers stay honest.</div></div>
+    </div>
+    <p class="note" style="margin-top:16px">Payout by PayPal or bank transfer. Free core is never behind the affiliate wall — you always send people to real value first.</p>
+  </section>
 
-  <h2>Why this is easy to recommend honestly</h2>
-  <ul>
-    <li><strong>The core stays free, forever.</strong> The full local gate — veto engine, Claude Code hook, adapters, CLI dashboard — is Apache-2.0 with nothing rate-limited or held back. You recommend real value, not a paywall.</li>
-    <li><strong>The claims are reproducible.</strong> Every public number traces to a row in <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md</a> with a measurement artifact — including 0 real recall misses across 1,085,159 unique real agent commands through the full gate. Your audience can check before they trust you.</li>
-    <li><strong>The paid layer is a boring, defensible product:</strong> the off-machine, append-only copy of the veto history — the log a compromised agent can't rewrite — plus alerts and monthly reports. Offsite backup, for agent actions.</li>
-  </ul>
+  <section>
+    <h2>How it works — three steps</h2>
+    <div class="steps">
+      <div class="step"><div class="n">Step 1</div><h3>Get your link</h3><p>Email for a code and you get <code>gate.cat/?ref=yourname</code>. It works on any page — the homepage, <code>/teams.html</code>, or <code>/veto-demo.html?ref=yourname</code>.</p></div>
+      <div class="step"><div class="n">Step 2</div><h3>Share it honestly</h3><p>Mention it where it fits — a Claude Code tutorial, a "how I stopped my agent from nuking my repo" post, a DevTools newsletter slot. Point at the free core and the demo.</p></div>
+      <div class="step"><div class="n">Step 3</div><h3>Get paid on every payment</h3><p>Anyone who upgrades to a paid plan from your link earns you 30% — on the first payment and every renewal after. We reconcile and pay out on the ledger.</p></div>
+    </div>
+  </section>
 
-  <h2>What the commission looks like</h2>
-  <table>
-    <tr><th>Plan your referral starts</th><th>Price</th><th>Your 30%, every month they stay</th></tr>
-    <tr><td>Cloud Solo</td><td>€19/mo</td><td>€5.70/mo</td></tr>
-    <tr><td>Cloud Team (up to 10 machines)</td><td>€149/mo flat</td><td>€44.70/mo</td></tr>
-    <tr><td>Cloud Business</td><td>€399/mo</td><td>€119.70/mo</td></tr>
-    <tr><td>Policy Packs (Fintech / PaaS / HTTP-API)</td><td>€29 one-time</td><td>€8.70 one-time</td></tr>
-  </table>
+  <section>
+    <h2>What you're pointing people at</h2>
+    <p class="lead">Numbers already published in the repo — so when your audience checks, the claims hold up. That's the whole point of a trust-based recommendation.</p>
+    <div class="stat">
+      <div class="s"><b>178 / 178</b> dangerous commands blocked in the threat suite</div>
+      <div class="s"><b>1,085,159</b> real agent commands replayed</div>
+      <div class="s"><b>1</b> documented false-block (published in the repo)</div>
+    </div>
+  </section>
 
-  <h2>The mechanics, honestly</h2>
-  <ul>
-    <li><strong>30% flat, lifetime-recurring.</strong> Attribution is stored on the first payment event and looked up on every renewal — that's what makes it lifetime, not first-invoice-only.</li>
-    <li><strong>Idempotent ledger.</strong> Every commission carries a unique event id; a re-delivered webhook never double-pays.</li>
-    <li><strong>Refunds claw back.</strong> A refund inserts a negative entry against the same subscription, so the ledger nets out. We'd rather you trust the report than be surprised by it.</li>
-    <li><strong>Payouts are manual for now</strong> (we're a solo-founder shop): you get the per-code ledger report monthly and we pay what it says. The ledger code is <a href="https://github.com/BGMLAI/gate.cat/blob/master/products/cloud/affiliate.py">readable Python in the open repo</a>.</li>
-  </ul>
+  <section>
+    <h2>Recommend it honestly — what it does <i>not</i> do</h2>
+    <div class="honest">
+      Keep it straight with your audience and it stays a trust win. gate.cat catches <b>known dangerous command shapes</b> with a deterministic deny-list. A deliberately obfuscated or genuinely novel command <b>can still slip past</b> it — the full bypass suite is in the repo. It is <b>not</b> a sandbox, not an antivirus, and not a substitute for least-privilege credentials. Please don't call it "compliant", "certified" or a "guarantee" — it's the fast deterministic layer that stops the well-known catastrophic mistakes an AI agent makes far more often than a human would, before they run. Honest framing is why people buy.
+    </div>
+  </section>
 
-  <div class="honest"><strong>Honest limits, for your audience:</strong> gate.cat is a deterministic wall in front of known-dangerous command shapes — not a proof of safety. An unmatched action is <em>unchecked</em>, not <em>safe</em>. It's designed to run <em>with</em> a sandbox, not instead of one. We publish our own bypass map and false-block, and we'd rather you quote that than an overclaim.</div>
-
-  <p><a class="btn primary" href="mailto:bogumil@bgml.ai?subject=gate.cat%20partner%20program&amp;body=Where%20does%20your%20audience%20live%20(newsletter%2C%20YouTube%2C%20course%2C%20...)%3F%0A%0A">Get your partner link →</a></p>
+  <section>
+    <div class="free">
+      <b>Try it yourself first — the core is the whole engine.</b><br>
+      <code class="mono">pip install gate.cat</code>, wire it into your agent, watch it veto <code class="mono">rm -rf</code>. Once you've seen it work, recommending it is easy. Then email for your partner link.
+    </div>
+  </section>
 
   <footer>
-    <a href="/">gate.cat</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md">Full pricing &amp; boundaries</a> · <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md — verify the numbers</a> · <a href="/teams.html">Team plan</a>
+    <div class="cta-row" style="margin-top:0">
+      <a class="btn" href="/cdn-cgi/l/email-protection#c9aba6aebca4a0a589a3a8a7a2a0acbea0e7aab3f6babcaba3acaabdf4aea8bdace7aaa8bdecfbf9b9a8bbbda7acbbecfbf9b9bba6aebba8a4efa8a4b9f2aba6adb0f481a0ecfbf98ba6aebca4a0a5ecfb8aecf988ecf98880eeadecfbf9a5a0a2acecfbf9a8ecfbf9aea8bdace7aaa8bdecfbf9b9a8bbbda7acbbecfbf9a5a0a7a2e7ecf988ecf9888aa1a8a7a7aca5ecfb8fa8bcada0aca7aaacecfa88ecfbf9ecf9888dacbaa0bbacadecfbf9bbacafecfbf9aaa6adacecfbf9e1ace7aee7ecfbf9b0a6bcbba7a8a4ace0ecfa88ecfbf9ecf98899a8b0a6bcbdecfbf9a4acbda1a6adecfbf9e199a8b099a8a5ecfb8faba8a7a2e0ecfa88ecfbf9ecf988ecf9889da1a8a7a2bae8">Get my partner link →</a>
+      <a class="btn ghost" href="https://github.com/BGMLAI/gate.cat">Read the code →</a>
+    </div>
+    <p style="margin-top:22px">
+      <a href="/">gate.cat</a> · <a href="/veto-demo.html">30-second veto demo</a> · <a href="/teams.html">for teams</a> · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · Apache 2.0<br>
+      Deterministic action veto for AI coding agents. Free core forever; partners earn 30% recurring on the paid Cloud/Team layer.
+    </p>
   </footer>
+
 </div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   1) read ?ref=CODE from the URL; store cookie gc_ref (90d, SameSite=Lax).
+   2) rewrite every checkout link to carry the ref so the webhook sees it:
+      - Lemon Squeezy links  -> checkout[custom][ref]=<code>  (LS echoes it back)
+      - Stripe payment links -> client_reference_id=<code>     (Stripe echoes it
+        back at data.object.client_reference_id). The LIVE landing uses
+        buy.stripe.com, so the Stripe rewrite is what actually earns commission.
+   Idempotent, handles ?/& correctly, covers /buy/ and /custom/ links. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    /* sanitize: allow only url-safe code chars, cap length. */
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+
+    var PARAM = "checkout[custom][ref]";
+    var ENCODED = encodeURIComponent(PARAM) + "=" + encodeURIComponent(ref);
+    /* Stripe Payment Links attribute via client_reference_id. */
+    var STRIPE_PARAM = "client_reference_id";
+    var STRIPE_ENCODED = STRIPE_PARAM + "=" + encodeURIComponent(ref);
+
+    /* append "name=value" to href once, correct ?/& handling. skip when the
+       param key is already present (idempotent for re-runs / hydration). */
+    function appendParam(a, href, key, encoded) {
+      if (href.indexOf(key + "=") !== -1) { return; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + encoded);
+    }
+
+    function rewrite() {
+      /* Lemon Squeezy checkout links. */
+      var lsLinks = document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]');
+      for (var i = 0; i < lsLinks.length; i++) {
+        var a = lsLinks[i];
+        var href = a.getAttribute("href");
+        if (!href) { continue; }
+        /* idempotent: never append the same custom ref twice. */
+        if (href.indexOf(encodeURIComponent(PARAM) + "=") !== -1 ||
+            href.indexOf(PARAM + "=") !== -1) { continue; }
+        var sep = href.indexOf("?") === -1 ? "?" : "&";
+        a.setAttribute("href", href + sep + ENCODED);
+      }
+      /* Stripe payment links (buy.stripe.com) -- the live checkout. */
+      var stripeLinks = document.querySelectorAll('a[href*="buy.stripe.com"]');
+      for (var j = 0; j < stripeLinks.length; j++) {
+        var sa = stripeLinks[j];
+        var shref = sa.getAttribute("href");
+        if (!shref) { continue; }
+        appendParam(sa, shref, STRIPE_PARAM, STRIPE_ENCODED);
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", rewrite);
+    } else {
+      rewrite();
+    }
+    /* re-apply for links injected after mount (SPA hydration). */
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(function () { rewrite(); });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+
 </body>
 </html>

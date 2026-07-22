@@ -51,6 +51,7 @@ Znane fakty operacyjne:
 - Mail do grzegorz@grzegorzlapanowski.pl odbił się (błąd serwera odbiorcy) 2026-07-19.
 - Site = statyczne `docs/` serwowane z VPS (OVH) za Cloudflare; deploy poza repo → kroki [USER].
 - METRICS.log dopisuje codziennie GitHub Action na masterze (możliwe konflikty — rebase przed pushem).
+- **RÓWNOLEGŁA SESJA LOKALNA (Claude Desktop u Bogumiła) deployuje bezpośrednio na VPS z pominięciem gita** — wykryta 2026-07-22 ~18:40: live teams.html/partners.html to JEJ wersje (lepsze; zsynchronizowane do repo w przebiegu #4). Zasada: przed każdą edycją plików site'u najpierw `curl` z produkcji i porównaj — produkcja wygrywa; nigdy nie nadpisuj ślepo deployem.
 
 ## KOLEJKA (backlog agenta)
 
@@ -83,9 +84,9 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
    wątek "Re: new security category…"; (b) Julian Goldie, wątek "Re: 30% lifetime
    recurring…". Konektor Gmail agenta nie ma funkcji send — wysyłka musi być Twoja.
    PRZY OKAZJI skasuj 2 stare drafty do Juliana z 15.07 (jeden ma błędną cenę €9).
-2. **Zmerguj PR #26 i wgraj site na VPS** — bez tego nudge z 0.4.17 codziennie
-   strzela w 404, a T1/T9/T10 zarabiają $0. Artefakt GOTOWY: `ops/deploy_landing.sh`
-   (uruchom z maszyny z kluczem VPS; `DRY_RUN=1` na próbę).
+2. **Zmerguj PR #26** — teams/partners są już LIVE (wgrane przez Twoją sesję lokalną
+   i zsynchronizowane do repo), więc 404 z nudge'a jest ZAŁATANE. Deploy `ops/deploy_landing.sh`
+   został do wgrania sitemap.xml (nowe wpisy) i przyszłych zmian docs/.
 3. **Opublikuj gate-cat 0.4.18 na PyPI** — po release-PR (T5+T6+T7, opcjonalnie T8)
    z checklistą publication-gate z docs/LAUNCH_0.4.16.md; agent nie może publikować.
 4. **Post Show HN — najlepiej PO kroku 2** (ruch ma trafiać na naprawione strony).
@@ -114,6 +115,13 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 | 19f7acd133235366 | grzegorz@grzegorzlapanowski.pl | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user |
 
 ## LOG PĘTLI
+
+- **2026-07-22 ~18:45 UTC — przebieg #4b (Chrome + odkrycie).** Na żądanie usera otwarty
+  Chromium (headless; TLS przez proxy blokuje renderowanie — curl działa). ODKRYCIE:
+  gate.cat/teams.html i /partners.html są LIVE z wersjami z równoległej sesji lokalnej
+  (nie było ich w gicie!) — zaciągnięte do repo (produkcja = prawda), walidacja HTML OK,
+  liczby zgodne z FACTS/PRICING. Dziura 404 z nudge'a ZAŁATANA w produkcji. USER-2
+  zredukowane do: merge PR #26 + deploy sitemap.
 
 - **2026-07-22 18:21 UTC — przebieg #4.** Poczta: **Mike WYSŁANY przez usera 17:11**
   (oba warm leady obsłużone — USER-1 domknięte); 0 płatności ($0/$2,000). Backlog:

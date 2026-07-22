@@ -1,117 +1,325 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>gate.cat Team — one policy, whole fleet, and a veto history no agent can delete</title>
-  <meta name="description" content="gate.cat Team (€149/mo flat, up to 10 machines): shared off-machine veto history, fleet alerts and fleet-wide monthly reports for teams running AI coding agents.">
-  <link rel="icon" href="img/favicon.ico">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --bg: #faf9f5; --ink: #0f0f0d; --muted: #5f5e58; --line: #e6e3d8; --accent: #cbdd1a; --card: #ffffff; }
-    body { background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.55; }
-    .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 72px; }
-    header { display: flex; align-items: center; gap: 12px; padding: 22px 0; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
-    .mark { width: 34px; height: 34px; background: var(--accent); color: var(--ink); font: 700 15px/34px ui-monospace, Menlo, Consolas, monospace; text-align: center; border-radius: 7px; flex: none; }
-    header a { color: var(--ink); text-decoration: none; }
-    header nav { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
-    header nav a { color: var(--muted); }
-    header nav a:hover { color: var(--ink); }
-    h1 { font-size: 34px; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 14px; }
-    h2 { font-size: 22px; letter-spacing: -0.01em; margin: 44px 0 12px; }
-    p.lead { font-size: 18px; color: var(--muted); max-width: 46em; }
-    p { margin-bottom: 12px; }
-    a { color: inherit; }
-    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 8px; }
-    .btn { display: inline-block; padding: 12px 22px; border-radius: 9px; font-weight: 600; font-size: 16px; text-decoration: none; border: 1.5px solid var(--ink); }
-    .btn.primary { background: var(--ink); color: #fff; }
-    .btn.primary:hover { background: #2a2a26; }
-    .btn.ghost:hover { background: #f1efe6; }
-    .fine { font-size: 13px; color: var(--muted); }
-    ul { padding-left: 22px; margin-bottom: 12px; }
-    li { margin-bottom: 8px; }
-    blockquote { border-left: 4px solid var(--accent); background: var(--card); padding: 16px 18px; border-radius: 0 10px 10px 0; margin: 18px 0; color: var(--ink); }
-    .evidence { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 18px 0; }
-    .evidence div { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
-    .evidence strong { display: block; font-size: 20px; letter-spacing: -0.01em; margin-bottom: 6px; }
-    .evidence span { font-size: 13.5px; color: var(--muted); }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 15px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-    th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-    tr:last-child td { border-bottom: none; }
-    .honest { background: #f4f2e9; border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 14.5px; color: var(--muted); margin: 26px 0; }
-    footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 18px; font-size: 13.5px; color: var(--muted); }
-    code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.93em; background: #f1efe6; padding: 2px 6px; border-radius: 5px; }
-    @media (max-width: 560px) { h1 { font-size: 27px; } header nav { gap: 12px; } }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gate.cat for teams — one rogue agent, the whole team's blast radius</title>
+<meta name="description" content="Every developer on your team runs AI coding agents. gate.cat is a deterministic deny-list that vetoes rm -rf, prod-DB drops, disk wipes and secret exfil before they run — on every machine, with one flat team price. Blocking is free and offline; Team/Business add a team-wide record, fleet alerts and signed policy sync.">
+<link rel="canonical" href="https://gate.cat/teams.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gate.cat/teams.html">
+<meta property="og:site_name" content="gate.cat">
+<meta property="og:title" content="gate.cat for teams — one rogue agent, the whole team's blast radius">
+<meta property="og:description" content="A deterministic kill switch for every AI coding agent on your team. Vetoes catastrophic shell commands before they run. Team €149/mo flat, Business €399/mo.">
+<meta property="og:image" content="https://gate.cat/veto-demo-poster.png">
+<meta property="og:image:width" content="1560">
+<meta property="og:image:height" content="940">
+<meta property="og:image:alt" content="gate.cat vetoing rm -rf before it runs — your files are safe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="gate.cat for teams">
+<meta name="twitter:description" content="A deterministic kill switch for every AI coding agent on your team. Team €149/mo flat.">
+<meta name="twitter:image" content="https://gate.cat/veto-demo-poster.png">
+<style>
+  :root{
+    --bg:#fbfaf2; --bg-2:#f3f2e7; --surface:#fdfcf6; --surface-2:#f2f1e6;
+    --ink:#0f0f0d; --ink-2:#3a3d35; --ink-soft:#6a6d62; --ink-faint:#9a9d90;
+    --frame:#0f0f0d; --hairline:rgba(15,15,13,.14);
+    --lime:#cbdd1a; --lime-deep:#5f6d00; --lime-wash:#eef4c6; --lime-line:#d3e08a;
+    --danger:#e5484d; --danger-deep:#c42b30; --danger-wash:#fbe7e8; --danger-line:#f0c4c5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0a0a08; --bg-2:#070706; --surface:#131310; --surface-2:#0f0f0c;
+      --ink:#f6f5ee; --ink-2:#c9c8bf; --ink-soft:#8f8d83; --ink-faint:#5c5a52;
+      --frame:#f6f5ee; --hairline:rgba(246,245,238,.16);
+      --lime:#cbdd1a; --lime-deep:#cbdd1a; --lime-wash:#20240a; --lime-line:#3c4310;
+      --danger:#ff6165; --danger-deep:#ff8a8d; --danger-wash:#25100f; --danger-line:#4a1c1d;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+  .bar{border-bottom:1px solid var(--hairline);background:var(--bg-2)}
+  .bar .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;font-size:14px}
+  .brand{font-weight:800;letter-spacing:-.01em}
+  .brand .paw{color:var(--lime-deep)}
+  .bar a.home{color:var(--ink-soft);text-decoration:none;border-bottom:1px dotted var(--ink-faint)}
+  .hero{padding:64px 0 28px}
+  .kicker{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--danger-deep)}
+  h1{font-size:clamp(30px,5.4vw,52px);line-height:1.04;letter-spacing:-.02em;margin:14px 0 0;font-weight:850}
+  h1 .veto{color:var(--danger-deep)}
+  .sub{font-size:clamp(16px,2.4vw,20px);color:var(--ink-2);margin:20px 0 0;max-width:64ch}
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:750;font-size:15px;
+    padding:13px 22px;border-radius:11px;border:1.5px solid var(--frame);background:var(--ink);color:var(--bg);}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn small{font-weight:600;opacity:.72}
+  .note{font-size:13px;color:var(--ink-soft);margin-top:12px}
+  section{padding:40px 0;border-top:1px solid var(--hairline)}
+  h2{font-size:clamp(21px,3.2vw,28px);letter-spacing:-.01em;margin:0 0 6px;font-weight:800}
+  .lead{color:var(--ink-2);max-width:66ch;margin:0 0 22px}
+  .pains{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .pain{border:1px solid var(--danger-line);background:var(--danger-wash);border-radius:12px;padding:16px 18px}
+  .pain .cmd{font-size:12.5px;color:var(--danger-deep);font-weight:700}
+  .pain .txt{font-size:14px;color:var(--ink-2);margin-top:6px}
+  .term{background:var(--surface-2);border:1px solid var(--hairline);border-radius:12px;padding:18px 20px;
+    font-size:13.5px;overflow-x:auto}
+  .term .l{display:block;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.7}
+  .term .u{color:var(--ink-soft)}
+  .term .b{color:var(--danger-deep);font-weight:700}
+  .term .g{color:var(--lime-deep);font-weight:700}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .feat{border:1px solid var(--hairline);background:var(--surface);border-radius:12px;padding:18px 20px}
+  .feat h3{margin:0 0 6px;font-size:16px}
+  .feat p{margin:0;font-size:14px;color:var(--ink-2)}
+  .feat .k{color:var(--lime-deep);font-weight:800}
+  .prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:8px}
+  .card{border:1.5px solid var(--frame);border-radius:16px;padding:24px;background:var(--surface);display:flex;flex-direction:column}
+  .card.hot{box-shadow:0 0 0 4px var(--lime-wash)}
+  .card .tier{font-weight:800;font-size:18px}
+  .card .badge{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--lime-deep)}
+  .card .price{font-size:34px;font-weight:850;letter-spacing:-.02em;margin:10px 0 2px}
+  .card .price small{font-size:15px;font-weight:600;color:var(--ink-soft)}
+  .card ul{list-style:none;padding:0;margin:14px 0 20px;font-size:14px;color:var(--ink-2)}
+  .card li{padding:6px 0 6px 22px;position:relative}
+  .card li::before{content:"→";position:absolute;left:0;color:var(--lime-deep);font-weight:800}
+  .card .btn{justify-content:center;margin-top:auto}
+  .stat{display:flex;flex-wrap:wrap;gap:26px;margin-top:6px}
+  .stat .s{font-size:14px;color:var(--ink-2)}
+  .stat .s b{color:var(--ink);font-size:22px;font-weight:850;display:block;letter-spacing:-.01em}
+  .honest{border:1px dashed var(--hairline);border-radius:12px;padding:16px 20px;font-size:13.5px;color:var(--ink-soft);background:var(--surface-2)}
+  .honest b{color:var(--ink-2)}
+  footer{padding:44px 0 60px;border-top:1px solid var(--hairline);color:var(--ink-soft);font-size:13.5px}
+  footer a{color:var(--ink-2)}
+  .free{background:var(--lime-wash);border:1px solid var(--lime-line);border-radius:12px;padding:16px 20px;font-size:14px;color:var(--ink-2)}
+  .free code{background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:2px 7px}
+</style>
 </head>
 <body>
+
+<div class="bar"><div class="wrap">
+  <span class="brand"><span class="paw">◐</span> gate.cat</span>
+  <a class="home" href="/">← main site</a>
+</div></div>
+
 <div class="wrap">
-  <header>
-    <a href="/" aria-label="gate.cat home"><div class="mark">g.c</div></a>
-    <a href="/" style="font-weight:700">gate.cat</a>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/veto-demo.html">Demo</a>
-      <a href="/partners.html">Partners</a>
-      <a href="https://github.com/BGMLAI/gate.cat">GitHub</a>
-    </nav>
+
+  <header class="hero">
+    <div class="kicker">for engineering teams</div>
+    <h1>One dev's agent goes rogue.<br>The whole team's the <span class="veto">blast radius</span>.</h1>
+    <p class="sub">Every developer on your team now runs AI coding agents — Claude Code, Cursor, Codex, aider. Each one can run shell commands on a real machine with real credentials. gate.cat is a deterministic deny-list that <b>vetoes the catastrophic ones before they execute</b>, on every machine, under one flat team price.</p>
+    <div class="cta-row">
+      <a class="btn" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Protect the team — Team €149/mo <small>flat</small></a>
+      <a class="btn ghost" href="https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b">Business €399/mo →</a>
+    </div>
+    <p class="note">The blocking is free and open source on every machine. Team &amp; Business add what a team needs on top: a shared record, fleet alerts, and signed policy sync. You're not paying to unlock safety.</p>
   </header>
 
-  <h1>One rogue agent's blast radius is the whole team's.</h1>
-  <p class="lead">Every developer on your team runs AI coding agents with shell access. gate.cat Team gives the fleet one policy and one veto history that no single agent — and no single machine — can delete.</p>
+  <section>
+    <h2>This already happened to teams — at organization scale</h2>
+    <p class="lead">These aren't hypotheticals. They're the failure modes already documented on the main site — and at team scale, one person's agent is enough to trigger any of them for everyone.</p>
+    <div class="pains">
+      <div class="pain">
+        <div class="cmd">Cursor agent, unattended</div>
+        <div class="txt">Prod database and every backup wiped in <b>~9 seconds</b>. No human in the loop, no undo.</div>
+      </div>
+      <div class="pain">
+        <div class="cmd">Runaway loop</div>
+        <div class="txt">An unbounded agent loop burned <b>~$47k</b> in paid API and infra — another case reached <b>~$106k</b> before anyone noticed.</div>
+      </div>
+      <div class="pain">
+        <div class="cmd">Secret exfil</div>
+        <div class="txt">An agent pipes <code class="mono">.env</code> / keys out via <code class="mono">curl</code> or <code class="mono">scp</code>. On a team machine that's <b>everyone's</b> credentials.</div>
+      </div>
+    </div>
+  </section>
 
-  <div class="cta-row">
-    <a class="btn primary" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Start Team — €149/mo flat →</a>
-    <a class="btn ghost" href="https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b">Start Business — €399/mo →</a>
-  </div>
-  <p class="fine">Up to 10 machines on Team. Automatic tax handling, cancel anytime, <strong>30-day full refund, no questions asked</strong>. Larger fleet? <a href="mailto:bogumil@bgml.ai?subject=gate.cat%20fleet">Email us</a>.</p>
+  <section>
+    <h2>How the gate works — same verdict, every machine</h2>
+    <p class="lead">No LLM judge in the path. A deterministic string + path analysis decides <b>before</b> the command runs. Same input, same verdict, every time — so a policy your team approves behaves identically on every developer's laptop and every CI runner.</p>
+    <div class="term" aria-label="example terminal session">
+<span class="l"><span class="u">agent$</span> rm -rf / --no-preserve-root</span>
+<span class="l"><span class="b">gate.cat: VETO</span>  irreversible filesystem wipe — blocked before exec</span>
+<span class="l"><span class="u">agent$</span> psql -c 'DROP DATABASE production'</span>
+<span class="l"><span class="b">gate.cat: VETO</span>  destructive DB op on a protected target — blocked</span>
+<span class="l"><span class="u">agent$</span> git status</span>
+<span class="l"><span class="g">gate.cat: allow</span>  (~0.6% of commands ever get stopped)</span>
+    </div>
+    <div class="stat" style="margin-top:20px">
+      <div class="s"><b>178 / 178</b> dangerous commands blocked in the threat suite</div>
+      <div class="s"><b>1,085,159</b> real agent commands replayed</div>
+      <div class="s"><b>1</b> documented false-block (published in the repo)</div>
+    </div>
+  </section>
 
-  <h2>Why the paid layer exists at all</h2>
-  <p>The local gate — the veto engine, the Claude Code hook, the adapters, the CLI dashboard and local reports — is <a href="https://github.com/BGMLAI/gate.cat">Apache-2.0 and free forever</a>. Not a trial; nothing is rate-limited or held back.</p>
-  <p>But a local log lives <strong>inside the agent's blast radius</strong>. An agent with shell access can delete or rewrite the file that records what it did — real incident reports include an agent that deleted a file and then hid it from the user. The paid layer is the <strong>off-machine, append-only copy of your fleet's veto history</strong> — the one thing the agents can't reach — plus alerts and a monthly report generated from it. Same shape as offsite backup: you hope it's boring, and you keep the receipts.</p>
+  <section>
+    <h2>What a team gets that a solo dev doesn't</h2>
+    <p class="lead">The free core blocks locally and offline on every machine. The paid tiers exist because a <b>team</b> needs to see and steer that across many machines and many people — with one bill, not a per-seat spreadsheet.</p>
+    <div class="grid2">
+      <div class="feat"><h3><span class="k">Shared record.</span> off every machine</h3><p>Every veto and every allow is recorded off the developer's machine — so a lead can see what agents actually tried across the team, not reconstruct it after an incident.</p></div>
+      <div class="feat"><h3><span class="k">Fleet alerts.</span> when something trips</h3><p>Get notified when an agent hits a hard block on any machine in the team — the early signal that a workflow or a prompt is doing something it shouldn't.</p></div>
+      <div class="feat"><h3><span class="k">Signed policy sync.</span> <small>(Business)</small></h3><p>Push one approved, cryptographically signed policy set to up to 10 machines. Each machine can verify it's running exactly the policy your team approved — tampering shows.</p></div>
+      <div class="feat"><h3><span class="k">Flat pricing.</span> not per-seat</h3><p>Team is <b>€149/mo flat</b>. Add developers without re-negotiating the bill — the opposite of per-seat security tools that punish you for growing.</p></div>
+    </div>
+  </section>
 
-  <blockquote><strong>Architecture promise (load-bearing):</strong> Cloud is an optional <em>reporter</em> beside the gate, never in its execution path. If Cloud is down, unreachable, or cancelled, the gate keeps blocking exactly as before. Policy sharing for teams works pull-only: a signed policy file your machines fetch and apply <strong>after local review</strong> — nothing remote ever executes or decides on your box.</blockquote>
+  <section>
+    <h2>Pricing</h2>
+    <div class="prices">
+      <div class="card">
+        <div class="tier">Free core</div>
+        <div class="price">€0</div>
+        <ul>
+          <li>Deterministic blocking on every machine</li>
+          <li>Claude Code / Cursor hook, gated shell for Codex &amp; aider</li>
+          <li>No model in the path · sub-millisecond · Apache 2.0</li>
+          <li>Works fully offline</li>
+        </ul>
+        <a class="btn ghost" href="/#install">Install free →</a>
+      </div>
+      <div class="card hot">
+        <div class="badge">most teams start here</div>
+        <div class="tier">Team</div>
+        <div class="price">€149<small> /mo flat</small></div>
+        <ul>
+          <li>Everything in Free, across the team</li>
+          <li>Shared, off-machine record of vetoes &amp; allows</li>
+          <li>Fleet alerts when an agent trips a block</li>
+          <li>Flat price — add developers freely</li>
+          <li>One invoice</li>
+        </ul>
+        <a class="btn" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Protect the team →</a>
+      </div>
+      <div class="card">
+        <div class="tier">Business</div>
+        <div class="price">€399<small> /mo</small></div>
+        <ul>
+          <li>Everything in Team</li>
+          <li>Up to 10 machines</li>
+          <li>Signed policy sync (verifiable on each machine)</li>
+          <li>Fleet report</li>
+        </ul>
+        <a class="btn ghost" href="https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b">Go Business →</a>
+      </div>
+    </div>
+    <p class="note" style="margin-top:18px">Prices in EUR. gate.cat bills through Stripe. EU B2B: add your VAT ID at checkout.</p>
+  </section>
 
-  <h2>What Team adds on top of the free gate</h2>
-  <table>
-    <tr><th>Included</th><th>Detail</th></tr>
-    <tr><td>Off-machine fleet veto history</td><td>Append-only, outside every agent's credentials, with email alerts. By default events carry a <em>hash</em> of the matched command — raw text is a separate, explicit opt-in, because commands can contain secrets.</td></tr>
-    <tr><td>Fleet-wide monthly report</td><td>Generated from the off-machine log. <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/SAMPLE_REPORT.md">A redacted sample from our own real dogfood log — red-team caveats included — is public.</a></td></tr>
-    <tr><td>Shared signed policy file</td><td>One policy for the whole fleet, pull-only, applied after local review (rolling out).</td></tr>
-    <tr><td>Priority support</td><td>Direct line to the person who wrote the engine.</td></tr>
-  </table>
-  <p class="fine">Price anchor, honestly stated: nearest per-seat alternatives price at $39–100 <em>per user per month</em> (market snapshot, 2026-07-08). Flat €149 costs less from the second developer onward and doesn't tax your team's growth up to 10 machines.</p>
+  <section>
+    <h2>What it does <i>not</i> do — plainly</h2>
+    <div class="honest">
+      gate.cat catches <b>known dangerous command shapes</b> using a deterministic deny-list. A deliberately obfuscated or genuinely novel command <b>can still slip past</b> it — the full bypass suite is in the repo so you can see exactly where the edges are. It is <b>not</b> a sandbox, not an antivirus, and not a substitute for least-privilege credentials. It's the fast, deterministic layer that stops the well-known catastrophic mistakes an AI agent makes far more often than a human would — <b>before</b> they run.
+    </div>
+  </section>
 
-  <h2>Measured, not claimed</h2>
-  <div class="evidence">
-    <div><strong>0 real misses</strong><span>across 1,085,159 unique real agent commands through the full gate (the 4 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits). Reproducible — method and artifact in the repo.</span></div>
-    <div><strong>~0.6%</strong><span>of real commands intervened on, measured on two independent logs — the gate gets out of the way.</span></div>
-    <div><strong>1,863 tests</strong><span>pass locally and the 0.4.16 CI matrix is green on Python 3.11–3.13. Coverage is printed by CI on every run.</span></div>
-  </div>
-  <p class="fine">Every number above traces to a row in <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md</a> (claim → source artifact → allowed wording). If your reproduction disagrees, that's a bug report we want.</p>
-
-  <h2>The audit-readiness pilot, precisely</h2>
-  <p>For compliance buyers (Business tier and up) — what you get, and what we deliberately do not claim:</p>
-  <ul>
-    <li><strong>Evidence stays yours:</strong> the veto log is collected append-only in <strong>your</strong> infrastructure (e.g. object storage with write-once retention — we provide the reference setup). We never hold the only copy of your evidence.</li>
-    <li><strong>Signed monthly report</strong> with explicit control mapping (which agent actions are gated, by which policy, with which verdicts) and a compensating-controls memo. Honest framing: this is <strong>management evidence with reproducible artifacts your auditor can sample</strong> — not a substitute for an independent audit.</li>
-    <li><strong>Explicit scope:</strong> coverage claims are limited to the enumerated danger classes in <a href="https://github.com/BGMLAI/gate.cat/blob/master/RECALL.md">RECALL.md</a>. Outside those classes = unchecked, and the report says so on page one.</li>
-    <li><strong>Guarantee rider:</strong> if the full gate passes a command from the covered classes in your logs during the pilot year, the next 12 months are service credit. Covered classes measure 100% recall — the risk is known and honestly bounded to exactly what we claim.</li>
-    <li>We are a solo-founder vendor without SOC2 today. That's why the evidence log is self-hosted and every report is reproducible from your own data — the trust model doesn't require believing us.</li>
-  </ul>
-  <p class="fine">One runaway <code>terraform destroy</code> loop cost a team ~$106k; one agent dropped a production database. The pilot is priced at a fraction of a single incident.</p>
-
-  <div class="cta-row">
-    <a class="btn primary" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Start Team — €149/mo flat →</a>
-    <a class="btn ghost" href="mailto:bogumil@bgml.ai?subject=gate.cat%20audit-readiness%20pilot">Talk about the pilot</a>
-  </div>
-
-  <div class="honest"><strong>Honest limits:</strong> the gate is certain only about what it <strong>blocks</strong> — an unmatched action is <em>unchecked</em>, not <em>safe</em>. Use gate.cat <em>with</em> your sandbox, not instead of one. Cloud records what happened; it does not make the gate smarter. Data retention 12 months, JSON export anytime, delete-account = hard delete. Full boundary, both directions: <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/THREAT_MODEL.md">THREAT_MODEL.md</a>.</div>
+  <section>
+    <div class="free">
+      <b>Try the free core first — it's the whole engine.</b><br>
+      <code class="mono">pip install gate.cat</code> — then wire it into your agent. The paid tiers only add the team layer on top; the protection itself is free and open source (Apache 2.0). Recommend it to your team, roll out Team when you want shared visibility.
+    </div>
+  </section>
 
   <footer>
-    <a href="/">gate.cat</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md">Full pricing &amp; boundaries</a> · <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md — verify the numbers</a> · <a href="/partners.html">Partner program</a>
+    <div class="cta-row" style="margin-top:0">
+      <a class="btn" href="https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a">Start Team — €149/mo flat →</a>
+      <a class="btn ghost" href="https://github.com/BGMLAI/gate.cat">Read the code →</a>
+    </div>
+    <p style="margin-top:22px">
+      <a href="/">gate.cat</a> · <a href="/veto-demo.html">30-second veto demo</a> · <a href="/partners.html">partner program (30%)</a> · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · Apache 2.0<br>
+      Deterministic action veto for AI coding agents. Free core forever; Team &amp; Business add the fleet layer.
+    </p>
   </footer>
+
 </div>
+
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   1) read ?ref=CODE from the URL; store cookie gc_ref (90d, SameSite=Lax).
+   2) rewrite every checkout link to carry the ref so the webhook sees it:
+      - Lemon Squeezy links  -> checkout[custom][ref]=<code>  (LS echoes it back)
+      - Stripe payment links -> client_reference_id=<code>     (Stripe echoes it
+        back at data.object.client_reference_id). The LIVE landing uses
+        buy.stripe.com, so the Stripe rewrite is what actually earns commission.
+   Idempotent, handles ?/& correctly, covers /buy/ and /custom/ links. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    /* sanitize: allow only url-safe code chars, cap length. */
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+
+    var PARAM = "checkout[custom][ref]";
+    var ENCODED = encodeURIComponent(PARAM) + "=" + encodeURIComponent(ref);
+    /* Stripe Payment Links attribute via client_reference_id. */
+    var STRIPE_PARAM = "client_reference_id";
+    var STRIPE_ENCODED = STRIPE_PARAM + "=" + encodeURIComponent(ref);
+
+    /* append "name=value" to href once, correct ?/& handling. skip when the
+       param key is already present (idempotent for re-runs / hydration). */
+    function appendParam(a, href, key, encoded) {
+      if (href.indexOf(key + "=") !== -1) { return; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + encoded);
+    }
+
+    function rewrite() {
+      /* Lemon Squeezy checkout links. */
+      var lsLinks = document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]');
+      for (var i = 0; i < lsLinks.length; i++) {
+        var a = lsLinks[i];
+        var href = a.getAttribute("href");
+        if (!href) { continue; }
+        /* idempotent: never append the same custom ref twice. */
+        if (href.indexOf(encodeURIComponent(PARAM) + "=") !== -1 ||
+            href.indexOf(PARAM + "=") !== -1) { continue; }
+        var sep = href.indexOf("?") === -1 ? "?" : "&";
+        a.setAttribute("href", href + sep + ENCODED);
+      }
+      /* Stripe payment links (buy.stripe.com) -- the live checkout. */
+      var stripeLinks = document.querySelectorAll('a[href*="buy.stripe.com"]');
+      for (var j = 0; j < stripeLinks.length; j++) {
+        var sa = stripeLinks[j];
+        var shref = sa.getAttribute("href");
+        if (!shref) { continue; }
+        appendParam(sa, shref, STRIPE_PARAM, STRIPE_ENCODED);
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", rewrite);
+    } else {
+      rewrite();
+    }
+    /* re-apply for links injected after mount (SPA hydration). */
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(function () { rewrite(); });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+
 </body>
 </html>
