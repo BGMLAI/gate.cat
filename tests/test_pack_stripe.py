@@ -49,3 +49,23 @@ def test_paid_current_price_is_cached(monkeypatch):
     assert fulfill.verify_session("cs_paid") == expected
     assert fulfill.verify_session("cs_paid") == expected
     assert len(calls) == 2
+
+
+def test_xsell_excludes_purchased_pack(monkeypatch):
+    m = _load(monkeypatch)
+    html = m.xsell_html("gatecat-pack-fintech-1.0.0.zip")
+    assert "Fintech" not in html                       # bought -> excluded
+    assert "PaaS" in html and "HTTP-API Breadth" in html
+    assert html.count("client_reference_id=pack-xsell") == 2
+    assert "teams.html?source=pack-xsell" in html      # Cloud Solo line
+    assert "&euro;29" in html and "&euro;19" in html
+
+
+def test_xsell_renders_into_page(monkeypatch):
+    m = _load(monkeypatch)
+    body = m.PAGE.format(sid="cs_x", fname="gatecat-pack-paas-1.0.0.zip",
+                         mod="paas",
+                         xsell=m.xsell_html("gatecat-pack-paas-1.0.0.zip"))
+    assert "Complete your coverage" in body
+    assert "PaaS" not in body.split("Complete your coverage")[1].split("</ul>")[0].replace(
+        "render/supabase", "")  # purchased PaaS pack not offered again

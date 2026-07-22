@@ -3,6 +3,31 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [0.4.18] -- the listing sells, the CLI hints honestly (2026-07-22)
+
+### Added
+- Once-a-DAY Solo hint on `gate.cat status`/`stats` (`gatecat/_nudge.py:
+  maybe_nudge_cli`): fires only when interventions > 0 and no
+  `GATECAT_CLOUD_API_KEY`, stderr-only, silenced by `GATECAT_NO_NUDGE`/
+  `GATECAT_QUIET`. A process-wide guard guarantees at most ONE hint of any
+  kind per run.
+- One-time-per-machine policy-pack hint (`gatecat/_pack_hint.py`): if a stack
+  CLI is on PATH (`stripe` -> Fintech; `vercel`/`netlify`/`fly`/`heroku`/
+  `railway`/`render`/`supabase` -> PaaS), prints the matching EUR 29 pack with
+  its PRICING.md scope. Same opt-outs, same shared no-stacking guard
+  (`~/.gatecat/.pack_nudged`).
+- `gate.cat report` footer links the off-machine variant of the same report
+  (ASCII-safe; the paste-safety test stays green). `gate.cat cloud` without a
+  key now says where a key comes from.
+
+### Changed
+- PyPI listing acts as a landing page: `[project.urls]` Homepage now points at
+  https://gate.cat (plus a Pricing link), and the README carries a free-forever
+  /pricing block right under the install section.
+- README proxy section: stale "21 deny policies" corrected to the measured 71
+  default policy walls (FACTS.md F10). No policy, recall, or bypass changes.
+
+
 ## [0.4.17] -- one-time post-veto Team hint (2026-07-16)
 
 ### Added

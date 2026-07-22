@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How do I secure an MCP server against destructive tool calls? · gate.cat</title>
+<meta name="description" content="MCP servers hand your AI agent real tools — delete-file, DROP TABLE, terminate-instance. gate.cat puts a deterministic, fail-closed veto in front of those tool calls so an irreversible one is blocked before it runs. Free, Apache 2.0, one line." />
+<link rel="canonical" href="https://gate.cat/answers/secure-mcp-server.html" />
+<meta property="og:title" content="How do I secure an MCP server against destructive tool calls? · gate.cat" />
+<meta property="og:description" content="MCP servers hand your AI agent real tools — delete-file, DROP TABLE, terminate-instance. gate.cat puts a deterministic, fail-closed veto in front of those tool calls so an irreversible one is blocked before it runs. Free, Apache 2.0, one line." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://gate.cat/answers/secure-mcp-server.html" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" href="../img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="answers.css" />
+<script>(function(){try{var t=localStorage.getItem("gatecat-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "gate.cat", "item": "https://gate.cat/"}, {"@type": "ListItem", "position": 2, "name": "Answers", "item": "https://gate.cat/answers/"}, {"@type": "ListItem", "position": 3, "name": "securing an MCP server", "item": "https://gate.cat/answers/secure-mcp-server.html"}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "how do I secure an mcp server against destructive tool calls?", "description": "MCP servers hand your AI agent real tools \u2014 delete-file, DROP TABLE, terminate-instance. gate.cat puts a deterministic, fail-closed veto in front of those tool calls so an irreversible one is blocked before it runs. Free, Apache 2.0, one line.", "url": "https://gate.cat/answers/secure-mcp-server.html", "author": {"@type": "Organization", "name": "BGML.ai", "url": "https://bgml.ai"}, "publisher": {"@type": "Organization", "name": "gate.cat", "url": "https://gate.cat"}, "about": "AI agent safety, fail-closed action veto, irreversible command prevention"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does gate.cat inspect MCP tool calls or just shell commands?", "acceptedAnswer": {"@type": "Answer", "text": "Both. In Claude Code, MCP tool calls flow through the same PreToolUse hook as shell commands, so the deny-list covers them. Through the proxy, any action an OpenAI-API agent takes is evaluated before it runs."}}, {"@type": "Question", "name": "What extra does the Local-Agent policy pack add for MCP?", "acceptedAnswer": {"@type": "Answer", "text": "Stack-specific breadth, not more core safety: deny rules for local-model and MCP tooling such as ollama rm, LM Studio model removal, and destructive vector-store calls like an HTTP DELETE against a collection. It is a one-time $29 add-on; the free core already blocks the classic shell/SQL/cloud shapes."}}, {"@type": "Question", "name": "Can the agent route around the proxy?", "acceptedAnswer": {"@type": "Answer", "text": "The proxy only sees traffic that is pointed at it \u2014 that is an operator base_url setting, not a gate.cat guarantee. The proxy's /health endpoint and a startup banner surface the current mode so a bypassed or disabled gate is visible rather than silent."}}, {"@type": "Question", "name": "Is gate.cat itself an MCP server?", "acceptedAnswer": {"@type": "Answer", "text": "No. gate.cat is a veto layer that sits in front of agents and their tools (including MCP tools). It is a Claude Code hook and an OpenAI-API proxy, not an MCP server you register as a tool."}}, {"@type": "Question", "name": "Does securing MCP calls slow the agent down?", "acceptedAnswer": {"@type": "Answer", "text": "The check is a local regex evaluation and intervenes on roughly 0.6% of real commands. Benign tool calls pass straight through; only the irreversible shapes are stopped."}}]}</script>
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="https://gate.cat/"><span class="mk"></span>gate.cat</a>
+  <span class="nav-sp"></span>
+  <a class="nl" href="./">Answers</a>
+  <a class="nl" href="https://gate.cat/#how">How&nbsp;it&nbsp;works</a>
+  <a class="nav-cta" href="https://gate.cat/#install">pip install gate-cat</a>
+  <button class="tog" id="tog" aria-label="Toggle theme">◐</button>
+</div></header>
+<main class="wrap">
+  <nav class="crumb"><a href="https://gate.cat/">gate.cat</a> / <a href="./">answers</a> / securing an MCP server</nav>
+  <p class="kick">mcp · tool safety</p>
+  <h1>how do I secure an mcp server against destructive tool calls?</h1>
+  <div class="answer">
+    <div class="lbl">Short answer</div>
+    <p>Don't trust the model to use dangerous tools carefully — put a deterministic veto <em>in front of</em> the tool calls. gate.cat inspects each action an MCP-connected agent tries (file deletes, database drops, cloud teardown, collection wipes) and blocks the irreversible ones before they execute, failing closed.</p>
+    <p>Run it as a Claude&nbsp;Code hook, or as a proxy the agent routes through — <code>pip install gate-cat</code>, free, Apache&nbsp;2.0.</p>
+  </div>
+  <p class="lede">The Model Context Protocol (MCP) is powerful because it gives an agent real tools. That is also the risk: an MCP server can expose <code>delete_file</code>, a database client, a cloud SDK or a vector-store admin API — and an agent that misreads intent can call the irreversible one.</p>
+
+<h2>where MCP goes wrong</h2>
+<p>An MCP tool call is a structured request to <em>do</em> something. Most servers apply little semantic checking — if the tool exists and the arguments parse, it runs. So the danger surface is exactly the destructive verbs:</p>
+<ul>
+  <li><b>Filesystem servers:</b> recursive delete, overwrite, move-outside-root.</li>
+  <li><b>Database servers:</b> <code>DROP TABLE</code>, <code>DELETE</code> without a <code>WHERE</code>, <code>TRUNCATE</code>.</li>
+  <li><b>Cloud / infra servers:</b> terminate instances, <code>terraform destroy</code>, delete buckets, revoke keys.</li>
+  <li><b>Vector-store / model servers:</b> drop a collection, <code>ollama rm</code> a model, delete an embedding index.</li>
+</ul>
+<p>Restarting a stopped instance is recoverable. Dropping a collection or deleting a bucket is not. The goal is a wall around the <em>irreversible subset</em>.</p>
+
+<h2>put the veto in front of the tools</h2>
+<p>gate.cat is a deterministic deny-list that evaluates an action <em>before</em> it executes and fails closed. Two ways to place it in an MCP setup:</p>
+<ul>
+  <li><b>Claude&nbsp;Code hook.</b> Tool calls from MCP servers flow through the <code>PreToolUse</code> hook, so the veto covers them natively — no per-server wiring.</li>
+  <li><b>Proxy.</b> For any OpenAI-API agent driving MCP tools, point the agent's <code>base_url</code> at the gate.cat proxy. The proxy's <code>/health</code> endpoint reports its mode so a misconfigured (silent) gate is detectable — silence is never assumed to mean safe.</li>
+</ul>
+<p>The <b>38 default policies</b> already cover the classic irreversible shapes across shell, SQL and cloud. For local-model and MCP stacks specifically, the optional <b>Local-Agent policy pack</b> adds deny rules for <code>ollama rm</code>, LM&nbsp;Studio model removal, and destructive vector-store calls (for example an HTTP <code>DELETE</code> against a Qdrant collection) — breadth for that stack, on top of the same free engine.</p>
+
+<div class="term"><span class="g"># MCP agent asks a vector-store tool to drop a collection…</span>
+<span class="p">&#8594;</span> DELETE /collections/customer_embeddings
+<span class="r">VETO [VECTOR_STORE_DROP]</span> irreversible collection delete — blocked
+<span class="g"># the benign twin still passes:</span>
+<span class="p">&#8594;</span> GET /collections/customer_embeddings  <span class="y">&#8594; allowed</span></div>
+
+<div class="note"><b>gate + sandbox, not gate instead of sandbox.</b> A pattern-layer veto reads the tool call; it does not contain the server process. Independent reviewers reached the same conclusion we did: run the MCP server inside an OS sandbox <em>and</em> keep gate.cat in front. The gate stops the named irreversible verbs early and cheaply; the sandbox bounds everything the pattern layer never saw.</div>
+
+  <h2>frequently asked</h2>
+  <div class="faq">
+    <details><summary>Does gate.cat inspect MCP tool calls or just shell commands?</summary><p>Both. In Claude Code, MCP tool calls flow through the same PreToolUse hook as shell commands, so the deny-list covers them. Through the proxy, any action an OpenAI-API agent takes is evaluated before it runs.</p></details>
+    <details><summary>What extra does the Local-Agent policy pack add for MCP?</summary><p>Stack-specific breadth, not more core safety: deny rules for local-model and MCP tooling such as ollama rm, LM Studio model removal, and destructive vector-store calls like an HTTP DELETE against a collection. It is a one-time $29 add-on; the free core already blocks the classic shell/SQL/cloud shapes.</p></details>
+    <details><summary>Can the agent route around the proxy?</summary><p>The proxy only sees traffic that is pointed at it — that is an operator base_url setting, not a gate.cat guarantee. The proxy's /health endpoint and a startup banner surface the current mode so a bypassed or disabled gate is visible rather than silent.</p></details>
+    <details><summary>Is gate.cat itself an MCP server?</summary><p>No. gate.cat is a veto layer that sits in front of agents and their tools (including MCP tools). It is a Claude Code hook and an OpenAI-API proxy, not an MCP server you register as a tool.</p></details>
+    <details><summary>Does securing MCP calls slow the agent down?</summary><p>The check is a local regex evaluation and intervenes on roughly 0.6% of real commands. Benign tool calls pass straight through; only the irreversible shapes are stopped.</p></details>
+  </div>
+
+  <section class="cta">
+  <h2>put a leash on your agent — 60 seconds</h2>
+  <p class="lede">The gate, all 38 default policies, the Claude&nbsp;Code hook and the proxy are free forever (Apache&nbsp;2.0). No account, no daemon, no telemetry.</p>
+  <div class="install"><span class="p">$</span>&nbsp;pip install gate-cat</div>
+  <p class="lede" style="margin-top:.6rem">Running agents across a team? One rogue agent is the whole team&rsquo;s blast radius. <a href="https://gate.cat/teams.html" id="lnk-teams" style="border-bottom:1px solid currentColor;font-weight:700;white-space:nowrap">See the team plan &mdash; &#8364;149/mo flat &#8594;</a></p>
+  <div class="cap" id="cap-answer-mcp">
+  <form class="cap-form" id="cf-answer-mcp">
+    <input id="ce-answer-mcp" type="email" placeholder="you@company.com" required autocomplete="email" aria-label="Your email" />
+    <button type="submit">Get &ldquo;Veto Catches&rdquo;</button>
+  </form>
+  <p class="cap-note">One email when there's a catch worth showing: a real irreversible command an agent tried, and how the wall stopped it. Opt-in, no spam, no telemetry. The gate itself is free.</p>
+  <p class="cap-done">&#10003; you're on the list — first catch lands soon.</p>
+</div>
+</section>
+
+  <h2>keep reading</h2>
+  <div class="related">
+    <a class="rcard" href="ai-agent-almost-ran-rm-rf.html"><div class="q">My AI agent almost ran rm -rf — how do I stop it?</div><div class="a">A deterministic wall that blocks the command before it runs.</div></a>
+    <a class="rcard" href="claude-code-deleted-my-file.html"><div class="q">Claude Code deleted my files — recovery &amp; prevention</div><div class="a">What to try first, and how to stop the next deletion before it runs.</div></a>
+    <a class="rcard" href="audit-evidence-for-ai-agent-actions.html"><div class="q">How do I get an audit trail of what my AI agent did?</div><div class="a">A local, tamper-evident log of every irreversible action, for free.</div></a>
+  </div>
+</main>
+<footer><div class="foot-in">
+  <span>gate.cat — fail-closed action-veto for AI agents · Apache 2.0</span>
+  <span><a href="https://gate.cat/">Home</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://gate.cat/teams.html" id="lnk-teams-foot">For teams</a> · <a href="https://gate.cat/#packs">Policy Packs</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+</div></footer>
+<script>
+(function(){var r=document.getElementById('tog');if(r)r.addEventListener('click',function(){var d=document.documentElement,n=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',n);try{localStorage.setItem('gatecat-theme',n);}catch(e){}});})();
+(function(){
+  var forms=[].slice.call(document.querySelectorAll('.cap-form'));
+  forms.forEach(function(f){
+    var cap=f.closest('.cap'),email=f.querySelector('input'),btn=f.querySelector('button');
+    var ref=new URLSearchParams(location.search).get('ref')||cap.id.replace('cap-','answer-')||'';
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()))return;
+      btn.disabled=true;btn.textContent='…';
+      fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email.value.trim(),ref:(cap.id+' '+ref).slice(0,120)})})
+      .then(function(x){return x.json();}).then(function(){cap.classList.add('done');})
+      .catch(function(){btn.disabled=false;btn.textContent='Retry';});
+    });
+  });
+})();
+</script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   Mirrors the capture on the main landing so a creator link like
+   gate.cat/answers/<page>.html?ref=CODE attributes commission at checkout:
+   1) read ?ref=CODE; store cookie gc_ref (90d, SameSite=Lax) at path=/,
+      so the main site sees the ref when the visitor buys.
+   2) also carry ?ref onto same-site onward links (belt-and-suspenders).
+   Never breaks the page. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+    var ids = ["lnk-teams", "lnk-teams-foot"];
+    for (var i = 0; i < ids.length; i++) {
+      var a = document.getElementById(ids[i]);
+      if (!a) { continue; }
+      var href = a.getAttribute("href");
+      if (!href || href.indexOf("ref=") !== -1) { continue; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + "ref=" + encodeURIComponent(ref));
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+</body>
+</html>

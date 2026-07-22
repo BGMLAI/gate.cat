@@ -1,6 +1,6 @@
 [project]
 name = "gate.cat"
-version = "0.4.17"
+version = "0.4.18"
 description = "Block irreversible AI-agent actions before they run — deterministic, fail-closed action-veto (deny-list + exec-check + human-in-the-loop) for any tool-using agent, from a Claude Code hook to local LLMs."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -91,9 +91,10 @@ gatecat-proxy = "gatecat.proxy.__main__:main"
 truthgate-audit = "gatecat.audit:main"
 
 [project.urls]
-Homepage = "https://github.com/BGMLAI/gate.cat"
+Homepage = "https://gate.cat"
 Repository = "https://github.com/BGMLAI/gate.cat"
 Issues = "https://github.com/BGMLAI/gate.cat/issues"
+Pricing = "https://gate.cat/teams.html"
 
 [build-system]
 requires = ["hatchling"]

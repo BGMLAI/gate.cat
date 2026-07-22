@@ -40,7 +40,9 @@ def _endpoint() -> str:
 def _api_key() -> str:
     k = os.environ.get("GATECAT_CLOUD_API_KEY")
     if not k:
-        sys.exit("cloud is off: set GATECAT_CLOUD_API_KEY (Solo/Team subscription)")
+        sys.exit("cloud is off: set GATECAT_CLOUD_API_KEY (Solo/Team subscription)\n"
+                 "  get a key: https://gate.cat/teams.html?source=cli "
+                 "(Solo EUR 19/mo, Team EUR 149/mo flat)")
     return k
 
 

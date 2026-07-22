@@ -65,7 +65,7 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 ## Links
 
 - [Repository & README](https://github.com/BGMLAI/gate.cat): install, quick start, the Claude Code hook config.
-- [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.17).
+- [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.18).
 - [Pricing (live)](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md): the local gate is free forever including local reports. Stripe checkout is live for gate.cat Cloud at Solo €19/month, Team €149/month flat for up to 10 machines, and Business €399/month. Cloud is the optional off-machine copy of veto history the agent cannot rewrite; it is never in the gate's execution path and uses hashed command events by default. Stack-specific Fintech, PaaS, and HTTP-API Breadth policy packs are €29 each, one-time, with lifetime updates.
 - [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md): every public number with its source and allowed wording.
 - [COMPARISON.md](https://github.com/BGMLAI/gate.cat/blob/master/COMPARISON.md): honest positioning vs LangGraph `interrupt`, HumanLayer, Lakera, Guardrails AI.

@@ -42,13 +42,51 @@ pip install gatecat_packs_*.whl
 export GATECAT_EXTRA_POLICIES=gatecat_packs.{mod}</pre>
 <p>Full instructions are in INSTALL.md inside the zip. This download link keeps
 working — bookmark this page. Receipt &amp; invoice arrive by email from Stripe.
-Questions: bgml@bgml.ai</p></body>"""
+Questions: bgml@bgml.ai</p>
+{xsell}</body>"""
 
 MODULE_FOR = {
     "gatecat-pack-fintech-1.0.0.zip": "fintech",
     "gatecat-pack-paas-1.0.0.zip": "paas",
     "gatecat-pack-http-breadth-1.0.0.zip": "http_api_breadth",
 }
+
+# Cross-sell on the thank-you page: the two packs NOT just bought, plus the
+# Cloud line. Scopes quote PRICING.md; links are the live Payment Links with a
+# client_reference_id so the source shows up on the Checkout Session (a plain
+# ?source= query on buy.stripe.com would be dropped and measure nothing).
+PACK_LINKS = {
+    "gatecat-pack-fintech-1.0.0.zip": (
+        "Fintech — refund creation, payouts/transfers, customer &amp; "
+        "billing-config deletion",
+        "https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c"),
+    "gatecat-pack-paas-1.0.0.zip": (
+        "PaaS — <code>vercel remove</code>, <code>netlify sites:delete</code>, "
+        "<code>fly/heroku apps destroy</code>, <code>railway down</code>, "
+        "<code>render/supabase delete</code>",
+        "https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d"),
+    "gatecat-pack-http-breadth-1.0.0.zip": (
+        "HTTP-API Breadth — destructive raw-HTTP calls the CLI-verb walls "
+        "never see",
+        "https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e"),
+}
+
+
+def xsell_html(purchased: str) -> str:
+    """The 'Complete your coverage' block, excluding the pack just bought."""
+    items = "".join(
+        f'<li><a href="{url}?client_reference_id=pack-xsell">{label}</a>'
+        " — &euro;29 one-time</li>"
+        for fname, (label, url) in PACK_LINKS.items() if fname != purchased)
+    return (
+        "<hr><h2>Complete your coverage</h2>"
+        "<p>Every rule in a pack is tested to fire on its danger and stay "
+        "silent on the benign twin — same bar as the free core.</p>"
+        f"<ul>{items}</ul>"
+        "<p>And the one thing an agent can't reach: an off-machine, "
+        "append-only copy of your veto history — "
+        '<a href="https://gate.cat/teams.html?source=pack-xsell">'
+        "Cloud Solo &euro;19/mo</a>.</p>")
 
 
 def _stripe_get(path: str):
@@ -99,7 +137,8 @@ class Handler(BaseHTTPRequestHandler):
             if not filename:
                 return self._deny()
             body = PAGE.format(sid=session_id, fname=filename,
-                               mod=MODULE_FOR[filename]).encode()
+                               mod=MODULE_FOR[filename],
+                               xsell=xsell_html(filename)).encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))

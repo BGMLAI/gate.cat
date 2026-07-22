@@ -47,13 +47,13 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 | Local CLI dashboard + local reports | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Off-machine veto history** (the copy the agent has no credentials for) + email alerts | — | ✅ | ✅ | ✅ | ✅ |
 | Monthly report from the off-machine log | — | ✅ yours | ✅ fleet-wide | ✅ signed, + control mapping | ✅ custom scope |
-| Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ *(ships this month)* | ✅ | ✅ |
+| Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ *(rolling out)* | ✅ | ✅ |
 | Evidence log self-hosted in **your** infra | — | — | — | ✅ | ✅ |
 | Support | community | email | priority | dedicated | dedicated + custom policies |
 | Price | €0 forever | €19/mo | €149/mo flat | €399/mo | custom |
 | | | [**Start Solo →**](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09) | [**Start Team →**](https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a) | [**Start Business →**](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
 
-Stripe checkout is live while Lemon Squeezy account review is pending. Billing
+Stripe checkout is live and is the payment channel. Billing
 includes automatic tax handling, cancellation at any time and a
 **30-day full refund, no questions asked.**
 
