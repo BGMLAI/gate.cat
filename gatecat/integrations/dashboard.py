@@ -234,7 +234,9 @@ def render_report(records: list[dict], month: str | None = None) -> str:
         "*Generated locally by the free `gate.cat report` command - counts only,",
         "no command text, nothing sent anywhere. This log lives on the same",
         "machine the agent runs on; the paid tier keeps an off-machine copy",
-        "precisely because of that (see PRICING.md).*",
+        "precisely because of that (see PRICING.md). Same report, generated from",
+        "the copy the agent can't rewrite: Solo EUR 19/mo --",
+        "https://gate.cat/teams.html?source=report*",
     ]
     return "\n".join(lines)
 
@@ -268,6 +270,15 @@ def explain(command: str, color: bool = True) -> str:
                 info = st.get("level") or st.get("policy") or st.get("reason") or ""
                 lines.append(f"    - {stage}: {str(info)[:60]}")
     return "\n".join(lines)
+
+
+def _cli_nudge(surface: str, records: list[dict]) -> None:
+    """Best-effort, post-render: never allowed to affect output or exit code."""
+    try:
+        from gatecat._nudge import maybe_nudge_cli
+        maybe_nudge_cli(surface, _summary(records)["interventions"] if records else 0)
+    except Exception:
+        pass
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -329,10 +340,14 @@ def main(argv: list[str] | None = None) -> int:
         if cmd in ("-h", "--help"):
             print("gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
             return 0
-        print(render_status(_read(), color))
+        recs = _read()
+        print(render_status(recs, color))
+        _cli_nudge("status", recs)
         return 0
     if cmd == "stats":
-        print(render_stats(_read(), color))
+        recs = _read()
+        print(render_stats(recs, color))
+        _cli_nudge("stats", recs)
         return 0
     if cmd == "log":
         n = int(args[1]) if len(args) > 1 and args[1].isdigit() else 20
