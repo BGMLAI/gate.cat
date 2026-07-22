@@ -7,8 +7,11 @@ początku każdego przebiegu i aktualizuje go na końcu. Kolejność przebiegu:
 
 ## ZASADY TWARDE
 
-1. **Zero wysyłania maili** — agent tworzy wyłącznie Gmail DRAFTY (`create_draft`
-   z `replyToMessageId`); wysyłka i każdy cold-outreach należą wyłącznie do Bogumiła.
+1. **Wysyłka maili: technicznie niemożliwa z tej sesji** — konektor Gmail nie ma
+   funkcji send (tylko read/label/draft). Agent tworzy DRAFTY (`create_draft`
+   z `replyToMessageId`) i flaguje je NATYCHMIAST w [USER] — Bogumił chce wysyłać
+   bez zwłoki (dyspozycja 2026-07-22). Jeśli kiedyś pojawi się kanał wysyłki,
+   agent może wysyłać wyłącznie odpowiedzi w istniejących wątkach — nigdy cold-outreach.
 2. **Zero cold-outreach** — drafty tylko w istniejących wątkach (odpowiedzi na
    odpowiedzi) lub do adresów, z którymi Bogumił już korespondował.
 3. **Liczby publiczne wyłącznie z FACTS.md** — nowa liczba = najpierw wiersz
@@ -48,7 +51,7 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 
 - [x] **T1 — Napraw martwe linki lejka: docs/teams.html + docs/partners.html (jeden PR)** — WYKONANE 2026-07-22 przebieg #1: obie strony zbudowane (standalone, paleta index.html, zero JS; wszystkie liczby wg allowed-wording z FACTS.md F1b/F2/F3 + PRICING.md; policy sharing opisane jako "rolling out" zamiast datowanej obietnicy — patrz T10), sitemap.xml uzupełniony, `ops/deploy_landing.sh` gotowy (rsync bez --delete, sha256 verify, curl 200, restart gatecat-fulfill). HTML/XML zwalidowane. Live po USER-2. Oryginalna spec: — `gatecat/_nudge.py` (shipped w 0.4.17, odpala się po pierwszym realnym veto na każdej maszynie) oraz README.md:285/292 kierują na gate.cat/teams.html i /partners.html, których nie ma w docs/ (żywe 404 — zweryfikowane). Zbuduj obie jako standalone strony na layoucie index.html (bez przebudowy bundla): teams.html = Team €149 value prop + wpleciona verbatim kopia audit-pilot z PRICING.md:109-127 + live Stripe links (Team `buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a`, Business `...7sYdR2e3PcTm2T6cvY67S0b`); partners.html = 30% lifetime-recurring + mailto CTA (affiliate.py nie ma self-serve signup). Do tego `ops/deploy_landing.sh` (artefakt dla USER-2). Acceptance: wpisy w sitemap.xml, każda liczba ma wiersz w FACTS.md/PRICING.md, jeden PR gotowy do merge; live dopiero po USER-2. _(impact: $150-600 (sufit wg sędziów), effort: M, B2B+PRODUCT-LED, 6.7/5.0)_
 - [x] **T2 — Gmail draft do Mike'a Privette (Return on Security), wątek 19f669c061fe1503** — WYKONANE 2026-07-22 przy bootstrapie: draft `r-7583389221339500184` w wątku; szczere liczby wyłącznie z FACTS.md (2,528 pobrań/30d, 0 real misses / 1,085,159 komend, revenue day-zero podane wprost), oferta danych do mapy kategorii "Agent Runtime Security". → USER-1: wyślij.
-- [ ] **T3 — Gmail draft do Juliana Goldie: affiliate ≠ sponsoring, wątek 19f675a02242badf** — Julian odpisał cennikiem płatnych sponsoringów, a oferta to darmowy 30% lifetime-recurring affiliate (README:289-292); draftuj do nowszego z dwóch zduplikowanych wątków i odnotuj duplikat. Jedna klaryfikacja bez zobowiązań: zero upfront spend, link do partners.html (po T1) albo sekcji README, decyzję o płatnym sponsoringu zostaw explicite Bogumiłowi. Acceptance: draft w wątku, żadnych obietnic wydatków. _(impact: $0-800 opcjonalność, effort: S, B2B, 6.7)_
+- [x] **T3 — Gmail draft do Juliana Goldie: affiliate ≠ sponsoring, wątek 19f675a02242badf** — WYKONANE 2026-07-22: draft `r1170664853448124004` (reply do 19f75bbfe62653c7); zero zobowiązań finansowych, matematyka prowizji z cennika, link do partners.html (wyślij po deploy'u USER-2 albo zaraz — strona wstanie za chwilę). UWAGA: w Draftach wiszą 2 STARE drafty do Juliana z 2026-07-15 (`r6116468691101999441`, `r-7678200491588625290` — jeden ze stalą ceną €9) → user powinien je skasować. Oryginalna spec: — Julian odpisał cennikiem płatnych sponsoringów, a oferta to darmowy 30% lifetime-recurring affiliate (README:289-292); draftuj do nowszego z dwóch zduplikowanych wątków i odnotuj duplikat. Jedna klaryfikacja bez zobowiązań: zero upfront spend, link do partners.html (po T1) albo sekcji README, decyzję o płatnym sponsoringu zostaw explicite Bogumiłowi. Acceptance: draft w wątku, żadnych obietnic wydatków. _(impact: $0-800 opcjonalność, effort: S, B2B, 6.7)_
 - [ ] **T4 — Odśwież i fact-checkuj paczkę Show HN (+ warunkowy wariant lobste.rs)** — Nie pisz od zera: zweryfikuj istniejący draft z docs/LAUNCH_KIT_2026-07-14.md przeciw FACTS.md (fix sędziów: popraw konflację "4 allowed commands"/false-block wg F4 = 178/178 i 1/129 benign; €19 nie €9; 71 policies wg F9), dopisz first-comment z live checkout links i linią "one-command install" jeśli T11 zmergowane. Zapisz ops/launch/show_hn_ready.md + ops/launch/lobsters_ready.md (lobste.rs jest invite-only — wariant tylko-jeśli-konto). Acceptance: każda liczba ma wiersz w FACTS.md, posty paste-ready bez dalszej edycji. _(impact: odblokowuje $200-1000 przez USER-4, effort: S, DISTRIBUTION, 4.8)_
 - [ ] **T5 — PyPI listing jako landing page (do release-PR 0.4.18)** — pyproject.toml [project.urls] (linie 93-96) kieruje Homepage/Repository/Issues na repo z 0 stars: dodaj `Homepage=https://gate.cat` i `Pricing=https://gate.cat/#pricing?source=pypi`; wstaw 4-linijkowy blok "Free forever · Cloud Solo €19/mo · Team €149 · Packs €29" zaraz pod sekcją install README (pricing dziś na linii ~265/619); grep i uzgodnij stale liczby (€9, 21/69 policies → €19, 71). Acceptance: zero sprzeczności liczbowych w repo, zmiany w release-PR 0.4.18 z checklistą publication-gate; publish = USER-3. _(impact: $50-250, effort: S, CONVERSION, 4.8)_
 - [ ] **T6 — Rozszerz istniejący _nudge.py o Solo surface (NIE reimplementuj)** — Post-veto nudge już jest w 0.4.17; dodaj rate-limitowane (raz/dzień, `~/.gatecat/nudge_last`) linie: status/stats przy blocked>0 bez cloud key, stopka raportu, `cloud` bez klucza → krótki pitch + gate.cat/#pricing?source=cli; copy verbatim z PRICING.md, respektuj GATECAT_NO_NUDGE/GATECAT_QUIET. Acceptance: testy zielone, nigdy dwa nudge w jednym przebiegu (koordynacja z T7), wchodzi do 0.4.18; zasięg uczciwie = tylko nowe instalacje od publish (fix sędziów). _(impact: $100-400 (sufit), effort: S, CONVERSION, 4.8)_
@@ -62,8 +65,10 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 
 ## [USER] — czeka na Bogumiła
 
-1. **Wyślij draft do Mike'a Privette (2 min, lead się starzeje)** — draft gotowy w Gmailu,
-   wątek `19f669c061fe1503` (Re: new security category…). Draft do Juliana dojdzie po T3.
+1. **Wyślij OBA drafty z folderu Drafts (2 min, leady się starzeją)** — (a) Mike Privette,
+   wątek "Re: new security category…"; (b) Julian Goldie, wątek "Re: 30% lifetime
+   recurring…". Konektor Gmail agenta nie ma funkcji send — wysyłka musi być Twoja.
+   PRZY OKAZJI skasuj 2 stare drafty do Juliana z 15.07 (jeden ma błędną cenę €9).
 2. **Zmerguj PR #26 i wgraj site na VPS** — bez tego nudge z 0.4.17 codziennie
    strzela w 404, a T1/T9/T10 zarabiają $0. Artefakt GOTOWY: `ops/deploy_landing.sh`
    (uruchom z maszyny z kluczem VPS; `DRY_RUN=1` na próbę).
@@ -89,11 +94,16 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 | Wątek | Kto | Ostatnia obsługa | Akcja |
 |---|---|---|---|
 | 19f669c061fe1503 | Mike Privette (Return on Security) | 2026-07-22 | draft `r-7583389221339500184` utworzony (T2); czeka na wysyłkę → USER-1 |
-| 19f675a02242badf / 19f668f7b6a127eb | Julian Goldie (duplikat wątku) | — | T3 w kolejce |
+| 19f675a02242badf / 19f668f7b6a127eb | Julian Goldie (duplikat wątku) | 2026-07-22 | draft `r1170664853448124004` w nowszym wątku (T3); czeka na wysyłkę → USER-1 |
 | 19f7acd133235366 | grzegorz@grzegorzlapanowski.pl | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user |
 
 ## LOG PĘTLI
 
+- **2026-07-22 ~14:50 UTC — interwencja usera ("wysyłaj").** Zweryfikowano: konektor
+  Gmail NIE MA funkcji send (tylko read/label/draft) — wysyłka niemożliwa z sesji;
+  zasada #1 przeredagowana z polityki na ograniczenie techniczne. T3 done: draft
+  do Juliana `r1170664853448124004`. Znalezione 2 stare drafty do Juliana (15.07,
+  jeden ze stalą ceną €9) → USER ma skasować. Oba świeże drafty czekają w Drafts.
 - **2026-07-22 14:21 UTC — przebieg #1.** Poczta: 0 nowych odpowiedzi (Mike w ledgerze),
   0 płatności gate.cat; Gmail działa z crona. Backlog: **T1 done** — teams.html,
   partners.html, sitemap, ops/deploy_landing.sh (walidacja OK). USER-2 odblokowany:
