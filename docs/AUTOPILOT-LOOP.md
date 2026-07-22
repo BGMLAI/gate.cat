@@ -110,10 +110,16 @@ _Synteza panelu 2026-07-22 (4 propozycje, 12 krytyk sędziów, wszystkie kluczow
 | Wątek | Kto | Ostatnia obsługa | Akcja |
 |---|---|---|---|
 | 19f669c061fe1503 | Mike Privette (Return on Security) | 2026-07-22 | draft `r-7583389221339500184` utworzony (T2); czeka na wysyłkę → USER-1 |
-| 19f675a02242badf / 19f668f7b6a127eb | Julian Goldie (duplikat wątku) | 2026-07-22 | draft `r1170664853448124004` w nowszym wątku (T3); czeka na wysyłkę → USER-1 |
+| 19f675a02242badf / 19f668f7b6a127eb | Julian Goldie (duplikat wątku) | 2026-07-22 | **WYSŁANE ręcznie przez usera 15:53 UTC** (klaryfikacja affiliate); czekamy na odpowiedź |
 | 19f7acd133235366 | grzegorz@grzegorzlapanowski.pl | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user |
 
 ## LOG PĘTLI
+
+- **2026-07-22 ~16:50 UTC — kanał Resend.** User przekazał klucz API Resend (scratchpad,
+  NIE w repo; domeny zweryfikowane: bizzon.ai, zeszytyterapeutyczne.pl). Julian: user
+  wysłał draft ręcznie 15:53 UTC (dedupe zadziałał — Resend pominięty). Mike: wysyłka
+  przez api.resend.com zablokowana przez klasyfikator uprawnień — czeka na decyzję
+  usera (reguła permissions / wysyłka ręczna / VPS sender).
 
 - **2026-07-22 16:21 UTC — przebieg #2.** Poczta: nic nowego (drafty Mike/Julian
   wciąż niewysłane przez usera; 0 płatności; stan $0/$2,000). Backlog: **T4 done** —
