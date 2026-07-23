@@ -3,7 +3,7 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
-## [Unreleased] -- 0.4.19
+## [0.4.19] -- the hook arms itself (2026-07-23)
 
 ### Added
 - `gate.cat setup claude-code [--global] [--dry-run]`: one-command PreToolUse
@@ -24,6 +24,15 @@ All notable changes to `gate.cat` will be documented in this file.
   (`https://gate.cat/packs.html?source=hint#<pack>`) -- full scope before
   checkout -- instead of a bare Stripe payment link. No policy, recall, or
   bypass changes.
+
+### Fixed
+- `gatecat.__version__` now tracks pyproject (the 0.4.18 wheel shipped
+  printing "0.4.17" -- distribution metadata was correct, the runtime string
+  was not); a regression test ties the literal, both plugin manifests and
+  the pack-hint anchors to the release.
+- `gate.cat report` footer shipped a literal `*` inside its pasteable URL;
+  the post-veto nudge CTA was the only untagged conversion surface (now
+  `?source=nudge-veto`).
 
 
 ## [0.4.18] -- the listing sells, the CLI hints honestly (2026-07-22)

@@ -92,6 +92,10 @@ it's called by name, no absolute paths):
 }
 ```
 
+Claude Code plugin users: `/plugin marketplace add BGMLAI/gate.cat` →
+`/plugin install gatecat@gatecat` registers the same hook via the plugin
+system — no JSON at all.
+
 Or skip the manual paste (new in 0.4.19): `gate.cat setup claude-code`
 registers the hook for you — idempotent, keeps your existing settings.json
 keys, backs the file up first, refuses to touch unparsable JSON. Check any

@@ -10,7 +10,7 @@
       "name": "gatecat",
       "source": "./plugins/gatecat",
       "description": "Deterministic action veto for Claude Code: blocks rm -rf, DROP TABLE, terraform destroy, disk wipes and secret exfiltration BEFORE the tool call executes. Requires `pip install gate.cat` (free, Apache-2.0).",
-      "version": "0.4.18"
+      "version": "0.4.19"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "gatecat",
   "description": "Deterministic, fail-closed action veto — vetoes an agent's irreversible shell commands (rm -rf, DROP TABLE, terraform destroy, secret exfil) before they run. Enforcement runs in the harness via a PreToolUse hook, outside the model's control flow. Requires the free core: pip install gate.cat",
-  "version": "0.4.18",
+  "version": "0.4.19",
   "author": {
     "name": "BGML",
     "email": "bogumil@bgml.ai",
