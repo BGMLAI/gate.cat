@@ -13,7 +13,7 @@ na ten plik) — pętla sama zauważy publish/deploy przy następnym przebiegu.
 
 ---
 
-## 0. Publish 0.4.18 na PyPI (5 min) — **PRZED merge PR #27**
+## 0. Publish 0.4.18 na PyPI — ✅ **WYKONANE 2026-07-23 07:21 UTC** (PyPI 0.4.18 + GH release v0.4.18; zweryfikowane przez pętlę czystym installem — F9 re-pin). Ostrzeżenie „przed merge PR #27" już NIEAKTUALNE: merge jest teraz bezpieczny. Znany kosmetyczny desync wheela: `gatecat.__version__` drukuje 0.4.17 (fix w 0.4.19, NIE republikuj dla kosmetyki).
 
 Master (commit `8ce3592`, merge PR #26) to dokładnie przygotowany release
 0.4.18. **PR #27 niesie już niewydany kod 0.4.19** (pack hint v2 w
