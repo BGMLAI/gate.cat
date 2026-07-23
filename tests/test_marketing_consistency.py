@@ -8,6 +8,53 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _hook_json_block(text: str) -> str:
+    """The PreToolUse hook JSON, normalized (whitespace-insensitive) so the
+    README and llms.txt copies are compared by content, not formatting."""
+    import json
+    marker = '"PreToolUse"'
+    i = text.index(marker)
+    a = text.rindex("{", 0, i)
+    depth = 0
+    for j in range(a, len(text)):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return json.dumps(json.loads(text[a:j + 1]), sort_keys=True)
+    raise AssertionError("unbalanced hook JSON")
+
+
+def test_hook_json_identical_in_readme_and_llms_txt():
+    """The copy-paste hook config is the single most-copied artifact; a drift
+    between the README (PyPI long_description) and llms.txt (answer-engine
+    channel) would hand users two different configs. Compare by parsed content
+    (replaces a manual grep — the config can never silently diverge)."""
+    readme = _hook_json_block((ROOT / "README.md").read_text())
+    llms = _hook_json_block((ROOT / "docs" / "llms.txt").read_text())
+    assert readme == llms
+    # and it is the exact PreToolUse block the setup CLI writes (the extractor
+    # anchors on "PreToolUse", so compare that inner object)
+    from gatecat._setup_cli import HOOK_ENTRY
+    import json
+    expected = json.dumps({"PreToolUse": [HOOK_ENTRY]}, sort_keys=True)
+    assert readme == expected
+
+
+def test_readme_comparison_is_veto_axis_not_cache():
+    """The Comparison section is the last thing an evaluator reads before
+    License — it must position the veto (linking COMPARISON.md), not lead with
+    the old semantic-cache table."""
+    readme = (ROOT / "README.md").read_text()
+    comparison = readme.split("## Comparison", 1)[1].split("## License", 1)[0]
+    assert "COMPARISON.md" in comparison
+    assert "irreversible-action" in comparison
+    assert "GPTCache" not in comparison           # cache table moved under Cache
+    # the cache table still exists, just not as THE comparison
+    assert "GPTCache" in readme
+
+
 def test_llms_txt_tracks_current_package_and_offer():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())
     llms = (ROOT / "docs" / "llms.txt").read_text()

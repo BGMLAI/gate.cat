@@ -63,6 +63,51 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 - OWASP scope: it owns **LLM06 (Excessive Agency)** and part of LLM01/05; it does not
   cover the other seven.
 
+## Copy-paste setup
+
+Each fragment is labeled by trust class. Enforcement = the tool cannot run until
+the gate returns; convention = an in-process adapter a prompt injection can route
+around.
+
+Claude Code hook (ENFORCEMENT) — add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "gatecat-hook" }]
+      }
+    ]
+  }
+}
+```
+
+Claude Code plugin (ENFORCEMENT) — same hook, no JSON:
+
+```
+/plugin marketplace add BGMLAI/gate.cat
+/plugin install gatecat@gatecat
+```
+
+Any OpenAI-API agent — Ollama / NIM / OpenRouter / vLLM (gate on the proxy's
+tool-call boundary): point the agent's base_url at the proxy:
+
+```
+export OPENAI_BASE_URL=http://localhost:8787/v1
+export OPENAI_API_KEY=$UPSTREAM_KEY
+gatecat-proxy
+```
+
+Any agent that shells out — Codex, aider, anything honoring `$SHELL`/`sh -c`
+(ENFORCEMENT): use the gated shell as the exec command, wherever the tool lets
+you set the shell:
+
+```
+gatecat-shell -c "<the command the agent would run>"
+```
+
 ## Links
 
 - [Repository & README](https://github.com/BGMLAI/gate.cat): install, quick start, the Claude Code hook config.

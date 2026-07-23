@@ -71,6 +71,20 @@ optional and off by default: **Cloud Solo €19/mo · Team €149/mo flat (up to
 machines) · Business €399/mo · one-time €29 policy packs** — details and honest
 boundaries in [PRICING.md](PRICING.md). Blocking never depends on payment.
 
+## Does it work with my agent?
+
+Three enforcement surfaces, honestly labeled by trust class (strongest first):
+
+| Your setup | How | Trust class |
+|---|---|---|
+| **Claude Code** | PreToolUse hook (`gatecat-hook`), or `/plugin marketplace add BGMLAI/gate.cat` | **Enforcement** — in the harness, outside the model's control flow |
+| **Any agent that shells out** (Codex, aider, and anything honoring `$SHELL`/`sh -c`) | `gatecat-shell` as the exec shell, wherever the tool lets you set the shell/exec command | **Enforcement** — the command can't run without the gate |
+| **Any OpenAI-API endpoint** (Ollama, NIM, OpenRouter, vLLM) | proxy mode — point the agent's `base_url` at gate.cat | Gate on the tool-call boundary the proxy sees |
+| **crewAI / LangGraph / AutoGen** | in-process adapter | Convention — a prompt injection can route around it (weaker; labeled as such) |
+
+Full config for each is below. The hook and the gated shell are the two that
+enforce; the adapters are convenience with a stated limit.
+
 ## The hook — the strongest mode
 
 Enforcement in the harness, **outside the model's control flow**: the tool call
@@ -350,6 +364,23 @@ also works as a drop-in wrapper for OpenAI/Anthropic SDKs with a three-tier resp
 cache, synthesis, upstream — cache semantically similar queries and return instant responses
 (<10ms), or synthesize from cached knowledge (~300ms, ~$0.002) instead of a full upstream call.
 
+For the cache layer specifically, against other semantic caches:
+
+| Feature | gate.cat | GPTCache | LiteLLM | Redis LangCache |
+|---------|-----------|----------|---------|-----------------|
+| Semantic similarity | Yes | Yes | Exact only | Yes |
+| Cache-Augmented Synthesis | Yes | No | No | No |
+| OpenAI drop-in | Yes | Partial | Yes | No |
+| Anthropic drop-in | Yes | No | Yes | No |
+| Streaming support | Yes | No | No | No |
+| Negative cache | Yes | No | No | No |
+| Multimodal (planned) | Yes | No | No | No |
+| Async | Yes | No | Yes | No |
+| Zero config | Yes | No | No | No |
+| Proxy mode (Docker) | Yes | No | Yes | No |
+| Local (no server) | Yes | Yes | No | No |
+| License | Apache 2.0 | MIT | MIT | Redis |
+
 ## Quick Start
 
 ### OpenAI (drop-in, zero code change)
@@ -626,20 +657,19 @@ Built-in embedders: `minilm` (text), `clip` (image, coming soon), `clap` (voice,
 
 ## Comparison
 
-| Feature | gate.cat | GPTCache | LiteLLM | Redis LangCache |
-|---------|-----------|----------|---------|-----------------|
-| Semantic similarity | Yes | Yes | Exact only | Yes |
-| Cache-Augmented Synthesis | Yes | No | No | No |
-| OpenAI drop-in | Yes | Partial | Yes | No |
-| Anthropic drop-in | Yes | No | Yes | No |
-| Streaming support | Yes | No | No | No |
-| Negative cache | Yes | No | No | No |
-| Multimodal (planned) | Yes | No | No | No |
-| Async | Yes | No | Yes | No |
-| Zero config | Yes | No | No | No |
-| Proxy mode (Docker) | Yes | No | Yes | No |
-| Local (no server) | Yes | Yes | No | No |
-| License | Apache 2.0 | MIT | MIT | Redis |
+gate.cat is a **narrow** tool: a deterministic, fail-closed veto for the
+irreversible-action class, enforced *outside* the agent's control flow. The
+honest positioning against the tools people rightly mention — approval flows
+(LangGraph `interrupt`, HumanLayer), detection guardrails (Lakera, Guardrails
+AI, NeMo), and the "just write regexes yourself" objection — is in
+**[COMPARISON.md](COMPARISON.md)**, with the same ground rule as
+[FACTS.md](FACTS.md): only claims we can back, and where a competitor is better
+for a job we say so.
+
+The one-line version: approval flows live in the agent's control flow (they
+fire only if the agent remembers to call them); gate.cat's hook lives in the
+harness and fires whether or not it did. It's the floor underneath the approval
+step, not a replacement for it.
 
 ## License
 
