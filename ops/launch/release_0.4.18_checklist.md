@@ -5,7 +5,12 @@ T7 (pack hint). Wersja i CHANGELOG już podbite w PR #26.
 
 ## Przed publikacją
 
-- [ ] Merge PR #26 do master (CI musi być zielone na ostatnim commicie).
+> **UWAGA (2026-07-23):** PR #27 niesie niewydany kod 0.4.19 (pack hint v2).
+> 0.4.18 buduj z mastera SPRZED merge'a PR #27 — commit `8ce3592` (merge
+> PR #26). Jeśli PR #27 już zmergowany: `git checkout 8ce3592` przed buildem.
+> Kolejność całości: `ops/launch/OWNER_RUNBOOK.md`.
+
+- [x] Merge PR #26 do master (zmergowany 2026-07-22 21:53, commit `8ce3592`).
 - [ ] Lokalnie z master: `python -m pytest -q` — pełny suite zielony
       (release-gate z FACTS.md F3; przy okazji re-pin F3 na nowy wynik).
 - [ ] `python -m gatecat.integrations.bypass_suite` — re-pin F4 jeśli liczby

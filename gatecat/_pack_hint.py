@@ -9,7 +9,12 @@ same run (shared per-process guard in gatecat._nudge).
 The detection is honest and local: ``shutil.which()`` on stack CLIs. A machine
 with the ``stripe`` CLI plausibly holds credentials the Fintech pack guards; a
 machine with ``vercel``/``fly``/... plausibly deploys where the PaaS pack
-guards. Pack scopes below quote PRICING.md verbatim.
+guards; a machine with ``datadog-ci``/``sentry-cli`` plausibly holds the admin
+API tokens the HTTP-API Breadth pack guards. Deliberately NO universal CLIs
+(docker, gh, curl): they are on every dev box and would destroy the precision
+that makes this a high-intent, once-per-machine hint. Pack scopes below quote
+PRICING.md (ASCII-transliterated for stderr). Links go to the pack preview
+page — full scope before checkout — never straight to a payment form.
 """
 import os
 import shutil
@@ -19,15 +24,19 @@ from gatecat import _nudge
 
 _FLAG = os.path.expanduser("~/.gatecat/.pack_nudged")
 
-# (pack name, CLIs that suggest it, scope quoted from PRICING.md, checkout)
+# (pack name, CLIs that suggest it, scope quoted from PRICING.md, preview URL)
 _PACKS = (
     ("Fintech", ("stripe",),
      "refund creation, payouts/transfers, customer & billing-config deletion",
-     "https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c"),
+     "https://gate.cat/packs.html?source=hint#fintech"),
     ("PaaS", ("vercel", "netlify", "fly", "heroku", "railway", "render", "supabase"),
      "`vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, "
      "`railway down`, `render/supabase delete`",
-     "https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d"),
+     "https://gate.cat/packs.html?source=hint#paas"),
+    ("HTTP-API Breadth", ("datadog-ci", "sentry-cli"),
+     "destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, "
+     "Docker Hub, PyPI, ... - the modality CLI-verb walls never see",
+     "https://gate.cat/packs.html?source=hint#http-api"),
 )
 
 

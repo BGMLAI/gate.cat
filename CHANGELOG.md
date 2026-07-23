@@ -3,6 +3,19 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [Unreleased] -- 0.4.19
+
+### Changed
+- Policy-pack hint v2 (`gatecat/_pack_hint.py`): now also detects the
+  HTTP-API Breadth pack -- via stack-specific CLIs only (`datadog-ci`,
+  `sentry-cli`; deliberately NO docker/gh/curl, which sit on every dev box
+  and would destroy the precision of a once-per-machine hint). All three
+  hints link the pack preview page
+  (`https://gate.cat/packs.html?source=hint#<pack>`) -- full scope before
+  checkout -- instead of a bare Stripe payment link. No policy, recall, or
+  bypass changes.
+
+
 ## [0.4.18] -- the listing sells, the CLI hints honestly (2026-07-22)
 
 ### Added
