@@ -92,6 +92,12 @@ it's called by name, no absolute paths):
 }
 ```
 
+Or skip the manual paste (new in 0.4.19): `gate.cat setup claude-code`
+registers the hook for you — idempotent, keeps your existing settings.json
+keys, backs the file up first, refuses to touch unparsable JSON. Check any
+install with `gate.cat doctor` (version · hook registered where · protection
+state).
+
 Now ask your agent to run `rm -rf ~/project`: the call is blocked (exit 2) and
 the model sees `VETO [DELETE_ANALYZER]: deletes '/home/you/project' under
 protected root '/home' - requires a human`. A delete under a throwaway path like

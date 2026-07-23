@@ -294,6 +294,17 @@ def main(argv: list[str] | None = None) -> int:
         cloud_cli.main(args[1:])
         return 0
 
+    # `gate.cat setup claude-code [--global] [--dry-run]` / `gate.cat doctor` --
+    # one-command hook activation + minimal install diagnosis. The biggest
+    # funnel leak is an installed pip package whose hook was never registered;
+    # this automates exactly what the README documents for manual paste.
+    if cmd == "setup":
+        from gatecat._setup_cli import run_setup
+        return run_setup(args[1:])
+    if cmd == "doctor":
+        from gatecat._setup_cli import run_doctor
+        return run_doctor(args[1:])
+
     # `gate.cat dashboard [--html [file]]` -- the richer view built from BOTH the
     # local log AND (if a cloud key is present) the cross-machine ciphertext
     # fetched + decrypted locally. Free local render always works; the paid part
@@ -340,7 +351,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if cmd in ("status", "", "-h", "--help") and cmd != "why":
         if cmd in ("-h", "--help"):
-            print("gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
+            print("gate.cat [status|setup claude-code|doctor|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
             return 0
         recs = _read()
         print(render_status(recs, color))
@@ -370,7 +381,7 @@ def main(argv: list[str] | None = None) -> int:
         print(explain(" ".join(args[1:]), color))
         return 0
     print(f"unknown command: {cmd}\n"
-          "gate.cat [status|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
+          "gate.cat [status|setup claude-code|doctor|on|off|allow '<cmd>' [ttl]|stats|log|report [YYYY-MM]|dashboard [--html]|why <command>]")
     return 2
 
 

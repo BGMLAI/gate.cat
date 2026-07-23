@@ -5,6 +5,16 @@ All notable changes to `gate.cat` will be documented in this file.
 
 ## [Unreleased] -- 0.4.19
 
+### Added
+- `gate.cat setup claude-code [--global] [--dry-run]`: one-command PreToolUse
+  hook activation -- idempotent merge that preserves foreign keys and other
+  hooks, `<file>.gatecat.bak` backup before any modifying write, fail-closed
+  on unparsable settings.json (prints the manual block instead of touching
+  the file). `gate.cat doctor`: minimal install diagnosis (version, hook
+  binary on PATH, where the hook is registered, protection state). The
+  biggest funnel leak was an installed pip package whose hook was never
+  registered -- this automates exactly what the README documents.
+
 ### Changed
 - Policy-pack hint v2 (`gatecat/_pack_hint.py`): now also detects the
   HTTP-API Breadth pack -- via stack-specific CLIs only (`datadog-ci`,
