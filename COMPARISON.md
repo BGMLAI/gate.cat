@@ -43,7 +43,7 @@ was talked into it, and stop the `terraform destroy` at the boundary anyway.
 
 ## vs. the "just use regexes yourself" objection
 
-You could. gate.cat is ~21 curated policies for the irreversible-action class + an independent
+You could. gate.cat is 71 default policy walls for the irreversible-action class + an independent
 exec analyzer + human-in-the-loop + a bypass suite that **prints its own known gaps** (base64
 payloads, deletes via a language runtime, `curl|sh`) instead of pretending they don't exist,
 + the harness integration that makes it enforcement rather than advice. The value is the curation,

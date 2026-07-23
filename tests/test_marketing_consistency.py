@@ -84,7 +84,8 @@ def test_self_verify_block_on_every_purchase_surface():
     """The reproduce-it block must appear where the buy decision happens, and
     its headline numbers must never travel without their published caveats
     (FACTS.md F4: named gap + benign false-block; F1b: adjudicated allows)."""
-    for surface in ("README.md", "docs/teams.html", "docs/packs.html"):
+    for surface in ("README.md", "docs/teams.html", "docs/packs.html",
+                    "docs/partners.html"):
         # normalize hard-wrapped markdown so phrases match across line breaks
         text = " ".join((ROOT / surface).read_text().split())
 

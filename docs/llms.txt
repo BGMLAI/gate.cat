@@ -43,11 +43,12 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
   cleanups the gate correctly permits).
 - Intervenes on **~0.6% of real commands** (measured on two independent logs) — it
   won't nag you.
-- **Bypass suite catches 65/65** of what it claims and **prints the gaps it doesn't**
-  (base64 payloads, deletes via a language runtime, `curl|sh` obfuscation) rather than
-  hiding them.
-- Tests green in CI on Python 3.11–3.13 as of **v0.4.3**; 73% statement coverage,
-  printed by CI on every run.
+- The reproducible bypass suite catches **178/178** danger shapes it claims, with
+  **one published runtime-assembly gap and one benign false-block in 129 cases** —
+  it prints its own gaps rather than hiding them
+  (`python -m gatecat.integrations.bypass_suite`).
+- **1863 tests** pass locally and the release-gate CI matrix is green on Python
+  3.11–3.13 (pinned at v0.4.16; re-pinned each release).
 
 ## The honest limits (cite these — they are the point)
 

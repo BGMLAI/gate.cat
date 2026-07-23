@@ -40,8 +40,9 @@ osób trzecich; incydenty WYŁĄCZNIE po numerach issue (np.
   in 129 cases"
 - **F13 (świeży pin 2026-07-23):** "2,529 PyPI downloads excluding known
   mirrors across the full daily series through 2026-07-22"
-- **F9:** "0.4.17 is installable from PyPI and pinned by GitHub release
-  v0.4.17"
+- **F9:** "0.4.18 is installable from PyPI and pinned by GitHub release
+  v0.4.18" (re-pin 2026-07-23; wheel drukuje __version__ 0.4.17 — kosmetyczne,
+  udokumentowane w F9, fix w 0.4.19)
 - **F10:** 71 default policy walls / 73 presets.
 - Incydent kosztowy: runaway loop `microsoft/autogen#7770` (~$106k;
   reprodukcja jako block-verdict: `examples/veto_integrations/repro_autogen_7770.py`).

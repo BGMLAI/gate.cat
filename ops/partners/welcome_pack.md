@@ -10,8 +10,11 @@ Mechanika (źródło prawdy: `products/cloud/affiliate.py` + skrypt
 `client_reference_id=CODE` → webhook przypina subskrypcję do kodu na ZAWSZE
 (`subscription_id → ref`), więc prowizja jest lifetime-recurring; refund =
 ujemna prowizja (clawback), ledger zawsze nettuje. Stawka: **30% każdej
-płatności** (RATE=0.30). Pack-i (€29 one-time) NIE akruują — prowizja tylko
-plany Cloud (Solo/Team/Business).
+płatności** (RATE=0.30) — i to KAŻDEJ płatnej: subskrypcje Cloud
+(Solo/Team/Business) akruują od każdego odnowienia, a one-time packi €29
+akruują jednorazowo (kod: "any paid entitlement counts";
+test_thirty_percent_accrual_one_time_pack to asertuje). [KOREKTA 2026-07-23,
+przebieg #27 — wcześniejsza wersja tego pliku twierdziła odwrotnie.]
 
 ---
 
@@ -27,7 +30,7 @@ Subject: `your gate.cat partner link — CODE inside`
 > It sets a 90-day cookie; any paid Cloud plan started from it (Solo EUR
 > 19/mo, Team EUR 149/mo flat, Business EUR 399/mo) pays you **30% of every
 > payment, for the lifetime of the subscription** — not just the first
-> invoice. One-time policy packs don't accrue commission; recurring plans do.
+> invoice. One-time EUR 29 policy packs earn the same 30% (once, at purchase).
 >
 > **Honest mechanics, so there are no surprises:**
 > - Attribution rides Stripe's `client_reference_id`, pinned to the
@@ -90,4 +93,3 @@ data), żeby pętla pilnowała follow-upów i wypłat.
   mówimy to wprost jak w wątku Return on Security).
 - Żadnego dashboardu partnera "wkrótce" — jest ledger na życzenie, tyle.
 - Żadnej ekskluzywności kategorii/regionu.
-- Prowizji od packów €29 (one-time nie akruuje — mechanika wyżej).

@@ -58,7 +58,7 @@
   <li><b>Claude&nbsp;Code hook.</b> Tool calls from MCP servers flow through the <code>PreToolUse</code> hook, so the veto covers them natively — no per-server wiring.</li>
   <li><b>Proxy.</b> For any OpenAI-API agent driving MCP tools, point the agent's <code>base_url</code> at the gate.cat proxy. The proxy's <code>/health</code> endpoint reports its mode so a misconfigured (silent) gate is detectable — silence is never assumed to mean safe.</li>
 </ul>
-<p>The <b>38 default policies</b> already cover the classic irreversible shapes across shell, SQL and cloud. For local-model and MCP stacks specifically, the optional <b>Local-Agent policy pack</b> adds deny rules for <code>ollama rm</code>, LM&nbsp;Studio model removal, and destructive vector-store calls (for example an HTTP <code>DELETE</code> against a Qdrant collection) — breadth for that stack, on top of the same free engine.</p>
+<p>The <b>71 default policies</b> already cover the classic irreversible shapes across shell, SQL and cloud. For local-model and MCP stacks specifically, the optional <b>Local-Agent policy pack</b> adds deny rules for <code>ollama rm</code>, LM&nbsp;Studio model removal, and destructive vector-store calls (for example an HTTP <code>DELETE</code> against a Qdrant collection) — breadth for that stack, on top of the same free engine.</p>
 
 <div class="term"><span class="g"># MCP agent asks a vector-store tool to drop a collection…</span>
 <span class="p">&#8594;</span> DELETE /collections/customer_embeddings
@@ -79,7 +79,7 @@
 
   <section class="cta">
   <h2>put a leash on your agent — 60 seconds</h2>
-  <p class="lede">The gate, all 38 default policies, the Claude&nbsp;Code hook and the proxy are free forever (Apache&nbsp;2.0). No account, no daemon, no telemetry.</p>
+  <p class="lede">The gate, all 71 default policies, the Claude&nbsp;Code hook and the proxy are free forever (Apache&nbsp;2.0). No account, no daemon, no telemetry.</p>
   <div class="install"><span class="p">$</span>&nbsp;pip install gate-cat</div>
   <p class="lede" style="margin-top:.6rem">Running agents across a team? One rogue agent is the whole team&rsquo;s blast radius. <a href="https://gate.cat/teams.html" id="lnk-teams" style="border-bottom:1px solid currentColor;font-weight:700;white-space:nowrap">See the team plan &mdash; &#8364;149/mo flat &#8594;</a></p>
   <div class="cap" id="cap-answer-mcp">
