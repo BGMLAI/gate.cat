@@ -61,6 +61,24 @@ def test_packs_page_shows_scope_before_checkout():
     teams = (ROOT / "docs" / "teams.html").read_text()
     assert "packs.html?source=teams" in teams
 
+    pricing = (ROOT / "PRICING.md").read_text()
+    assert "gate.cat/packs.html?source=pricing-md" in pricing
+
+
+def test_teams_page_tracks_cookieless_funnel_events():
+    """teams.html is the highest-LTV page; without events the owner cannot
+    tell 'nobody clicks' from 'clicks we never see'. Same /events contract
+    as packs.html (source param wins, utm_source fallback, teams-direct)."""
+    teams = (ROOT / "docs" / "teams.html").read_text()
+
+    assert 'id="gc-funnel-events"' in teams
+    for event in ("page_view", "checkout_click", "github_click"):
+        assert f'track("{event}"' in teams
+    assert '"/events?"' in teams
+    assert "teams-direct" in teams
+    assert "navigator.sendBeacon" in teams
+    assert "document.cookie" not in teams.split('id="gc-funnel-events"')[1]
+
 
 def test_self_verify_block_on_every_purchase_surface():
     """The reproduce-it block must appear where the buy decision happens, and

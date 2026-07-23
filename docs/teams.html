@@ -332,5 +332,61 @@
 })();
 </script>
 
+<script id="gc-funnel-events">
+/* Cookieless funnel events — same /events contract as the landing page, so
+   scripts/funnel_report.py and scripts/daily_funnel.py read both streams.
+   source: explicit ?source= (internal cross-links) wins, else utm_source. */
+(function () {
+  try {
+    var query = new URLSearchParams(window.location.search);
+    var clean = function (value, max) {
+      return String(value || "").replace(/[^\w .:/#?&=-]/g, "").slice(0, max || 60);
+    };
+    var session;
+    try {
+      session = sessionStorage.getItem("gc_sid");
+      if (!session) {
+        session = Math.random().toString(36).slice(2, 12);
+        sessionStorage.setItem("gc_sid", session);
+      }
+    } catch (_) { session = "anonymous"; }
+    var referrer = "";
+    try { referrer = document.referrer ? new URL(document.referrer).hostname : ""; } catch (_) {}
+    var track = function (event, label) {
+      var data = new URLSearchParams({
+        e: clean(event),
+        label: clean(label || ""),
+        sid: clean(session),
+        source: clean(query.get("source") || query.get("utm_source") || "teams-direct"),
+        medium: clean(query.get("utm_medium")),
+        campaign: clean(query.get("utm_campaign")),
+        ref: clean(referrer)
+      });
+      var url = "/events?" + data.toString();
+      try {
+        fetch(url, { method: "POST", keepalive: true, credentials: "omit", cache: "no-store" })
+          .catch(function () {
+            if (navigator.sendBeacon) navigator.sendBeacon(url, "");
+            else (new Image()).src = url;
+          });
+      } catch (_) {
+        try { (new Image()).src = url; } catch (_) {}
+      }
+    };
+    track("page_view");
+    document.addEventListener("click", function (event) {
+      var target = event.target.closest("a");
+      if (!target) return;
+      var href = target.getAttribute("href") || "";
+      if (href.indexOf("buy.stripe.com") !== -1) {
+        track("checkout_click", clean(target.textContent, 40));
+      } else if (href.indexOf("github.com/BGMLAI/gate.cat") !== -1) {
+        track("github_click", clean(target.textContent, 40));
+      }
+    }, { capture: true });
+  } catch (e) { /* never break the page over analytics */ }
+})();
+</script>
+
 </body>
 </html>

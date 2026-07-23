@@ -236,7 +236,7 @@ def render_report(records: list[dict], month: str | None = None) -> str:
         "machine the agent runs on; the paid tier keeps an off-machine copy",
         "precisely because of that (see PRICING.md). Same report, generated from",
         "the copy the agent can't rewrite: Solo EUR 19/mo --",
-        "https://gate.cat/teams.html?source=report*",
+        "https://gate.cat/teams.html?source=report",
     ]
     return "\n".join(lines)
 

@@ -32,7 +32,7 @@ def mark_fired() -> None:
 _MSG = (
     "gate.cat vetoed that locally - this machine only, no record leaves the box.\n"
     "Team plans keep an off-machine record of vetoes and alert teammates: "
-    "https://gate.cat/teams.html\n"
+    "https://gate.cat/teams.html?source=nudge-veto\n"
     "(silence this once-per-machine notice: GATECAT_NO_NUDGE=1)\n"
 )
 

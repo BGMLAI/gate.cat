@@ -73,6 +73,8 @@ benign twin — the same bar as the core gate.
 | **PaaS** | `vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, `railway down`, `render/supabase delete` — deploy/list/info stay allowed | [**€29 →**](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) |
 | **HTTP-API Breadth** | destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, Docker Hub, PyPI, … — the modality CLI-verb walls never see (requires gate.cat ≥ 0.4.9) | [**€29 →**](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e) |
 
+Full scope of every pack, listed before you pay:
+[gate.cat/packs.html](https://gate.cat/packs.html?source=pricing-md).
 Delivery is fully automated: pay → instant download page (wheel + install
 instructions). Install = `pip install <wheel>` + one env var
 (`GATECAT_EXTRA_POLICIES`). VAT is calculated automatically at checkout.
