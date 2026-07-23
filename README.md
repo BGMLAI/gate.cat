@@ -285,6 +285,20 @@ or buy a one-time €29 policy pack:
 [HTTP-API Breadth](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e).
 **What's inside each pack → [gate.cat/packs.html](https://gate.cat/packs.html?source=pypi)**
 
+**Don't trust us — reproduce it.** Before paying anyone (including us), run
+the evidence yourself — two commands, no datasets:
+
+```bash
+pip install gate-cat
+python -m gatecat.integrations.bypass_suite
+```
+
+The reproducible bypass suite catches **178/178** danger shapes it claims —
+and prints its own edges: one published runtime-assembly gap and one benign
+false-block in 129 cases. At scale: **0 real recall misses across 1,085,159
+unique real agent commands** through the full gate. Every number →
+[FACTS.md](FACTS.md).
+
 **Running agents across a team?** One rogue agent's blast radius is the whole
 team's. The team plan adds a shared off-machine veto history no single agent can
 delete, fleet alerts, and signed policy sync — walked through on the dedicated
@@ -622,4 +636,4 @@ Built-in embedders: `minilm` (text), `clip` (image, coming soon), `clap` (voice,
 Apache 2.0 — see [LICENSE](LICENSE).
 
 Built by [BGML.ai](https://bgml.ai) / [Fundacja BLOOM](https://bloom.foundation).
-Policy Packs → [gate.cat/#packs](https://gate.cat/#packs)
+Policy Packs → [gate.cat/packs.html](https://gate.cat/packs.html?source=pypi)

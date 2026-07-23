@@ -62,6 +62,23 @@ def test_packs_page_shows_scope_before_checkout():
     assert "packs.html?source=teams" in teams
 
 
+def test_self_verify_block_on_every_purchase_surface():
+    """The reproduce-it block must appear where the buy decision happens, and
+    its headline numbers must never travel without their published caveats
+    (FACTS.md F4: named gap + benign false-block; F1b: adjudicated allows)."""
+    for surface in ("README.md", "docs/teams.html", "docs/packs.html"):
+        # normalize hard-wrapped markdown so phrases match across line breaks
+        text = " ".join((ROOT / surface).read_text().split())
+
+        assert "python -m gatecat.integrations.bypass_suite" in text, surface
+        assert "178/178" in text, surface
+        # honesty coupling: the caveats ride along or the number doesn't ship
+        assert "runtime-assembly gap" in text, surface
+        assert "benign false-block in 129 cases" in text, surface
+        assert "1,085,159" in text, surface
+        assert "FACTS.md" in text, surface
+
+
 def test_claude_design_landing_uses_the_live_stripe_offer():
     landing = (ROOT / "docs" / "index.html").read_text()
 
