@@ -57,9 +57,11 @@ def _signed(payload: dict, secret: str = SECRET, timestamp: int | None = None):
 
 def _checkout(session_id="cs_live_1", sub_id="sub_1", ref=None, mode="subscription",
               amount_total=1900, currency="usd", event_id="evt_checkout_1",
-              price=SOLO_PRICE, email="buyer@x"):
+              price=SOLO_PRICE, email="buyer@x", invoice=None, payment_intent=None):
     """checkout.session.completed. When ref is given it rides in
-    client_reference_id exactly as Stripe echoes ?client_reference_id=CODE."""
+    client_reference_id exactly as Stripe echoes ?client_reference_id=CODE.
+    Real subscription sessions carry the FIRST invoice id at ``invoice``;
+    real payment-mode (pack) sessions carry ``payment_intent``."""
     obj = {
         "id": session_id, "mode": mode, "payment_status": "paid",
         "amount_total": amount_total, "currency": currency,
@@ -68,6 +70,9 @@ def _checkout(session_id="cs_live_1", sub_id="sub_1", ref=None, mode="subscripti
     }
     if mode == "subscription":
         obj["subscription"] = sub_id
+        obj["invoice"] = invoice if invoice is not None else "in_first_" + sub_id
+    if payment_intent is not None:
+        obj["payment_intent"] = payment_intent
     if ref is not None:
         obj["client_reference_id"] = ref
     return {"id": event_id, "type": "checkout.session.completed",
@@ -75,23 +80,34 @@ def _checkout(session_id="cs_live_1", sub_id="sub_1", ref=None, mode="subscripti
 
 
 def _invoice(sub_id="sub_1", amount_paid=1900, currency="usd",
-             event_id="evt_invoice_1", event_type="invoice.paid"):
-    """invoice.paid (a RENEWAL): NO client_reference_id -- attribution must come
-    from the stored subscription_id -> ref mapping."""
-    return {"id": event_id, "type": event_type,
-            "data": {"object": {"id": "in_" + event_id, "subscription": sub_id,
-                                "amount_paid": amount_paid, "currency": currency}}}
+             event_id="evt_invoice_1", event_type="invoice.paid",
+             invoice_id=None, charge=None, payment_intent=None):
+    """invoice.paid / invoice.payment_succeeded: NO client_reference_id --
+    attribution must come from the stored subscription_id -> ref mapping.
+    ``invoice_id`` defaults to a per-event id (a RENEWAL); pass the checkout's
+    invoice id to simulate Stripe announcing the SAME first payment again."""
+    obj = {"id": invoice_id or ("in_" + event_id), "subscription": sub_id,
+           "amount_paid": amount_paid, "currency": currency}
+    if charge is not None:
+        obj["charge"] = charge
+    if payment_intent is not None:
+        obj["payment_intent"] = payment_intent
+    return {"id": event_id, "type": event_type, "data": {"object": obj}}
 
 
-def _refund(sub_id="sub_1", amount_refunded=1900, currency="usd",
-            event_id="evt_refund_1"):
-    """charge.refunded. The subscription id rides on the charge object so the
-    clawback resolves the stored referral (real Stripe subscription charges
-    carry the subscription link)."""
-    return {"id": event_id, "type": "charge.refunded",
-            "data": {"object": {"id": "ch_" + event_id, "subscription": sub_id,
-                                "amount_refunded": amount_refunded,
-                                "currency": currency}}}
+def _refund(amount_refunded=1900, currency="usd", event_id="evt_refund_1",
+            charge_id=None, payment_intent=None, invoice=None):
+    """charge.refunded with a REALISTIC Charge shape: a Charge has NO
+    ``subscription`` field (the old fixture invented one, which made the
+    clawback look testable while the production lookup could never resolve).
+    Resolution must run through payment_intent / invoice / charge-id aliases."""
+    obj = {"id": charge_id or ("ch_" + event_id),
+           "amount_refunded": amount_refunded, "currency": currency}
+    if payment_intent is not None:
+        obj["payment_intent"] = payment_intent
+    if invoice is not None:
+        obj["invoice"] = invoice
+    return {"id": event_id, "type": "charge.refunded", "data": {"object": obj}}
 
 
 @pytest.fixture
@@ -206,20 +222,97 @@ def test_payment_idempotent_same_event_id(tmp_path, env_vars):
     assert ca.affiliate.ledger()["creator1"]["accrued_cents"] == 1140
 
 
-# ---- 5. clawback (charge.refunded) ------------------------------------------
+# ---- 5. clawback (charge.refunded, REAL Charge shapes) -----------------------
 
-def test_refund_clawback_nets_out(tmp_path, env_vars):
+def test_refund_clawback_nets_out_realistic_charge(tmp_path, env_vars):
+    """A real Charge in charge.refunded has NO .subscription field — the
+    clawback must resolve through the payment_intent alias captured at
+    checkout time."""
     ca = _load_activate(tmp_path, _sub_env())
     ca._stripe = lambda _path: _checkout(ref="creator1")["data"]["object"]
-    b, s = _signed(_checkout(ref="creator1", amount_total=1900))
-    ca.handle_stripe_event(b, s)   # accrues 570
-    rb, rs = _signed(_refund(sub_id="sub_1", amount_refunded=1900))
+    b, s = _signed(_checkout(ref="creator1", amount_total=1900,
+                             payment_intent="pi_sub_first"))
+    ca.handle_stripe_event(b, s)   # accrues 570, aliases pi_sub_first -> sub_1
+    rb, rs = _signed(_refund(amount_refunded=1900,
+                             payment_intent="pi_sub_first"))
     res = ca.handle_stripe_event(rb, rs)
     assert res["affiliate"]["amount_cents"] == -570
     led = ca.affiliate.ledger()
     assert led["creator1"]["accrued_cents"] == 570
     assert led["creator1"]["clawback_cents"] == -570
     assert led["creator1"]["net_owed_cents"] == 0
+
+
+def test_pack_refund_resolves_via_payment_intent_alias(tmp_path, env_vars):
+    """Pack referral is keyed on the Checkout SESSION id (cs_...), but the
+    refund Charge only carries the payment_intent (pi_...). Without the alias
+    the promised clawback would never fire on production shapes."""
+    ca = _load_activate(tmp_path, _sub_env())
+    pack = _checkout(session_id="cs_pack_9", ref="creator1", mode="payment",
+                     amount_total=2900, event_id="evt_pack_9",
+                     payment_intent="pi_pack_9")
+    b, s = _signed(pack)
+    ca.handle_stripe_event(b, s)                       # accrues 870
+    rb, rs = _signed(_refund(amount_refunded=2900, event_id="evt_refund_p9",
+                             payment_intent="pi_pack_9"))
+    res = ca.handle_stripe_event(rb, rs)
+    assert res["affiliate"]["amount_cents"] == -870
+    assert ca.affiliate.ledger()["creator1"]["net_owed_cents"] == 0
+
+
+def test_unrecognized_refund_is_no_referral_not_an_exception(tmp_path, env_vars):
+    ca = _load_activate(tmp_path, _sub_env())
+    rb, rs = _signed(_refund(amount_refunded=1900, event_id="evt_refund_alien",
+                             payment_intent="pi_never_seen"))
+    res = ca.handle_stripe_event(rb, rs)
+    assert res["ok"] is True
+    assert res["affiliate"].get("affiliate") is False
+    assert res["affiliate"].get("reason") == "no referral"
+
+
+# ---- 5b. the same FIRST payment announced under multiple event types --------
+
+def test_first_invoice_announced_three_times_books_thirty_percent_once(
+        tmp_path, env_vars):
+    """Stripe announces the first subscription payment as
+    checkout.session.completed AND invoice.paid AND invoice.payment_succeeded,
+    each under a DIFFERENT evt_ id. Keying accruals on the underlying invoice
+    books 30% exactly once (the old evt-id key booked 90%)."""
+    ca = _load_activate(tmp_path, _sub_env())
+    ca._stripe = lambda _path: _checkout(ref="creator1")["data"]["object"]
+    b, s = _signed(_checkout(ref="creator1", amount_total=1900,
+                             invoice="in_first_sub_1"))
+    ca.handle_stripe_event(b, s)
+    for etype, eid in (("invoice.paid", "evt_first_paid"),
+                       ("invoice.payment_succeeded", "evt_first_succ")):
+        ib, isig = _signed(_invoice(sub_id="sub_1", amount_paid=1900,
+                                    event_id=eid, event_type=etype,
+                                    invoice_id="in_first_sub_1"))
+        ca.handle_stripe_event(ib, isig)
+    led = ca.affiliate.ledger()
+    assert led["creator1"]["accrued_cents"] == 570       # once, not 1710
+    conn = ca.affiliate._connect()
+    try:
+        n = conn.execute("SELECT COUNT(*) FROM affiliate_commissions").fetchone()[0]
+    finally:
+        conn.close()
+    assert n == 1
+
+
+def test_out_of_order_first_invoice_still_books_exactly_once(tmp_path, env_vars):
+    """Stripe does not guarantee delivery order: invoice.paid may land BEFORE
+    checkout.session.completed. The early invoice has no referral yet (skipped);
+    the checkout then books month 1 exactly once."""
+    ca = _load_activate(tmp_path, _sub_env())
+    ca._stripe = lambda _path: _checkout(ref="creator1")["data"]["object"]
+    ib, isig = _signed(_invoice(sub_id="sub_1", amount_paid=1900,
+                                event_id="evt_early", invoice_id="in_first_sub_1"))
+    early = ca.handle_stripe_event(ib, isig)
+    assert early["affiliate"].get("affiliate") is False   # no referral yet
+    b, s = _signed(_checkout(ref="creator1", amount_total=1900,
+                             invoice="in_first_sub_1"))
+    ca.handle_stripe_event(b, s)
+    assert ca.affiliate.ledger()["creator1"]["accrued_cents"] == 570
 
 
 # ---- 6. no-ref path: Stripe activation is PROVABLY untouched -----------------
