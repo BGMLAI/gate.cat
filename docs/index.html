@@ -272,5 +272,86 @@ document.addEventListener('DOMContentLoaded', async function() {
       }, { capture: true });
     })();
   </script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   1) read ?ref=CODE from the URL; store cookie gc_ref (90d, SameSite=Lax).
+   2) rewrite every checkout link to carry the ref so the webhook sees it:
+      - Lemon Squeezy links  -> checkout[custom][ref]=<code>  (LS echoes it back)
+      - Stripe payment links -> client_reference_id=<code>     (Stripe echoes it
+        back at data.object.client_reference_id). The LIVE landing uses
+        buy.stripe.com, so the Stripe rewrite is what actually earns commission.
+   Idempotent, handles ?/& correctly, covers /buy/ and /custom/ links. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    /* sanitize: allow only url-safe code chars, cap length. */
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+
+    var PARAM = "checkout[custom][ref]";
+    var ENCODED = encodeURIComponent(PARAM) + "=" + encodeURIComponent(ref);
+    /* Stripe Payment Links attribute via client_reference_id. */
+    var STRIPE_PARAM = "client_reference_id";
+    var STRIPE_ENCODED = STRIPE_PARAM + "=" + encodeURIComponent(ref);
+
+    /* append "name=value" to href once, correct ?/& handling. skip when the
+       param key is already present (idempotent for re-runs / hydration). */
+    function appendParam(a, href, key, encoded) {
+      if (href.indexOf(key + "=") !== -1) { return; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + encoded);
+    }
+
+    function rewrite() {
+      /* Lemon Squeezy checkout links. */
+      var lsLinks = document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]');
+      for (var i = 0; i < lsLinks.length; i++) {
+        var a = lsLinks[i];
+        var href = a.getAttribute("href");
+        if (!href) { continue; }
+        /* idempotent: never append the same custom ref twice. */
+        if (href.indexOf(encodeURIComponent(PARAM) + "=") !== -1 ||
+            href.indexOf(PARAM + "=") !== -1) { continue; }
+        var sep = href.indexOf("?") === -1 ? "?" : "&";
+        a.setAttribute("href", href + sep + ENCODED);
+      }
+      /* Stripe payment links (buy.stripe.com) -- the live checkout. */
+      var stripeLinks = document.querySelectorAll('a[href*="buy.stripe.com"]');
+      for (var j = 0; j < stripeLinks.length; j++) {
+        var sa = stripeLinks[j];
+        var shref = sa.getAttribute("href");
+        if (!shref) { continue; }
+        appendParam(sa, shref, STRIPE_PARAM, STRIPE_ENCODED);
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", rewrite);
+    } else {
+      rewrite();
+    }
+    /* re-apply for links injected after mount (SPA hydration). */
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(function () { rewrite(); });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
 </body>
 </html>

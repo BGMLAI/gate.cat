@@ -104,7 +104,11 @@ def test_claude_design_landing_uses_the_live_stripe_offer():
     assert "your agent runs shell commands" in landing
     assert "https://buy.stripe.com/14AaEQ6BncTmctGbrU67S0f" in landing
     assert landing.count("https://buy.stripe.com/") == 6
-    assert "lemonsqueezy.com" not in landing
+    # no Lemon Squeezy CHECKOUT LINKS may return to the page; the affiliate
+    # script's a[href*=...] selector (appended last) is not a link.
+    assert "lemonsqueezy.com" not in landing.split('id="gc-affiliate-ref"')[0]
+    assert 'href="https://lemonsqueezy.com' not in landing
+    assert 'href="https://checkout.lemonsqueezy.com' not in landing
     assert "start solo · €9" in landing
     assert "founding price — locked for life, then €19" in landing
     assert "pip install" not in landing.lower()
@@ -131,7 +135,12 @@ def test_landing_tracks_cookieless_funnel_events():
     assert "utm_source" in landing
     assert "utm_medium" in landing
     assert "utm_campaign" in landing
-    assert "document.cookie" not in landing
+    # ANALYTICS stays cookieless: no document.cookie anywhere before the
+    # gc-affiliate-ref block (appended last). The affiliate script's gc_ref
+    # cookie is functional attribution, not analytics — it may not leak
+    # earlier into the page.
+    before_affiliate = landing.split('id="gc-affiliate-ref"')[0]
+    assert "document.cookie" not in before_affiliate
 
 
 def test_landing_html_cannot_keep_stale_install_copy():

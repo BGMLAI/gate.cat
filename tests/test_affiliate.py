@@ -321,20 +321,27 @@ def test_add_affiliate_cli_main(tmp_path, env_vars, capsys):
     assert "gate.cat/?ref=creatorx" in out
 
 
-# ---- landing-page JS patch presence (static assertion) ----------------------
+# ---- referral JS must ride on EVERY page with a checkout link ---------------
 
-def test_landing_page_referral_js_injected(tmp_path, env_vars):
-    """The referral-capture JS is present and well-formed in the landing bundle.
-    (Live browser behavior is verified via preview; this pins the injection.)"""
-    site = os.path.join(os.path.dirname(__file__), "..", "..",
-                        "gatecat-release-0.2.1", "site", "cd_redesign.html")
-    if not os.path.exists(site):
-        pytest.skip("landing bundle not present in this checkout")
-    data = open(site, encoding="utf-8").read()
-    assert 'id="gc-affiliate-ref"' in data
-    assert "gc_ref" in data
-    assert "SameSite=Lax" in data
-    assert "checkout[custom][ref]" in data
-    assert 'lemonsqueezy.com/checkout' in data
-    # idempotency guard + ?/& handling present
-    assert 'indexOf("?")' in data
+def test_every_checkout_page_carries_referral_capture():
+    """The partner link format is gate.cat/?ref=CODE (printed by the CLI,
+    promised in the welcome pack). Any docs/ page with a buy.stripe.com link
+    but no gc-affiliate-ref script silently drops attribution — the partner's
+    lifetime 30% becomes a false promise on that page. (Replaces a test that
+    pointed at a file outside this repo and always skipped.)"""
+    import glob
+
+    docs = os.path.join(os.path.dirname(__file__), "..", "docs")
+    checked = 0
+    for path in glob.glob(os.path.join(docs, "**", "*.html"), recursive=True):
+        data = open(path, encoding="utf-8").read()
+        if "buy.stripe.com" not in data:
+            continue
+        checked += 1
+        name = os.path.relpath(path, docs)
+        assert 'id="gc-affiliate-ref"' in data, name
+        assert "gc_ref" in data, name
+        assert "SameSite=Lax" in data, name
+        assert "client_reference_id" in data, name
+    # the landing, teams, packs and partners pages at minimum
+    assert checked >= 4
