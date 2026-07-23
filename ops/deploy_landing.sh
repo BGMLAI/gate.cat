@@ -14,7 +14,7 @@ VPS="${VPS:-root@204.168.129.200}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/vps/id_ed25519}"
 DOCROOT="${DOCROOT:-/opt/bgml/static/gatecat}"
 SITE_DIR="$(cd "$(dirname "$0")/.." && pwd)/docs"
-PAGES=(teams.html partners.html sitemap.xml)
+PAGES=(teams.html partners.html packs.html sitemap.xml)
 SSH=(ssh -i "$SSH_KEY" -o ConnectTimeout=8 "$VPS")
 
 run() { if [ "${DRY_RUN:-0}" = "1" ]; then echo "DRY: $*"; else "$@"; fi }
@@ -36,7 +36,7 @@ for f in "${PAGES[@]}"; do
 done
 
 echo "== 3/4 live 200 check (the nudge in 0.4.17 hits these URLs)"
-for url in https://gate.cat/teams.html https://gate.cat/partners.html; do
+for url in https://gate.cat/teams.html https://gate.cat/partners.html https://gate.cat/packs.html; do
   if [ "${DRY_RUN:-0}" = "1" ]; then echo "DRY: curl $url"; continue; fi
   code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
   echo "$code  $url"
