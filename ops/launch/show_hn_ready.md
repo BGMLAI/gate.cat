@@ -63,3 +63,20 @@ Uwaga: świadomie linkuję stronę cenową zamiast surowych linków buy.stripe.c
 na HN goły checkout-link w komentarzu autora czytany jest jako spam i zbiera
 downvoty; checkout jest 1 klik od teams.html/#pricing. Surowe linki masz
 w PRICING.md, gdybyś wolał inaczej.
+
+---
+
+## Gałęzie odpowiedzi modów HN (V1, 2026-07-23; mail second-chance wysłany 07:33 UTC)
+
+**Gałąź B — DEFAULT (odmowa modów ALBO cisza >72h od maila, tj. do 2026-07-26 07:33 UTC):**
+NIC więcej na HN. Wątek zamykamy w LEDGER jako closed-flagged. Żadnego
+repostu z tego konta ani świeżego konta — drugi post pod flagą to ryzyko
+bana domeny gate.cat na HN. Resubmit dopiero przy MATERIALNEJ nowości
+(np. release 0.4.19 z `gate.cat setup claude-code` — wtedy nowy tytuł
+o setup-one-command, nie odgrzewka tego samego posta).
+
+**Gałąź A — reinstate (modzi przywracają post):** wklej NATYCHMIAST
+przygotowany pierwszy komentarz (sekcja wyżej — nigdy nie wszedł, więc
+jest świeży), okno aktywnej obsługi komentarzy 3–4h liczone OD MOMENTU
+reinstatement (nie od pierwotnej publikacji), zero próśb o głosy,
+zero linków buy.stripe w komentarzach (tylko strony ?source=hn).
