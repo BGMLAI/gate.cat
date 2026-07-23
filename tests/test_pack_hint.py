@@ -15,6 +15,7 @@ def _isolate(tmp_path, monkeypatch, which=lambda cli: None):
     monkeypatch.setattr(ph.shutil, "which", which)
     monkeypatch.delenv("GATECAT_NO_NUDGE", raising=False)
     monkeypatch.delenv("GATECAT_QUIET", raising=False)
+    monkeypatch.delenv("GATECAT_EXTRA_POLICIES", raising=False)
 
 
 def test_stripe_cli_triggers_fintech_pack(tmp_path, monkeypatch, capsys):
@@ -94,6 +95,32 @@ def test_silent_when_no_stack_cli(tmp_path, monkeypatch, capsys):
 
     assert capsys.readouterr().err == ""
     assert not os.path.exists(str(tmp_path / ".gatecat" / ".pack_nudged"))
+
+
+def test_silent_when_pack_already_owned(tmp_path, monkeypatch, capsys):
+    """A buyer who loaded the Fintech pack must NOT be pitched the Fintech pack.
+    Suppress-only: the stripe CLI is present, but the pack module is loaded."""
+    _isolate(tmp_path, monkeypatch,
+             which=lambda c: "/usr/bin/stripe" if c == "stripe" else None)
+    monkeypatch.setenv("GATECAT_EXTRA_POLICIES", "gatecat_packs.fintech")
+
+    ph.maybe_pack_hint()
+
+    assert capsys.readouterr().err == ""
+    # no flag written: if they later drop the pack, the hint can return
+    assert not os.path.exists(str(tmp_path / ".gatecat" / ".pack_nudged"))
+
+
+def test_owned_pack_is_skipped_but_other_still_hints(tmp_path, monkeypatch, capsys):
+    """Owning Fintech silences only Fintech — a PaaS CLI still hints PaaS.
+    (This is suppression, not cross-selling: the PaaS hint would fire anyway.)"""
+    _isolate(tmp_path, monkeypatch,
+             which=lambda c: "/usr/bin/vercel" if c == "vercel" else None)
+    monkeypatch.setenv("GATECAT_EXTRA_POLICIES", "gatecat_packs.fintech")
+
+    ph.maybe_pack_hint()
+
+    assert "PaaS" in capsys.readouterr().err
 
 
 def test_once_per_machine(tmp_path, monkeypatch, capsys):

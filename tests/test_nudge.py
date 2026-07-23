@@ -19,6 +19,21 @@ def _point_flag_at(tmp_path, monkeypatch):
 def _clear_optouts(monkeypatch):
     monkeypatch.delenv("GATECAT_NO_NUDGE", raising=False)
     monkeypatch.delenv("GATECAT_QUIET", raising=False)
+    monkeypatch.delenv("GATECAT_CLOUD_API_KEY", raising=False)
+
+
+def test_cloud_customer_is_silent_and_writes_no_flag(tmp_path, monkeypatch, capsys):
+    """A paying Cloud customer already has the off-machine record the nudge
+    pitches -- do not sell them what they bought. And write NO flag, so the
+    nudge returns if they ever drop Cloud."""
+    flag = _point_flag_at(tmp_path, monkeypatch)
+    _clear_optouts(monkeypatch)
+    monkeypatch.setenv("GATECAT_CLOUD_API_KEY", "gk_live_x")
+
+    nudge.maybe_nudge_after_veto()
+
+    assert capsys.readouterr().err == ""
+    assert not os.path.exists(str(flag))
 
 
 def test_first_veto_writes_flag_and_emits(tmp_path, monkeypatch, capsys):

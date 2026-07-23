@@ -24,25 +24,39 @@ from gatecat import _nudge
 
 _FLAG = os.path.expanduser("~/.gatecat/.pack_nudged")
 
-# (pack name, CLIs that suggest it, scope quoted from PRICING.md, preview URL)
+# (pack name, CLIs that suggest it, scope quoted from PRICING.md, preview URL,
+# GATECAT_EXTRA_POLICIES module -- same names the pack fulfiller ships in
+# gatecat_fulfill.MODULE_FOR, so a hint stays silent once the pack is loaded).
 _PACKS = (
     ("Fintech", ("stripe",),
      "refund creation, payouts/transfers, customer & billing-config deletion",
-     "https://gate.cat/packs.html?source=hint#fintech"),
+     "https://gate.cat/packs.html?source=hint#fintech", "fintech"),
     ("PaaS", ("vercel", "netlify", "fly", "heroku", "railway", "render", "supabase"),
      "`vercel remove`, `netlify sites:delete`, `fly/heroku apps destroy`, "
      "`railway down`, `render/supabase delete`",
-     "https://gate.cat/packs.html?source=hint#paas"),
+     "https://gate.cat/packs.html?source=hint#paas", "paas"),
     ("HTTP-API Breadth", ("datadog-ci", "sentry-cli"),
      "destructive raw-HTTP calls to Datadog, Sentry, Slack admin, Atlassian, "
      "Docker Hub, PyPI, ... - the modality CLI-verb walls never see",
-     "https://gate.cat/packs.html?source=hint#http-api"),
+     "https://gate.cat/packs.html?source=hint#http-api", "http_api_breadth"),
 )
 
 
+def _owned(module: str) -> bool:
+    """True if this pack's module is already loaded via GATECAT_EXTRA_POLICIES
+    (comma/space/colon-separated). Suppress-only: never used to suggest a
+    DIFFERENT pack, just to stay silent about one the user already bought."""
+    extra = os.environ.get("GATECAT_EXTRA_POLICIES", "")
+    tokens = extra.replace(",", " ").replace(":", " ").split()
+    return any(t == module or t.endswith("." + module) for t in tokens)
+
+
 def _detect():
-    """First (pack, matched CLI) whose tool exists on PATH, else None."""
-    for name, clis, scope, url in _PACKS:
+    """First (pack, matched CLI) whose tool exists on PATH AND is not already
+    owned, else None."""
+    for name, clis, scope, url, module in _PACKS:
+        if _owned(module):
+            continue
         for cli in clis:
             if shutil.which(cli):
                 return name, cli, scope, url

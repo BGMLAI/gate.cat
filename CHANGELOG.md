@@ -3,6 +3,19 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [Unreleased] -- 0.4.20
+
+### Fixed
+- The first-veto Team nudge now stays silent when `GATECAT_CLOUD_API_KEY` is
+  set -- a paying Cloud customer already has the off-machine record the nudge
+  pitches (the CLI nudge already did this; the post-veto path did not). No
+  once-per-machine flag is written in that case, so the nudge returns if Cloud
+  is dropped.
+- The policy-pack hint is suppressed for a pack whose module is already loaded
+  via `GATECAT_EXTRA_POLICIES` (suppress-only: it never suggests a *different*
+  pack) -- a Fintech-pack buyer is no longer pitched the Fintech pack.
+
+
 ## [0.4.19] -- the hook arms itself (2026-07-23)
 
 ### Added

@@ -46,6 +46,11 @@ def maybe_nudge_after_veto():
     try:
         if os.environ.get("GATECAT_NO_NUDGE") or os.environ.get("GATECAT_QUIET"):
             return
+        # Already a Cloud customer: the "this machine only, get Team" pitch is
+        # exactly what they already pay for -- staying silent (and NOT writing
+        # the once-per-machine flag, so the nudge returns if they drop Cloud).
+        if os.environ.get("GATECAT_CLOUD_API_KEY"):
+            return
         if os.path.exists(_FLAG):
             return
         os.makedirs(os.path.dirname(_FLAG), exist_ok=True)

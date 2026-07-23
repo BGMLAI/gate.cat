@@ -46,6 +46,6 @@ def test_pack_hint_urls_anchor_to_real_packs_page_ids():
     from gatecat._pack_hint import _PACKS
 
     packs_html = (ROOT / "docs" / "packs.html").read_text()
-    for _name, _clis, _scope, url in _PACKS:
+    for _name, _clis, _scope, url, _module in _PACKS:
         anchor = url.split("#", 1)[1]
         assert f'id="{anchor}"' in packs_html, url
