@@ -22,7 +22,15 @@ run() { if [ "${DRY_RUN:-0}" = "1" ]; then echo "DRY: $*"; else "$@"; fi }
 echo "== 1/4 rsync docs/ -> $VPS:$DOCROOT"
 # --delete is deliberately NOT used: the docroot also serves files that do not
 # live in docs/ (e.g. veto-demo.html from site/). Additive deploy only.
-run rsync -av -e "ssh -i $SSH_KEY -o ConnectTimeout=8" "$SITE_DIR/" "$VPS:$DOCROOT/"
+# Excludes (W1, 2026-07-23): internal loop state, launch kits and research
+# dossiers must NEVER reach the public docroot — AUTOPILOT-LOOP.md was found
+# LIVE (HTTP 200) with third-party contact data and full internal strategy.
+run rsync -av \
+  --exclude 'AUTOPILOT-LOOP.md' \
+  --exclude 'LAUNCH_KIT_2026-07-14.md' \
+  --exclude 'LAUNCH_0.4.16.md' \
+  --exclude 'research/' \
+  -e "ssh -i $SSH_KEY -o ConnectTimeout=8" "$SITE_DIR/" "$VPS:$DOCROOT/"
 
 echo "== 2/4 sha256 verify the funnel pages"
 for f in "${PAGES[@]}"; do

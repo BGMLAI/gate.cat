@@ -47,6 +47,17 @@ ops/deploy_landing.sh
 Skrypt sam robi rsync (additive), weryfikuje sha256 + HTTP 200 na
 teams/partners/**packs** i restartuje fulfillment (port 8791).
 
+**W TYM SAMYM SSH (W1 — pilne, wyciek rule-9):** usuń już-wgrane pliki
+wewnętrzne z publicznego docroota (są dziś LIVE, m.in. pełny stan pętli
+z adresem osoby trzeciej):
+
+```bash
+ssh -i ~/.ssh/vps/id_ed25519 root@204.168.129.200 \
+  'cd /opt/bgml/static/gatecat && rm -f AUTOPILOT-LOOP.md LAUNCH_KIT_2026-07-14.md LAUNCH_0.4.16.md && rm -rf research/'
+```
+
+(deploy_landing.sh ma już `--exclude` na te ścieżki, więc nie wrócą.)
+
 ## 3. Snapshot funnela — jeden paste, wynik na czat (2 min)
 
 ```bash
