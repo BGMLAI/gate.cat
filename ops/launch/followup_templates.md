@@ -108,3 +108,25 @@ Subject: `Re:` (ten sam wątek)
 (07-22 17:11), piłka u niego. Reakcja na jego odpowiedź:
 `ops/launch/mike_category_data_pack.md`. Jeśli cisza >14 dni, decyzja
 wraca do panelu (nie do tego pliku).
+
+---
+
+## Gałąź: „show me the numbers first" (V4, 2026-07-23)
+
+Przewidziana w day-3 („Yes / no / show me the numbers first all fine") —
+obsługa w 60 sekund:
+
+1. **Liczby:** wklej blok „What you can honestly say" z
+   `ops/partners/welcome_pack.md` (sekcja 1 welcome maila — NIE kopiuj go
+   tutaj, jedno źródło prawdy) + link https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md.
+2. **Jedno uczciwe zdanie o trakcji** (frazowanie z wątku Return on Security —
+   działa, bo uprzedza zarzut): *"Revenue is day-zero and I won't dress it
+   up — downloads plus the evidence register ARE the traction story today,
+   which is exactly why the deal is revenue-share, not a sponsorship
+   invoice: it costs you nothing unless it converts."*
+3. **Pre-yes demo:** *"30 seconds, no signup, watch it veto rm -rf live:
+   https://gate.cat/veto-demo.html — if that demo wouldn't interest your
+   audience, we're done and no hard feelings."*
+
+Zero innych liczb. Jeśli spyta o zarobki innych partnerów: prawda —
+program wystartował w tym tygodniu, jest zero danych i mówimy to wprost.

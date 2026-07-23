@@ -69,9 +69,9 @@ matter on an irreversible action, and which an LLM judge doesn't give you:
 
 And we publish the gate's limits instead of hiding them: the
 [bypass suite](gatecat/integrations/bypass_suite.py)
-runs in CI and prints its own map — 100% catch on the dangers it *claims*, a
-disclosed false-block, and five named gaps (base64-encoded payloads, deletes via
-a language runtime, `curl | sh`, …). The honest line is mechanical: the gate is
+runs in CI and prints its own map — 178/178 catch on the dangers it *claims*,
+one benign false-block in 129 cases, and a named runtime-assembly gap printed
+in the output (FACTS.md F4). The honest line is mechanical: the gate is
 certain only about what it **blocks**; everything else is *unchecked, not safe*.
 
 A smarter judge is a fine *second* layer for the fuzzy cases. But the layer that

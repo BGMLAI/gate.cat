@@ -93,3 +93,18 @@ data), żeby pętla pilnowała follow-upów i wypłat.
   mówimy to wprost jak w wątku Return on Security).
 - Żadnego dashboardu partnera "wkrótce" — jest ledger na życzenie, tyle.
 - Żadnej ekskluzywności kategorii/regionu.
+
+## 5. Swipe copy dla partnera (V4 — jeden blok, wkleja 1:1)
+
+Trzecia osoba, ~60 słów, disclosure wbudowane, `{REF_LINK}` =
+`https://gate.cat/?ref=CODE`:
+
+> gate.cat is an open-source (Apache-2.0) kill switch for AI coding agents:
+> a deterministic deny-list that vetoes rm -rf, prod-DB drops and secret
+> exfiltration BEFORE they execute — no model call in the path, so it can't
+> be prompt-injected into saying yes. The core is free forever; paid plans
+> add the off-machine veto history an agent can't rewrite. Try it:
+> {REF_LINK} (affiliate link — I earn a commission).
+
+Zasady: partner może skracać, nie może usuwać linii disclosure ani dodawać
+liczb spoza FACTS.md. Wariantów tweet-length celowo brak (cięcie sędziów).
