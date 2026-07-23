@@ -283,6 +283,7 @@ or buy a one-time €29 policy pack:
 [Fintech](https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c) ·
 [PaaS](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) ·
 [HTTP-API Breadth](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e).
+**What's inside each pack → [gate.cat/packs.html](https://gate.cat/packs.html?source=pypi)**
 
 **Running agents across a team?** One rogue agent's blast radius is the whole
 team's. The team plan adds a shared off-machine veto history no single agent can

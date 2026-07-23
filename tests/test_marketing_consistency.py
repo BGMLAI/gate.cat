@@ -29,6 +29,39 @@ def test_readme_exposes_a_direct_paid_path():
     assert "https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e" in readme
 
 
+def test_packs_page_shows_scope_before_checkout():
+    packs = (ROOT / "docs" / "packs.html").read_text()
+
+    # the three live Payment Links, tagged with the page source
+    assert "https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c?source=packs" in packs
+    assert "https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d?source=packs" in packs
+    assert "https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e?source=packs" in packs
+    # scope verbatim from PRICING.md (modulo HTML escaping)
+    assert "refund creation, payouts/transfers, customer &amp; billing-config deletion" in packs
+    assert "PayPal/Braintree/Adyen/Wise/Mercury (5 policies)" in packs
+    assert "railway down" in packs and "deploy/list/info stay allowed" in packs
+    assert "requires gate.cat ≥ 0.4.9" in packs
+    # honest framing + terms
+    assert "€29" in packs
+    assert "30-day full refund" in packs
+    assert "GATECAT_EXTRA_POLICIES" in packs
+    assert "fail-closed" in packs
+    assert "lemonsqueezy.com/checkout" not in packs.replace(
+        'a[href*="lemonsqueezy.com/checkout"]', "")  # affiliate selector only
+    # anchors the cross-sells deep-link to
+    for anchor in ('id="fintech"', 'id="paas"', 'id="http-api"'):
+        assert anchor in packs
+
+    sitemap = (ROOT / "docs" / "sitemap.xml").read_text()
+    assert "https://gate.cat/packs.html" in sitemap
+
+    readme = (ROOT / "README.md").read_text()
+    assert "gate.cat/packs.html?source=pypi" in readme
+
+    teams = (ROOT / "docs" / "teams.html").read_text()
+    assert "packs.html?source=teams" in teams
+
+
 def test_claude_design_landing_uses_the_live_stripe_offer():
     landing = (ROOT / "docs" / "index.html").read_text()
 
