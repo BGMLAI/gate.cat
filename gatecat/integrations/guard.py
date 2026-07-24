@@ -553,9 +553,19 @@ def check_action(
 
     shadow_on = shadow_enabled(shadow)
 
+    # Inert literals (git-commit-message / echo / grep bodies) are blanked ONCE
+    # here, up front, so BOTH the delete analyzer AND the regex walls judge the
+    # same content-stripped text. Doing it only before evaluate() (as it used to)
+    # let a `git clean -f` inside a commit MESSAGE reach the delete analyzer and
+    # false-block a benign `git commit -m "...git clean -f..."` (issue #4 / F1).
+    # Stripping only ever turns a false-block into an allow, never masks a real
+    # verb (`| sh`/interpreter pipes keep their body). log/raise below still use
+    # the ORIGINAL `action`, so the audit trail is verbatim.
+    engine_action = _strip_data_heredocs_safe(action)
+
     # Target-anchored delete analyzer first (D-narrow: real cwd/env from the
     # harness). Only handles the delete class; returns None for everything else.
-    del_decision = _analyze_delete_class(source, action, policies, cwd=cwd, env=env, home=home)
+    del_decision = _analyze_delete_class(source, engine_action, policies, cwd=cwd, env=env, home=home)
     engine_policies = policies
     deferred_warn = None  # a delete-analyzer WARN pending the deny-wall pass
     if del_decision is None:
@@ -595,10 +605,11 @@ def check_action(
             return del_decision.with_stages(stages)
 
     # Data-heredoc bodies (cat>file<<EOF ... EOF) are a document/script being
-    # WRITTEN, not commands - strip them before the regex walls so a literal
-    # "DROP TABLE"/"terraform destroy" inside written docs can't false-block
-    # (content-vs-command class). Executed heredocs (bash<<EOF) are untouched.
-    engine_action = _strip_data_heredocs_safe(action)
+    # WRITTEN, not commands - already stripped into `engine_action` above (once,
+    # shared with the delete analyzer) so a literal "DROP TABLE"/"terraform
+    # destroy"/"git clean -f" inside written docs or a commit message can't
+    # false-block (content-vs-command class). Executed heredocs (bash<<EOF) are
+    # untouched.
     try:
         decision = evaluate(source, engine_action, engine_policies)
     except EngineUnavailable as exc:

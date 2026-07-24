@@ -6,6 +6,14 @@ All notable changes to `gate.cat` will be documented in this file.
 ## [Unreleased] -- 0.4.20
 
 ### Fixed
+- Content-vs-command false-block (issue #4 / F1): a benign
+  `git commit -m "...git clean -f..."` was vetoed by the delete analyzer
+  because it ran on the raw action while inert-literal stripping (commit
+  message / echo / grep bodies) only fed the regex walls. The stripped text
+  is now computed once and shared with both stages, so a danger pattern
+  quoted inside a commit message can't false-block; the bare `git clean -f`
+  command still blocks, and recall stays 43/43 with 0 benign false-blocks.
+  log/raise still use the original action (verbatim audit).
 - The first-veto Team nudge now stays silent when `GATECAT_CLOUD_API_KEY` is
   set -- a paying Cloud customer already has the off-machine record the nudge
   pitches (the CLI nudge already did this; the post-veto path did not). No
