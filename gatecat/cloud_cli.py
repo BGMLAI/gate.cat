@@ -38,7 +38,7 @@ def _endpoint() -> str:
 
 
 def _api_key() -> str:
-    k = os.environ.get("GATECAT_CLOUD_API_KEY")
+    k = (os.environ.get("GATECAT_CLOUD_API_KEY") or "").strip()
     if not k:
         sys.exit("cloud is off: set GATECAT_CLOUD_API_KEY (Solo/Team subscription)\n"
                  "  get a key: https://gate.cat/teams.html?source=cli "
@@ -51,21 +51,20 @@ def _base() -> str:
     return _endpoint().rsplit("/events", 1)[0]
 
 
-def _fetch(since: int = 0) -> list:
-    """GET the account's encrypted events from the server."""
-    url = _base() + f"/events?since={since}"
-    req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _api_key()})
-    return json.load(urllib.request.urlopen(req, timeout=15)).get("events", [])
-
-
 class _UpgradeRequired(Exception):
     """The server returned 402/403 -- this is a paid (Team+) feature."""
 
 
-def _get_json(path: str) -> dict:
-    """GET an arbitrary cloud path, raising _UpgradeRequired on 402/403 so the
-    CLI can print a clear upgrade message instead of a stack trace."""
-    url = _base() + path
+def _http_get_json(url: str) -> dict:
+    """The SINGLE choke point for every authenticated cloud GET.
+
+    All network/auth failure handling lives here, once, so no subcommand ever
+    dumps a raw Python traceback on a paying user:
+      * 401 -> the key is wrong/expired: one clear line + exit 1 (not a stack).
+      * 402/403 -> _UpgradeRequired, so the caller prints a tailored upgrade line.
+      * other HTTP / unreachable host / timeout -> one clear line + exit 1.
+    Happy path returns the decoded JSON dict.
+    """
     req = urllib.request.Request(url, headers={"Authorization": "Bearer " + _api_key()})
     try:
         return json.load(urllib.request.urlopen(req, timeout=15))
@@ -76,7 +75,27 @@ def _get_json(path: str) -> dict:
             except Exception:
                 msg = "this is a Team feature"
             raise _UpgradeRequired(msg)
-        raise
+        if e.code == 401:
+            sys.exit("gate.cat cloud: unauthorized (401) — GATECAT_CLOUD_API_KEY is "
+                     "wrong or expired.\n"
+                     "  double-check the key, or get a new one: "
+                     "https://gate.cat/teams.html?source=cli")
+        sys.exit(f"gate.cat cloud: server error (HTTP {e.code}) — try again shortly.")
+    except (urllib.error.URLError, TimeoutError) as e:
+        reason = getattr(e, "reason", e)
+        sys.exit(f"gate.cat cloud: server unreachable ({reason}) — check your network "
+                 "or GATECAT_CLOUD_ENDPOINT.")
+
+
+def _fetch(since: int = 0) -> list:
+    """GET the account's encrypted events from the server."""
+    return _http_get_json(_base() + f"/events?since={since}").get("events", [])
+
+
+def _get_json(path: str) -> dict:
+    """GET an arbitrary cloud path through the shared choke point (which turns
+    402/403 into _UpgradeRequired for a clear upgrade message)."""
+    return _http_get_json(_base() + path)
 
 
 def _decrypt_all(rows: list) -> list:

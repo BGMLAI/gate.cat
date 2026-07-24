@@ -178,7 +178,8 @@ _Synteza: sędziowie potwierdzili tezę o diminishing returns — z 7 propozycji
   - acceptance: nowy test failuje na obecnym kodzie (dowód buga), przechodzi po fixie; istniejący test_cloud_reporter.py zielony; kursor nigdy nie awansuje, gdy ship() nie zwraca pełnego sukcesu.
   - _(impact: $0/30d bezpośrednio (0 subskrybentów), ale asymetria katastrofalna: bez fixa pierwszy płatnik traci historię od dnia 1 bez sygnału błędu → gwarantowany refund/chargeback/recenzja; ubezpieczenie pierwszej konwersji w najtańszym możliwym momencie; effort: M; soczewka: płatny onboarding; score: 8/10)_
 
-- [ ] **Y4 — cloud report/verify/ledger: obsługa błędów RAZ na warstwie _fetch()/_get_json() zamiast surowego tracebacku**
+- [x] **Y4 — DONE (przebieg #45):** cała obsługa błędów sieci/auth scentralizowana w JEDNYM choke-poincie `_http_get_json(url)`, którego używają i `_fetch()`, i `_get_json()` (zamiast per-komenda). 401 → jedna linia „unauthorized (401) — GATECAT_CLOUD_API_KEY wrong or expired" + link teams.html + exit 1; 402/403 → `_UpgradeRequired` (bez zmian, ścieżka upgrade zachowana); inny HTTP / URLError / TimeoutError → jedna linia „server unreachable/error" + exit 1; ZERO surowego tracebacku. `_api_key()` teraz `.strip()`-uje klucz (usuwa copy-paste newline). Nowy `tests/test_cloud_cli.py` — dokładnie 3 przypadki (401 bez tracebacku, host nieosiągalny bez tracebacku, happy-path round-trip przez stub urlopen z realnym decrypt); 401+unreachable udowodnione na PRE-FIX kodzie (padały surowym HTTPError/URLError). Istniejące zachowanie (brak klucza, 402/403 upgrade) bez zmian. Pełny suite: **1972 passed, 29 skipped.**
+- [ ] ~~**Y4 — cloud report/verify/ledger: obsługa błędów RAZ na warstwie _fetch()/_get_json() zamiast surowego tracebacku**~~ _(spec poniżej, zrealizowana)_
   - why-now: zreprodukowane: błędny GATECAT_CLOUD_API_KEY na `gate.cat cloud report` = nieobsłużony HTTPError i surowy stack trace na terminalu płacącego — na dokładnie tych pierwszych komendach ze strony aktywacji. `tests/test_cloud_cli.py` nie istnieje (potwierdzone) mimo że to jedyny klient płatnej funkcji. KOREKTA z werdyktu honesty: serwer zwraca **401** dla złego klucza (nie 403) — komunikat i test dopasować do 401.
   - scope: cięcia obu sędziów zastosowane — obsługa błędów RAZ na współdzielonej warstwie `_fetch()`/`_get_json()` (nie per-komenda): 401 → jedna linia „zły/wygasły klucz, sprawdź GATECAT_CLOUD_API_KEY, nowy: gate.cat/teams.html" + exit 1; URLError/timeout → „serwer cloud nieosiągalny, sprawdź sieć"; `.strip()` klucza w `_api_key()`. Testy LEAN, dokładnie 3 przypadki: zły klucz (401, bez tracebacku, exit code), nieosiągalny host, happy-path round-trip przez stub (wzorzec monkeypatch urlopen z test_cloud_reporter.py). Zero gold-platingu ponad to.
   - acceptance: `tests/test_cloud_cli.py` istnieje i przechodzi; żaden test nie pokazuje Python tracebacku; istniejące zachowanie (brak klucza, brak [cloud] extra, 402/403 upgrade-path) bez zmian; pełny suite zielony.
@@ -273,6 +274,21 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-24 11:21 UTC — przebieg #45: Y4 DONE → KOLEJKA v6 wyczerpana (tylko Y2 gated do jutra).**
+  Poczta: 0 płatności gate.cat (Stripe = inny biznes), 0 nowych inbound wymagających
+  draftu (awesome-ai-devtools template-check nadal czerwony — PR ownera, już
+  zgłoszone #43; cc58444 CI stale — obecne zielone; LinkedIn/urządzenie = szum).
+  Backlog: **Y4 done** — obsługa błędów cloud CLI scentralizowana w jednym
+  `_http_get_json()` (401 → jedna linia + exit, nie traceback; URLError/timeout →
+  jedna linia; 402/403 upgrade bez zmian; `.strip()` klucza). Nowy
+  `tests/test_cloud_cli.py` (3 przypadki), 401+unreachable udowodnione na pre-fix.
+  Suite **1972 passed**. **STAN KOLEJKI v6: Y1 (NO-GO), Y3, Y4 zamknięte; zostaje
+  tylko Y2 (day-3 follow-upy) gated do 2026-07-25.** Wszystkie ~40 zadań gałęzi
+  wciąż niezmergowane/niewydane — pętla efektywnie zablokowana na przepustowości
+  ownera (merge PR #27 → deploy docs → publish 0.4.19/0.4.20). NIE odpalam panelu
+  #46 (repo-polish zadeklarowany zamknięty w v6; nowe taski to wata dopóki nic z
+  gałęzi nie wyszło). Następny przebieg: jeśli 2026-07-25 → Y2; inaczej pusto/hold.
 
 - **2026-07-24 10:21 UTC — przebieg #44: Y3 DONE (zweryfikowany bug korupcji danych naprawiony).**
   Poczta: 0 płatności gate.cat (oba Stripe = inny biznes: Zeszyty Terapeutyczne
