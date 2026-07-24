@@ -275,6 +275,18 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-24 13:21 UTC — przebieg #47: HOLD (bez zmian; nowość: bounce cold-sendu ownera).**
+  Poczta: 0 płatności gate.cat, 0 nowego inbound wymagającego draftu. NOWE: bounce
+  „Undeliverable" — owner wysłał własny cold-outreach (ES, bogumil@jankiewi.cz →
+  contact@devtalles.com, 11:47) i odbił się „recipient unknown / contact wasn't found
+  at devtalles.com". To send OWNERA (nie moja kampania, nie w LEDGER); szukanie
+  alternatywnego adresu / re-send = cold-outreach do nowego adresu = poza twardymi
+  ograniczeniami → BEZ draftu. Zgłoszone userowi jedną linią (jego żywa kampania,
+  deliverability). Reszta: awesome-ai-devtools template-check czerwony (owner, repo poza
+  scope — nie mogę tknąć bez add_repo), cc58444 stale. Backlog: Y2 wciąż gated do 2026-07-25.
+  Panel #47 NIE odpalony (stan od v6 bez zmian, ~40 commitów niezmergowane = wata). PR #27
+  bez zmian od #46 (clean, CI zielone). Wąskie gardło: merge → deploy → publish.
+
 - **2026-07-24 12:21 UTC — przebieg #46: HOLD (kolejka pusta poza gated Y2; panel = wata).**
   Poczta: 0 płatności gate.cat, 0 nowych inbound (Stripe=inny biznes; awesome-ai-devtools
   template-check nadal czerwony=owner; cc58444 stale). Backlog: jedyny task to Y2, gated
