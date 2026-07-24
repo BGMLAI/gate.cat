@@ -52,30 +52,30 @@ MODULE_FOR = {
 }
 
 # Cross-sell on the thank-you page: the two packs NOT just bought, plus the
-# Cloud line. Scopes quote PRICING.md; links are the live Payment Links with a
-# client_reference_id so the source shows up on the Checkout Session (a plain
-# ?source= query on buy.stripe.com would be dropped and measure nothing).
+# Cloud line. Scopes quote PRICING.md; links go to the pack preview page
+# (full scope before checkout — no blind €29 buy), and its ?source= shows up
+# in the /events funnel log as checkout_click source=pack-xsell.
 PACK_LINKS = {
     "gatecat-pack-fintech-1.0.0.zip": (
         "Fintech — refund creation, payouts/transfers, customer &amp; "
         "billing-config deletion",
-        "https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c"),
+        "https://gate.cat/packs.html?source=pack-xsell#fintech"),
     "gatecat-pack-paas-1.0.0.zip": (
         "PaaS — <code>vercel remove</code>, <code>netlify sites:delete</code>, "
         "<code>fly/heroku apps destroy</code>, <code>railway down</code>, "
         "<code>render/supabase delete</code>",
-        "https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d"),
+        "https://gate.cat/packs.html?source=pack-xsell#paas"),
     "gatecat-pack-http-breadth-1.0.0.zip": (
         "HTTP-API Breadth — destructive raw-HTTP calls the CLI-verb walls "
         "never see",
-        "https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e"),
+        "https://gate.cat/packs.html?source=pack-xsell#http-api"),
 }
 
 
 def xsell_html(purchased: str) -> str:
     """The 'Complete your coverage' block, excluding the pack just bought."""
     items = "".join(
-        f'<li><a href="{url}?client_reference_id=pack-xsell">{label}</a>'
+        f'<li><a href="{url}">{label}</a>'
         " — &euro;29 one-time</li>"
         for fname, (label, url) in PACK_LINKS.items() if fname != purchased)
     return (

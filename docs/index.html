@@ -4,6 +4,20 @@
   <meta charset="utf-8">
   <title>gate.cat — fail-closed action veto for AI agents</title>
   <meta name="description" content="gate.cat blocks destructive shell commands before AI coding agents execute them. Open source, local, and fail-closed.">
+  <link rel="canonical" href="https://gate.cat/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gate.cat/">
+  <meta property="og:site_name" content="gate.cat">
+  <meta property="og:title" content="gate.cat — fail-closed action veto for AI agents">
+  <meta property="og:description" content="Blocks an AI coding agent's rm -rf, prod-DB drop, terraform destroy and secret exfil before they run. Deterministic, open source, free core.">
+  <meta property="og:image" content="https://gate.cat/veto-demo-poster.png">
+  <meta property="og:image:width" content="1560">
+  <meta property="og:image:height" content="940">
+  <meta property="og:image:alt" content="gate.cat vetoing rm -rf before it runs — your files are safe">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="gate.cat — fail-closed action veto for AI agents">
+  <meta name="twitter:description" content="A deterministic kill switch for AI coding agents. Vetoes catastrophic shell commands before they run. Free core, open source.">
+  <meta name="twitter:image" content="https://gate.cat/veto-demo-poster.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #faf9f5; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -13,9 +27,14 @@
     #__bundler_placeholder { color: #999; font-size: 14px; }
   </style>
   <noscript>
-    <style>#__bundler_loading { display: none; }</style>
-    <div style="position:fixed;bottom:12px;left:12px;font:13px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#999;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);z-index:10000;">
-      This page requires JavaScript to display.
+    <style>#__bundler_loading { display: none; } #__bundler_thumbnail { display: none; }</style>
+    <div style="max-width:640px;margin:0 auto;padding:48px 20px;font:16px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;color:#0f0f0d;">
+      <h1 style="font-size:28px;line-height:1.15;margin:0 0 12px">gate.cat — a fail-closed action veto for AI coding agents</h1>
+      <p style="margin:0 0 16px;color:#3a3d35">Blocks an AI agent's <b>rm -rf</b>, prod-database drops, <b>terraform destroy</b> and secret exfiltration <b>before</b> they run. Deterministic, no model in the veto path, free core (Apache-2.0).</p>
+      <p style="margin:0 0 8px"><b>Install safely</b> (inspect the script first, then run):</p>
+      <pre style="margin:0 0 16px;padding:12px;background:#f2f1e6;border-radius:8px;overflow-x:auto;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace">curl -fsSL https://gate.cat/install.sh -o /tmp/gatecat-install.sh
+sh /tmp/gatecat-install.sh</pre>
+      <p style="margin:0"><a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="/teams.html">for teams</a> · <a href="/packs.html">policy packs</a></p>
     </div>
   </noscript>
 </head>
@@ -272,5 +291,86 @@ document.addEventListener('DOMContentLoaded', async function() {
       }, { capture: true });
     })();
   </script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   1) read ?ref=CODE from the URL; store cookie gc_ref (90d, SameSite=Lax).
+   2) rewrite every checkout link to carry the ref so the webhook sees it:
+      - Lemon Squeezy links  -> checkout[custom][ref]=<code>  (LS echoes it back)
+      - Stripe payment links -> client_reference_id=<code>     (Stripe echoes it
+        back at data.object.client_reference_id). The LIVE landing uses
+        buy.stripe.com, so the Stripe rewrite is what actually earns commission.
+   Idempotent, handles ?/& correctly, covers /buy/ and /custom/ links. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    /* sanitize: allow only url-safe code chars, cap length. */
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+
+    var PARAM = "checkout[custom][ref]";
+    var ENCODED = encodeURIComponent(PARAM) + "=" + encodeURIComponent(ref);
+    /* Stripe Payment Links attribute via client_reference_id. */
+    var STRIPE_PARAM = "client_reference_id";
+    var STRIPE_ENCODED = STRIPE_PARAM + "=" + encodeURIComponent(ref);
+
+    /* append "name=value" to href once, correct ?/& handling. skip when the
+       param key is already present (idempotent for re-runs / hydration). */
+    function appendParam(a, href, key, encoded) {
+      if (href.indexOf(key + "=") !== -1) { return; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + encoded);
+    }
+
+    function rewrite() {
+      /* Lemon Squeezy checkout links. */
+      var lsLinks = document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]');
+      for (var i = 0; i < lsLinks.length; i++) {
+        var a = lsLinks[i];
+        var href = a.getAttribute("href");
+        if (!href) { continue; }
+        /* idempotent: never append the same custom ref twice. */
+        if (href.indexOf(encodeURIComponent(PARAM) + "=") !== -1 ||
+            href.indexOf(PARAM + "=") !== -1) { continue; }
+        var sep = href.indexOf("?") === -1 ? "?" : "&";
+        a.setAttribute("href", href + sep + ENCODED);
+      }
+      /* Stripe payment links (buy.stripe.com) -- the live checkout. */
+      var stripeLinks = document.querySelectorAll('a[href*="buy.stripe.com"]');
+      for (var j = 0; j < stripeLinks.length; j++) {
+        var sa = stripeLinks[j];
+        var shref = sa.getAttribute("href");
+        if (!shref) { continue; }
+        appendParam(sa, shref, STRIPE_PARAM, STRIPE_ENCODED);
+      }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", rewrite);
+    } else {
+      rewrite();
+    }
+    /* re-apply for links injected after mount (SPA hydration). */
+    if (window.MutationObserver) {
+      var mo = new MutationObserver(function () { rewrite(); });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
 </body>
 </html>

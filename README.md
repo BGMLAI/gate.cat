@@ -41,7 +41,7 @@ Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine u
 
 [![CI](https://github.com/BGMLAI/gate.cat/actions/workflows/ci.yml/badge.svg)](https://github.com/BGMLAI/gate.cat/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/gate.cat)](https://pypi.org/project/gate.cat/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://github.com/BGMLAI/gate.cat/blob/master/LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/gate.cat)](https://pypi.org/project/gate.cat/)
 [![Site](https://img.shields.io/badge/site-gate.cat-cbdd1a)](https://gate.cat)
 
@@ -53,7 +53,7 @@ a single byte executes — a real terminal, `pip install gate-cat`, no montage:
 
 ![gate.cat blocks a curl-pipe-shell an agent tried to run](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/demo_a.gif)
 
-<sub>Blocks the `curl … | sh` pattern specifically; obfuscated/base64 install tricks still evade — see [OBJECTIONS.md](OBJECTIONS.md). Cast: [`docs/demos/demo_a.cast`](docs/demos/demo_a.cast).</sub>
+<sub>Blocks the `curl … | sh` pattern specifically; obfuscated/base64 install tricks still evade — see [OBJECTIONS.md](https://github.com/BGMLAI/gate.cat/blob/master/OBJECTIONS.md). Cast: [`docs/demos/demo_a.cast`](https://github.com/BGMLAI/gate.cat/blob/master/docs/demos/demo_a.cast).</sub>
 
 ## Install
 
@@ -69,7 +69,21 @@ pip install "gate-cat[all]"         # everything
 **Free forever** — the full local gate, nothing rate-limited. The paid layer is
 optional and off by default: **Cloud Solo €19/mo · Team €149/mo flat (up to 10
 machines) · Business €399/mo · one-time €29 policy packs** — details and honest
-boundaries in [PRICING.md](PRICING.md). Blocking never depends on payment.
+boundaries in [PRICING.md](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md). Blocking never depends on payment.
+
+## Does it work with my agent?
+
+Three enforcement surfaces, honestly labeled by trust class (strongest first):
+
+| Your setup | How | Trust class |
+|---|---|---|
+| **Claude Code** | PreToolUse hook (`gatecat-hook`), or `/plugin marketplace add BGMLAI/gate.cat` | **Enforcement** — in the harness, outside the model's control flow |
+| **Any agent that shells out** (Codex, aider, and anything honoring `$SHELL`/`sh -c`) | `gatecat-shell` as the exec shell, wherever the tool lets you set the shell/exec command | **Enforcement** — the command can't run without the gate |
+| **Any OpenAI-API endpoint** (Ollama, NIM, OpenRouter, vLLM) | proxy mode — point the agent's `base_url` at gate.cat | Gate on the tool-call boundary the proxy sees |
+| **crewAI / LangGraph / AutoGen** | in-process adapter | Convention — a prompt injection can route around it (weaker; labeled as such) |
+
+Full config for each is below. The hook and the gated shell are the two that
+enforce; the adapters are convenience with a stated limit.
 
 ## The hook — the strongest mode
 
@@ -92,6 +106,16 @@ it's called by name, no absolute paths):
 }
 ```
 
+Claude Code plugin users: `/plugin marketplace add BGMLAI/gate.cat` →
+`/plugin install gatecat@gatecat` registers the same hook via the plugin
+system — no JSON at all.
+
+Or skip the manual paste (new in 0.4.19): `gate.cat setup claude-code`
+registers the hook for you — idempotent, keeps your existing settings.json
+keys, backs the file up first, refuses to touch unparsable JSON. Check any
+install with `gate.cat doctor` (version · hook registered where · protection
+state).
+
 Now ask your agent to run `rm -rf ~/project`: the call is blocked (exit 2) and
 the model sees `VETO [DELETE_ANALYZER]: deletes '/home/you/project' under
 protected root '/home' - requires a human`. A delete under a throwaway path like
@@ -104,7 +128,7 @@ logs a no-op (`GATECAT_VETO_EPHEMERAL=0` forces it armed).
 Framework adapters (crewAI / LangGraph / AutoGen) exist too, but they are
 in-process convention — a prompt injection can route around them. Only the hook
 is enforcement the agent cannot skip. See
-[`examples/veto_integrations/`](examples/veto_integrations/) for adapter usage.
+[`examples/veto_integrations/`](https://github.com/BGMLAI/gate.cat/tree/master/examples/veto_integrations/) for adapter usage.
 
 ## The gated shell — enforcement for any agent that shells out
 
@@ -200,7 +224,7 @@ to a human — one deterministic gate, three outcomes:
 
 ![gate.cat policy: dev runs, prod denied, staging escalated to a human](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/demo_b.gif)
 
-<sub>Source: [`examples/veto_terraform.py`](examples/veto_terraform.py). Cast: [`docs/demos/demo_b.cast`](docs/demos/demo_b.cast).</sub>
+<sub>Source: [`examples/veto_terraform.py`](https://github.com/BGMLAI/gate.cat/blob/master/examples/veto_terraform.py). Cast: [`docs/demos/demo_b.cast`](https://github.com/BGMLAI/gate.cat/blob/master/docs/demos/demo_b.cast).</sub>
 
 **Honest verdicts** — the pipeline never claims more than it measured:
 
@@ -238,7 +262,10 @@ Every stage that spoke is recorded in `report.stages` for debugging.
 model-agnostic): agents increasingly run on cheap/local models (7-30B via Ollama/vLLM) for cost
 and data-residency. That's where the gate's *uncertainty signal* is strongest (AUC 0.77–0.90,
 measured N=4800) and where frontier-first guardrail vendors don't aim — on frontier models the
-*signal* weakens (AUC 0.68–0.71). The action-veto's deny-list + exec-check does not depend on
+*signal* weakens (AUC 0.68–0.71). Honest caveat, because reproducibility is the brand: this AUC
+pair is an **internal measurement whose artifact isn't published yet** (FACTS F6/F7), so unlike
+every other number here, treat it as directional rather than reproducible-today. The action-veto's
+deny-list + exec-check does not depend on
 model size at all; it protects a Claude Code (frontier) agent exactly as it protects a local one.
 
 *Naming note*: `koryto` (Polish: riverbed) is the project's canonical term for the
@@ -283,13 +310,28 @@ or buy a one-time €29 policy pack:
 [Fintech](https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c) ·
 [PaaS](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) ·
 [HTTP-API Breadth](https://buy.stripe.com/aFa8wIgbX06AdxK67A67S0e).
+**What's inside each pack → [gate.cat/packs.html](https://gate.cat/packs.html?source=pypi)**
+
+**Don't trust us — reproduce it.** Before paying anyone (including us), run
+the evidence yourself — two commands, no datasets:
+
+```bash
+pip install gate-cat
+python -m gatecat.integrations.bypass_suite
+```
+
+The reproducible bypass suite catches **178/178** danger shapes it claims —
+and prints its own edges: one published runtime-assembly gap and one benign
+false-block in 129 cases. At scale: **0 real recall misses across 1,085,159
+unique real agent commands** through the full gate. Every number →
+[FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md).
 
 **Running agents across a team?** One rogue agent's blast radius is the whole
 team's. The team plan adds a shared off-machine veto history no single agent can
 delete, fleet alerts, and signed policy sync — walked through on the dedicated
 page: **[the team plan → gate.cat/teams.html](https://gate.cat/teams.html)**.
 
-Full boundaries and tier details: [PRICING.md](PRICING.md).
+Full boundaries and tier details: [PRICING.md](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md).
 
 **Teach AI coding, or write a dev newsletter?** There's a partner program —
 30% recurring, for the lifetime of the subscription, on every paid plan someone
@@ -298,15 +340,15 @@ paywall: **[partner program → gate.cat/partners.html](https://gate.cat/partner
 
 ## Verify the numbers
 
-Every public number traces to a row in [FACTS.md](FACTS.md) (claim → source →
+Every public number traces to a row in [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md) (claim → source →
 allowed wording), and the corpus harnesses behind the headline measurements are
-in [`scripts/`](scripts/README.md) — reproduce them, and if your numbers
+in [`scripts/`](https://github.com/BGMLAI/gate.cat/blob/master/scripts/README.md) — reproduce them, and if your numbers
 disagree with ours, that's a bug report we want. The 14.7k-command half of the
 ~0.6% claim is our own private log (labeled as such in FACTS.md); the public
 corpus half you can re-run yourself.
 
 **Recall** — the claim we care about most (does anything dangerous get through?)
-is measured on two axes in [RECALL.md](RECALL.md). The deterministic one needs no
+is measured on two axes in [RECALL.md](https://github.com/BGMLAI/gate.cat/blob/master/RECALL.md). The deterministic one needs no
 datasets and runs in seconds:
 
 ```bash
@@ -324,6 +366,23 @@ The verification/veto layer above runs on top of a semantic cache. Used standalo
 also works as a drop-in wrapper for OpenAI/Anthropic SDKs with a three-tier response: verbatim
 cache, synthesis, upstream — cache semantically similar queries and return instant responses
 (<10ms), or synthesize from cached knowledge (~300ms, ~$0.002) instead of a full upstream call.
+
+For the cache layer specifically, against other semantic caches:
+
+| Feature | gate.cat | GPTCache | LiteLLM | Redis LangCache |
+|---------|-----------|----------|---------|-----------------|
+| Semantic similarity | Yes | Yes | Exact only | Yes |
+| Cache-Augmented Synthesis | Yes | No | No | No |
+| OpenAI drop-in | Yes | Partial | Yes | No |
+| Anthropic drop-in | Yes | No | Yes | No |
+| Streaming support | Yes | No | No | No |
+| Negative cache | Yes | No | No | No |
+| Multimodal (planned) | Yes | No | No | No |
+| Async | Yes | No | Yes | No |
+| Zero config | Yes | No | No | No |
+| Proxy mode (Docker) | Yes | No | Yes | No |
+| Local (no server) | Yes | Yes | No | No |
+| License | Apache 2.0 | MIT | MIT | Redis |
 
 ## Quick Start
 
@@ -601,24 +660,23 @@ Built-in embedders: `minilm` (text), `clip` (image, coming soon), `clap` (voice,
 
 ## Comparison
 
-| Feature | gate.cat | GPTCache | LiteLLM | Redis LangCache |
-|---------|-----------|----------|---------|-----------------|
-| Semantic similarity | Yes | Yes | Exact only | Yes |
-| Cache-Augmented Synthesis | Yes | No | No | No |
-| OpenAI drop-in | Yes | Partial | Yes | No |
-| Anthropic drop-in | Yes | No | Yes | No |
-| Streaming support | Yes | No | No | No |
-| Negative cache | Yes | No | No | No |
-| Multimodal (planned) | Yes | No | No | No |
-| Async | Yes | No | Yes | No |
-| Zero config | Yes | No | No | No |
-| Proxy mode (Docker) | Yes | No | Yes | No |
-| Local (no server) | Yes | Yes | No | No |
-| License | Apache 2.0 | MIT | MIT | Redis |
+gate.cat is a **narrow** tool: a deterministic, fail-closed veto for the
+irreversible-action class, enforced *outside* the agent's control flow. The
+honest positioning against the tools people rightly mention — approval flows
+(LangGraph `interrupt`, HumanLayer), detection guardrails (Lakera, Guardrails
+AI, NeMo), and the "just write regexes yourself" objection — is in
+**[COMPARISON.md](https://github.com/BGMLAI/gate.cat/blob/master/COMPARISON.md)**, with the same ground rule as
+[FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md): only claims we can back, and where a competitor is better
+for a job we say so.
+
+The one-line version: approval flows live in the agent's control flow (they
+fire only if the agent remembers to call them); gate.cat's hook lives in the
+harness and fires whether or not it did. It's the floor underneath the approval
+step, not a replacement for it.
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](https://github.com/BGMLAI/gate.cat/blob/master/LICENSE).
 
 Built by [BGML.ai](https://bgml.ai) / [Fundacja BLOOM](https://bloom.foundation).
-Policy Packs → [gate.cat/#packs](https://gate.cat/#packs)
+Policy Packs → [gate.cat/packs.html](https://gate.cat/packs.html?source=pypi)

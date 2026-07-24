@@ -3,6 +3,59 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [Unreleased] -- 0.4.20
+
+### Fixed
+- Content-vs-command false-block (issue #4 / F1): a benign
+  `git commit -m "...git clean -f..."` was vetoed by the delete analyzer
+  because it ran on the raw action while inert-literal stripping (commit
+  message / echo / grep bodies) only fed the regex walls. The stripped text
+  is now computed once and shared with both stages, so a danger pattern
+  quoted inside a commit message can't false-block; the bare `git clean -f`
+  command still blocks, and recall stays 43/43 with 0 benign false-blocks.
+  log/raise still use the original action (verbatim audit).
+- The first-veto Team nudge now stays silent when `GATECAT_CLOUD_API_KEY` is
+  set -- a paying Cloud customer already has the off-machine record the nudge
+  pitches (the CLI nudge already did this; the post-veto path did not). No
+  once-per-machine flag is written in that case, so the nudge returns if Cloud
+  is dropped.
+- The policy-pack hint is suppressed for a pack whose module is already loaded
+  via `GATECAT_EXTRA_POLICIES` (suppress-only: it never suggests a *different*
+  pack) -- a Fintech-pack buyer is no longer pitched the Fintech pack.
+
+
+## [0.4.19] -- the hook arms itself (2026-07-23)
+
+### Added
+- `gate.cat setup claude-code [--global] [--dry-run]`: one-command PreToolUse
+  hook activation -- idempotent merge that preserves foreign keys and other
+  hooks, `<file>.gatecat.bak` backup before any modifying write, fail-closed
+  on unparsable settings.json (prints the manual block instead of touching
+  the file). `gate.cat doctor`: minimal install diagnosis (version, hook
+  binary on PATH, where the hook is registered, protection state). The
+  biggest funnel leak was an installed pip package whose hook was never
+  registered -- this automates exactly what the README documents.
+
+### Changed
+- Policy-pack hint v2 (`gatecat/_pack_hint.py`): now also detects the
+  HTTP-API Breadth pack -- via stack-specific CLIs only (`datadog-ci`,
+  `sentry-cli`; deliberately NO docker/gh/curl, which sit on every dev box
+  and would destroy the precision of a once-per-machine hint). All three
+  hints link the pack preview page
+  (`https://gate.cat/packs.html?source=hint#<pack>`) -- full scope before
+  checkout -- instead of a bare Stripe payment link. No policy, recall, or
+  bypass changes.
+
+### Fixed
+- `gatecat.__version__` now tracks pyproject (the 0.4.18 wheel shipped
+  printing "0.4.17" -- distribution metadata was correct, the runtime string
+  was not); a regression test ties the literal, both plugin manifests and
+  the pack-hint anchors to the release.
+- `gate.cat report` footer shipped a literal `*` inside its pasteable URL;
+  the post-veto nudge CTA was the only untagged conversion surface (now
+  `?source=nudge-veto`).
+
+
 ## [0.4.18] -- the listing sells, the CLI hints honestly (2026-07-22)
 
 ### Added

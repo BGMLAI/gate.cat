@@ -210,6 +210,7 @@
       </div>
     </div>
     <p class="note" style="margin-top:18px">Prices in EUR. gate.cat bills through Stripe. EU B2B: add your VAT ID at checkout.</p>
+    <p class="note">Agents holding Stripe, Vercel/Fly or raw admin-API credentials? One-time <b>policy packs (€29)</b> add stack-specific breadth on any tier — <a href="/packs.html?source=teams">full scope of each pack, before checkout →</a></p>
   </section>
 
   <section>
@@ -217,6 +218,27 @@
     <div class="honest">
       gate.cat catches <b>known dangerous command shapes</b> using a deterministic deny-list. A deliberately obfuscated or genuinely novel command <b>can still slip past</b> it — the full bypass suite is in the repo so you can see exactly where the edges are. It is <b>not</b> a sandbox, not an antivirus, and not a substitute for least-privilege credentials. It's the fast, deterministic layer that stops the well-known catastrophic mistakes an AI agent makes far more often than a human would — <b>before</b> they run.
     </div>
+  </section>
+
+  <section>
+    <h2>Don't trust us — reproduce it</h2>
+    <p class="lead">No testimonials on this page on purpose: the evidence is reproducible instead. Two commands on your own machine, no datasets:</p>
+    <div class="term" aria-label="self-verify commands">
+<span class="l"><span class="u">$</span> pip install gate-cat</span>
+<span class="l"><span class="u">$</span> python -m gatecat.integrations.bypass_suite</span>
+    </div>
+    <p class="note" style="margin-top:14px">The reproducible bypass suite catches <b>178/178</b> danger shapes it claims — and prints its own edges: one published runtime-assembly gap and one benign false-block in 129 cases. At scale: <b>0 real recall misses across 1,085,159 unique real agent commands</b> through the full gate (the 4 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits — same shape blocks on a real target). Every public number traces to a row in <a href="https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md">FACTS.md</a> — if your run disagrees, that's a bug report we want.</p>
+  </section>
+
+  <section>
+    <h2>Prove the data boundary — before you send a byte</h2>
+    <p class="lead">A team lead's first question is "what leaves our machines, and can your server rewrite our record?" You don't have to take our word — the answers are in readable docs and readable Python:</p>
+    <div class="grid2">
+      <div class="feat"><h3><span class="k">Threat model.</span> both directions</h3><p>Exactly what Cloud can and can't do — including that the reporter server exposes no update/delete route (append-only by construction). <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/THREAT_MODEL.md">Read THREAT_MODEL.md →</a></p></div>
+      <div class="feat"><h3><span class="k">What leaves the box.</span> hash mode default</h3><p>The matched command is sent as a hash by default; raw text is a separate explicit opt-in. Field-by-field. <a href="https://github.com/BGMLAI/gate.cat/blob/master/TELEMETRY.md">Read TELEMETRY.md →</a></p></div>
+      <div class="feat"><h3><span class="k">A real report.</span> redacted sample</h3><p>The monthly report, generated from our own dogfood log, red-team caveats included — the actual artifact, not a mockup. <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/SAMPLE_REPORT.md">See SAMPLE_REPORT.md →</a></p></div>
+    </div>
+    <p class="note" style="margin-top:14px">Vendor-continuity, plainly: the local gate is Apache-2.0 and blocks with zero network — if Cloud is down, unreachable, or cancelled, the gate keeps working exactly the same. You are never one vendor away from an unprotected machine.</p>
   </section>
 
   <section>
@@ -232,7 +254,7 @@
       <a class="btn ghost" href="https://github.com/BGMLAI/gate.cat">Read the code →</a>
     </div>
     <p style="margin-top:22px">
-      <a href="/">gate.cat</a> · <a href="/veto-demo.html">30-second veto demo</a> · <a href="/partners.html">partner program (30%)</a> · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · Apache 2.0<br>
+      <a href="/">gate.cat</a> · <a href="/coverage.html">what it blocks</a> · <a href="/answers/">answers</a> · <a href="/veto-demo.html">30-second veto demo</a> · <a href="/packs.html">policy packs (€29)</a> · <a href="/partners.html">partner program (30%)</a> · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · Apache 2.0<br>
       Deterministic action veto for AI coding agents. Free core forever; Team &amp; Business add the fleet layer.
     </p>
   </footer>
@@ -318,6 +340,62 @@
       mo.observe(document.documentElement, { childList: true, subtree: true });
     }
   } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+
+<script id="gc-funnel-events">
+/* Cookieless funnel events — same /events contract as the landing page, so
+   scripts/funnel_report.py and scripts/daily_funnel.py read both streams.
+   source: explicit ?source= (internal cross-links) wins, else utm_source. */
+(function () {
+  try {
+    var query = new URLSearchParams(window.location.search);
+    var clean = function (value, max) {
+      return String(value || "").replace(/[^\w .:/#?&=-]/g, "").slice(0, max || 60);
+    };
+    var session;
+    try {
+      session = sessionStorage.getItem("gc_sid");
+      if (!session) {
+        session = Math.random().toString(36).slice(2, 12);
+        sessionStorage.setItem("gc_sid", session);
+      }
+    } catch (_) { session = "anonymous"; }
+    var referrer = "";
+    try { referrer = document.referrer ? new URL(document.referrer).hostname : ""; } catch (_) {}
+    var track = function (event, label) {
+      var data = new URLSearchParams({
+        e: clean(event),
+        label: clean(label || ""),
+        sid: clean(session),
+        source: clean(query.get("source") || query.get("utm_source") || "teams-direct"),
+        medium: clean(query.get("utm_medium")),
+        campaign: clean(query.get("utm_campaign")),
+        ref: clean(referrer)
+      });
+      var url = "/events?" + data.toString();
+      try {
+        fetch(url, { method: "POST", keepalive: true, credentials: "omit", cache: "no-store" })
+          .catch(function () {
+            if (navigator.sendBeacon) navigator.sendBeacon(url, "");
+            else (new Image()).src = url;
+          });
+      } catch (_) {
+        try { (new Image()).src = url; } catch (_) {}
+      }
+    };
+    track("page_view");
+    document.addEventListener("click", function (event) {
+      var target = event.target.closest("a");
+      if (!target) return;
+      var href = target.getAttribute("href") || "";
+      if (href.indexOf("buy.stripe.com") !== -1) {
+        track("checkout_click", clean(target.textContent, 40));
+      } else if (href.indexOf("github.com/BGMLAI/gate.cat") !== -1) {
+        track("github_click", clean(target.textContent, 40));
+      }
+    }, { capture: true });
+  } catch (e) { /* never break the page over analytics */ }
 })();
 </script>
 

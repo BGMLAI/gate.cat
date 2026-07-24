@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How do I enforce guardrails on AI coding agents across my team? · gate.cat</title>
+<meta name="description" content="Every engineer runs Claude Code, Cursor or an agent — and any one of them can run rm -rf, drop a prod DB, or exfiltrate a shared key. gate.cat is a deterministic, fail-closed veto each machine runs for free; the Team plan adds a fleet-wide record, alerts and signed policy sync so the guard is consistent across everyone, not one machine at a time." />
+<link rel="canonical" href="https://gate.cat/answers/ai-agent-guardrails-across-a-team.html" />
+<meta property="og:title" content="How do I enforce guardrails on AI coding agents across my team? · gate.cat" />
+<meta property="og:description" content="One rogue agent on one laptop is the whole team's blast radius. A deterministic fail-closed veto on every machine, plus a fleet-wide record and alerts for the team." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://gate.cat/answers/ai-agent-guardrails-across-a-team.html" />
+<meta property="og:image" content="https://gate.cat/img/mark-256.png" />
+<meta name="twitter:card" content="summary" />
+<link rel="icon" href="../img/favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="answers.css" />
+<script>(function(){try{var t=localStorage.getItem("gatecat-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","light");}})();</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "gate.cat", "item": "https://gate.cat/"}, {"@type": "ListItem", "position": 2, "name": "Answers", "item": "https://gate.cat/answers/"}, {"@type": "ListItem", "position": 3, "name": "guardrails for AI agents across a team", "item": "https://gate.cat/answers/ai-agent-guardrails-across-a-team.html"}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "how do I enforce guardrails on ai coding agents across my team?", "description": "Every engineer runs an agent, and any one of them can run an irreversible command. gate.cat is a deterministic fail-closed veto each machine runs for free; the Team plan adds a fleet-wide record, alerts and signed policy sync so the guard is consistent across everyone.", "url": "https://gate.cat/answers/ai-agent-guardrails-across-a-team.html", "author": {"@type": "Organization", "name": "BGML.ai", "url": "https://bgml.ai"}, "publisher": {"@type": "Organization", "name": "gate.cat", "url": "https://gate.cat"}, "about": "AI agent safety, fail-closed action veto, irreversible command prevention across a fleet"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I make sure every engineer actually has the guard turned on?", "acceptedAnswer": {"@type": "Answer", "text": "The free core is installed per machine, so on its own you can't see who has it. The Team plan is exactly this gap: each machine reports veto events to one place, so you get a fleet-wide view of which machines are covered and what fired, plus alerts when a guard trips. Business adds signed policy sync so the same rule set is pushed to every machine instead of each dev editing their own."}}, {"@type": "Question", "name": "Is the Team plan priced per seat?", "acceptedAnswer": {"@type": "Answer", "text": "No. Team is a flat 149 euro per month for up to 10 machines, and Business is 399 euro per month. It is not per-seat, so adding another engineer's laptop does not change the bill until you pass the machine limit."}}, {"@type": "Question", "name": "What does the guard actually block, and does it call a model?", "acceptedAnswer": {"@type": "Answer", "text": "It is a deterministic, fail-closed deny-list. On the PreToolUse step, before a command runs, it inspects the command string and paths for irreversible shapes: recursive delete, disk wipe, database drop, cloud teardown, secret exfiltration and runaway loops. There is no model in the decision path, so the decision is sub-millisecond and does not vary run to run."}}, {"@type": "Question", "name": "What does it NOT catch?", "acceptedAnswer": {"@type": "Answer", "text": "It matches known dangerous shapes, so a deliberately obfuscated or genuinely novel command can slip past it. It is not a sandbox and does not replace least-privilege credentials, backups or code review. The reproducible bypass suite catches 178 of 178 danger shapes it claims, with one published gap and one benign false-block in 129 cases; separately, 0 real recall misses across 1,085,159 unique real agent commands replayed through the full gate. Treat it as one deterministic layer, not the only one."}}, {"@type": "Question", "name": "Does anything leave our machines?", "acceptedAnswer": {"@type": "Answer", "text": "The free core has zero telemetry and runs entirely local. The fleet record is opt-in Cloud, off by default, and is designed so the provider cannot read your entries because each event is encrypted on your machine. Cloud checkout stays in announce mode until that end-to-end-encrypted path ships."}}]}</script>
+</head>
+<body>
+<header class="nav"><div class="nav-in">
+  <a class="brand" href="https://gate.cat/"><span class="mk"></span>gate.cat</a>
+  <span class="nav-sp"></span>
+  <a class="nl" href="./">Answers</a>
+  <a class="nl" href="https://gate.cat/#how">How&nbsp;it&nbsp;works</a>
+  <a class="nav-cta" href="https://gate.cat/#install">pip install gate-cat</a>
+  <button class="tog" id="tog" aria-label="Toggle theme">◐</button>
+</div></header>
+<main class="wrap">
+  <nav class="crumb"><a href="https://gate.cat/">gate.cat</a> / <a href="./">answers</a> / guardrails across a team</nav>
+  <p class="kick">teams &amp; fleets</p>
+  <h1>how do I enforce guardrails on ai coding agents across my team?</h1>
+  <div class="answer">
+    <div class="lbl">Short answer</div>
+    <p>Put a deterministic, fail-closed veto in front of every engineer's agent. gate.cat is free per machine (<code>pip install gate-cat</code>) and blocks irreversible shell commands — <code>rm -rf</code>, DB drop, cloud teardown, secret exfiltration — <em>before</em> they run, with no model in the decision path.</p>
+    <p>The part a team actually needs is the layer above one laptop: <b>a fleet-wide record, alerts, and one policy set pushed to every machine</b>, so you can see coverage and consistency instead of trusting that each person installed it and kept their rules current. That is what the Team plan is for.</p>
+  </div>
+  <p class="lede">On a team, the risk is not that <em>you</em> run the wrong command — it's that <em>any one</em> of your engineers' agents does, on a machine that can reach shared infrastructure. One rogue agent on one laptop is the whole team's blast radius.</p>
+
+<h2>why a team is a different problem than a solo dev</h2>
+<p>A solo developer installs the guard once and moves on. A team has three problems a single install doesn't solve:</p>
+<ul>
+  <li><b>Coverage you can't see.</b> Ten engineers, ten machines — did all ten install the guard? Is it still on? Per-machine software gives you no answer.</li>
+  <li><b>Drift.</b> If everyone edits their own rules, your protection is whatever the least-careful person configured. You want one reviewed policy set, not ten diverging ones.</li>
+  <li><b>Shared blast radius.</b> One agent with prod credentials, a shared database URL, or a team key in its environment can take down infrastructure the whole team depends on, or leak keys that belong to everyone.</li>
+</ul>
+
+<h2>the free layer: a deterministic wall on every machine</h2>
+<p>Each developer runs the same free core. On the <code>PreToolUse</code> step — before the command executes — gate.cat inspects the command string and its paths for irreversible shapes and refuses the dangerous ones. It's a string-and-path deny-list, not a model call, so the decision is sub-millisecond and identical every time. It installs as a Claude&nbsp;Code hook, a Cursor hook, or a gated shell in front of Codex/aider.</p>
+<ul>
+  <li><b>Fail-closed.</b> If a rule matches, the command doesn't run — the safe default is to refuse, not to allow.</li>
+  <li><b>Measured, and honest about the edges — two separate numbers, stated precisely.</b> The reproducible bypass suite catches <b>178/178</b> danger shapes it claims, with one published runtime-assembly gap and one benign false-block in 129 cases. Separately, at scale: <b>0 real recall misses across 1,085,159</b> unique real agent commands replayed through the full gate. It catches known dangerous shapes; obfuscated or novel commands can still slip, and it is not a sandbox.</li>
+  <li><b>Free forever, Apache&nbsp;2.0.</b> Every engineer can have the wall today, at no cost, with no account.</li>
+</ul>
+
+<h2>the team layer: coverage, alerts, and one policy set</h2>
+<p>The paid tier doesn't unlock the safety — the safety is free on every machine. It adds the things you can only do at fleet scale:</p>
+<ul>
+  <li><b>Fleet record.</b> Every machine reports its veto events to one place, so you can see which machines are covered and what the guards stopped — a tamper-evident record kept off the machine that was blocked.</li>
+  <li><b>Alerts.</b> When a guard trips on someone's machine, the team hears about it — a runaway loop or an attempted teardown surfaces instead of staying on one laptop.</li>
+  <li><b>Signed policy sync (Business).</b> One reviewed rule set is pushed to every machine, so coverage is consistent instead of drifting per developer.</li>
+</ul>
+<p class="lede" style="margin-top:1rem">Pricing is flat, not per-seat: <b>Team &#8364;149/mo for up to 10 machines</b>, Business &#8364;399/mo. <a href="https://gate.cat/teams.html" id="lnk-teams" style="border-bottom:1px solid currentColor;font-weight:700;white-space:nowrap">See the full team plan &#8594;</a></p>
+
+<div class="term"><span class="p">$</span> gate.cat fleet --last 7d
+<span class="g">gate.cat &#183; fleet veto log &#183; last 7 days (8 machines reporting)</span>
+  machines covered ........... 8 / 8
+  interventions .............. 17
+  by rule:  FS_DESTROY 6 &#183; DB_DROP 4 &#183; CLOUD_TEARDOWN 3 &#183; KEY_EXFIL 2 &#183; RUNAWAY 2
+  loudest machine ............ ci-runner-3  (5 interventions)
+  gate mode .................. enforcing (fail-closed) on all</div>
+
+  <h2>frequently asked</h2>
+  <div class="faq">
+    <details><summary>Can I make sure every engineer actually has the guard turned on?</summary><p>The free core is installed per machine, so on its own you can't see who has it. The Team plan is exactly this gap: each machine reports veto events to one place, so you get a fleet-wide view of which machines are covered and what fired, plus alerts when a guard trips. Business adds signed policy sync so the same rule set is pushed to every machine instead of each dev editing their own.</p></details>
+    <details><summary>Is the Team plan priced per seat?</summary><p>No. Team is a flat &#8364;149/mo for up to 10 machines, and Business is &#8364;399/mo. It is not per-seat, so adding another engineer's laptop does not change the bill until you pass the machine limit.</p></details>
+    <details><summary>What does the guard actually block, and does it call a model?</summary><p>It is a deterministic, fail-closed deny-list. On the PreToolUse step, before a command runs, it inspects the command string and paths for irreversible shapes: recursive delete, disk wipe, database drop, cloud teardown, secret exfiltration and runaway loops. There is no model in the decision path, so the decision is sub-millisecond and does not vary run to run.</p></details>
+    <details><summary>What does it NOT catch?</summary><p>It matches known dangerous shapes, so a deliberately obfuscated or genuinely novel command can slip past it. It is not a sandbox and does not replace least-privilege credentials, backups or code review. It measured 178/178 on a published irreversible-command suite and has one false-block documented in the repo. Treat it as one deterministic layer, not the only one.</p></details>
+    <details><summary>Does anything leave our machines?</summary><p>The free core has zero telemetry and runs entirely local. The fleet record is opt-in Cloud, off by default, and is designed so the provider cannot read your entries because each event is encrypted on your machine. Cloud checkout stays in announce mode until that end-to-end-encrypted path ships.</p></details>
+  </div>
+
+  <section class="cta">
+  <h2>give every machine the same wall — 60 seconds</h2>
+  <p class="lede">The gate, the default policies, the Claude&nbsp;Code hook and the proxy are free forever (Apache&nbsp;2.0). No account, no daemon, no telemetry. Start with your own machine:</p>
+  <div class="install"><span class="p">$</span>&nbsp;pip install gate-cat</div>
+  <p class="lede" style="margin-top:.6rem">Running agents across a team? One rogue agent is the whole team&rsquo;s blast radius. <a href="https://gate.cat/teams.html" id="lnk-teams-cta" style="border-bottom:1px solid currentColor;font-weight:700;white-space:nowrap">See the team plan &mdash; &#8364;149/mo flat &#8594;</a></p>
+  <div class="cap" id="cap-answer-team">
+  <form class="cap-form" id="cf-answer-team">
+    <input id="ce-answer-team" type="email" placeholder="you@company.com" required autocomplete="email" aria-label="Your email" />
+    <button type="submit">Get &ldquo;Veto Catches&rdquo;</button>
+  </form>
+  <p class="cap-note">One email when there's a catch worth showing: a real irreversible command an agent tried, and how the wall stopped it. Opt-in, no spam, no telemetry. The gate itself is free.</p>
+  <p class="cap-done">&#10003; you're on the list — first catch lands soon.</p>
+</div>
+</section>
+
+  <h2>keep reading</h2>
+  <div class="related">
+    <a class="rcard" href="audit-evidence-for-ai-agent-actions.html"><div class="q">How do I get an audit trail of what my AI agent did?</div><div class="a">A free local log of every irreversible action, and an optional evidence pack.</div></a>
+    <a class="rcard" href="secure-mcp-server.html"><div class="q">How do I secure an MCP server against destructive tool calls?</div><div class="a">Put a fail-closed veto in front of the tools, not inside the model.</div></a>
+    <a class="rcard" href="ai-agent-almost-ran-rm-rf.html"><div class="q">My AI agent almost ran rm -rf — how do I stop it?</div><div class="a">A deterministic wall that blocks the command before it runs.</div></a>
+  </div>
+</main>
+<footer><div class="foot-in">
+  <span>gate.cat — fail-closed action-veto for AI agents · Apache 2.0</span>
+  <span><a href="https://gate.cat/">Home</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · <a href="https://gate.cat/teams.html" id="lnk-teams-foot">For teams</a> · <a href="https://gate.cat/#packs">Policy Packs</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+</div></footer>
+<script>
+(function(){var r=document.getElementById('tog');if(r)r.addEventListener('click',function(){var d=document.documentElement,n=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',n);try{localStorage.setItem('gatecat-theme',n);}catch(e){}});})();
+(function(){
+  var forms=[].slice.call(document.querySelectorAll('.cap-form'));
+  forms.forEach(function(f){
+    var cap=f.closest('.cap'),email=f.querySelector('input'),btn=f.querySelector('button');
+    var ref=new URLSearchParams(location.search).get('ref')||cap.id.replace('cap-','answer-')||'';
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim()))return;
+      btn.disabled=true;btn.textContent='…';
+      fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email.value.trim(),ref:(cap.id+' '+ref).slice(0,120)})})
+      .then(function(x){return x.json();}).then(function(){cap.classList.add('done');})
+      .catch(function(){btn.disabled=false;btn.textContent='Retry';});
+    });
+  });
+})();
+</script>
+<script id="gc-affiliate-ref">
+/* gate.cat affiliate/referral capture (self-hosted, zero-cost).
+   Mirrors the capture on the main landing so a creator link like
+   gate.cat/answers/<page>.html?ref=CODE attributes commission at checkout:
+   1) read ?ref=CODE; store cookie gc_ref (90d, SameSite=Lax) at path=/,
+      so the main site sees the ref when the visitor buys.
+   2) also carry ?ref onto same-site onward links (belt-and-suspenders).
+   Never breaks the page. */
+(function () {
+  try {
+    var COOKIE = "gc_ref";
+    function readCookie(name) {
+      var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+      return m ? decodeURIComponent(m[1]) : "";
+    }
+    function writeCookie(name, val, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + days * 864e5);
+      document.cookie = name + "=" + encodeURIComponent(val) +
+        "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax";
+    }
+    function clean(code) {
+      return (code || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 120);
+    }
+    var params = new URLSearchParams(window.location.search);
+    var urlRef = clean(params.get("ref"));
+    if (urlRef) { writeCookie(COOKIE, urlRef, 90); }
+    var ref = urlRef || clean(readCookie(COOKIE));
+    if (!ref) { return; }
+    var ids = ["lnk-teams", "lnk-teams-cta", "lnk-teams-foot"];
+    for (var i = 0; i < ids.length; i++) {
+      var a = document.getElementById(ids[i]);
+      if (!a) { continue; }
+      var href = a.getAttribute("href");
+      if (!href || href.indexOf("ref=") !== -1) { continue; }
+      var sep = href.indexOf("?") === -1 ? "?" : "&";
+      a.setAttribute("href", href + sep + "ref=" + encodeURIComponent(ref));
+    }
+  } catch (e) { /* never break the page over affiliate tracking */ }
+})();
+</script>
+</body>
+</html>

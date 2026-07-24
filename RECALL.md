@@ -20,7 +20,7 @@ python scripts/recall_danger_axis.py
 
 Result on `master` (2026-07-08):
 
-- **43 / 43 danger classes neutralized** — 30 `block`, 13 `warn`, **0 allowed**.
+- **43 / 43 danger classes neutralized** — 31 `block`, 12 `warn`, **0 allowed**.
   Covers `rm -rf /`, `dd of=/dev/sda`, `mkfs`, fork bomb, `curl | sh`,
   `DROP DATABASE` / `TRUNCATE` / unqualified `DELETE`, `git push --force` /
   `reset --hard` / reflog wipe, cloud terminate, `kubectl delete`,

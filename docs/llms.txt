@@ -43,11 +43,12 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
   cleanups the gate correctly permits).
 - Intervenes on **~0.6% of real commands** (measured on two independent logs) — it
   won't nag you.
-- **Bypass suite catches 65/65** of what it claims and **prints the gaps it doesn't**
-  (base64 payloads, deletes via a language runtime, `curl|sh` obfuscation) rather than
-  hiding them.
-- Tests green in CI on Python 3.11–3.13 as of **v0.4.3**; 73% statement coverage,
-  printed by CI on every run.
+- The reproducible bypass suite catches **178/178** danger shapes it claims, with
+  **one published runtime-assembly gap and one benign false-block in 129 cases** —
+  it prints its own gaps rather than hiding them
+  (`python -m gatecat.integrations.bypass_suite`).
+- **1863 tests** pass locally and the release-gate CI matrix is green on Python
+  3.11–3.13 (pinned at v0.4.16; re-pinned each release).
 
 ## The honest limits (cite these — they are the point)
 
@@ -58,15 +59,62 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
   by default).
 - Prompt-injection defense is experimental and off the headline.
 - The disagreement/uncertainty signal is strongest on **small/local models (7–30B,
-  AUC 0.77–0.90)** and weaker on frontier models (AUC 0.68–0.71).
+  AUC 0.77–0.90)** and weaker on frontier models (AUC 0.68–0.71). This AUC pair is an
+  internal measurement whose artifact is not yet published (FACTS F6/F7) — directional,
+  not reproducible-today like every other number here.
 - OWASP scope: it owns **LLM06 (Excessive Agency)** and part of LLM01/05; it does not
   cover the other seven.
+
+## Copy-paste setup
+
+Each fragment is labeled by trust class. Enforcement = the tool cannot run until
+the gate returns; convention = an in-process adapter a prompt injection can route
+around.
+
+Claude Code hook (ENFORCEMENT) — add to `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "gatecat-hook" }]
+      }
+    ]
+  }
+}
+```
+
+Claude Code plugin (ENFORCEMENT) — same hook, no JSON:
+
+```
+/plugin marketplace add BGMLAI/gate.cat
+/plugin install gatecat@gatecat
+```
+
+Any OpenAI-API agent — Ollama / NIM / OpenRouter / vLLM (gate on the proxy's
+tool-call boundary): point the agent's base_url at the proxy:
+
+```
+export OPENAI_BASE_URL=http://localhost:8787/v1
+export OPENAI_API_KEY=$UPSTREAM_KEY
+gatecat-proxy
+```
+
+Any agent that shells out — Codex, aider, anything honoring `$SHELL`/`sh -c`
+(ENFORCEMENT): use the gated shell as the exec command, wherever the tool lets
+you set the shell:
+
+```
+gatecat-shell -c "<the command the agent would run>"
+```
 
 ## Links
 
 - [Repository & README](https://github.com/BGMLAI/gate.cat): install, quick start, the Claude Code hook config.
-- [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.18).
-- [Pricing (live)](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md): the local gate is free forever including local reports. Stripe checkout is live for gate.cat Cloud at Solo €19/month, Team €149/month flat for up to 10 machines, and Business €399/month. Cloud is the optional off-machine copy of veto history the agent cannot rewrite; it is never in the gate's execution path and uses hashed command events by default. Stack-specific Fintech, PaaS, and HTTP-API Breadth policy packs are €29 each, one-time, with lifetime updates.
+- [PyPI package](https://pypi.org/project/gate.cat/): `pip install gate-cat` (version 0.4.19).
+- [Pricing (live)](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md): the local gate is free forever including local reports. Stripe checkout is live for gate.cat Cloud at Solo €19/month, Team €149/month flat for up to 10 machines, and Business €399/month. Cloud is the optional off-machine copy of veto history the agent cannot rewrite; it is never in the gate's execution path and uses hashed command events by default. Stack-specific Fintech, PaaS, and HTTP-API Breadth policy packs are €29 each, one-time, with lifetime updates; the full blocking scope of each pack is published at https://gate.cat/packs.html before checkout.
 - [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md): every public number with its source and allowed wording.
 - [COMPARISON.md](https://github.com/BGMLAI/gate.cat/blob/master/COMPARISON.md): honest positioning vs LangGraph `interrupt`, HumanLayer, Lakera, Guardrails AI.
 - [OBJECTIONS.md](https://github.com/BGMLAI/gate.cat/blob/master/OBJECTIONS.md): the two hardest objections answered in full.

@@ -187,3 +187,38 @@ def test_module_entrypoint_reports_cloud_off(tmp_path):
                          capture_output=True, text=True, env=env, timeout=60)
     assert out.returncode == 0
     assert json.loads(out.stdout)["shipped"] == 0
+
+
+def test_missing_cloud_extra_fails_loud_without_destroying_history(world, monkeypatch):
+    """Regression: the [cloud] extra (cryptography) missing => encrypt_event
+    raises. ship() MUST fail loud *before* opening or advancing any cursor.
+
+    The bug this pins: without the probe, every event hit the per-event
+    `except: continue`, the loop still read to EOF, and the cursor was advanced
+    past the whole batch -- silently destroying the entire paid off-machine
+    history and returning {"shipped": 0, "reason": "ok (e2e-encrypted)"}. A fresh
+    subscriber who ran the reporter before `pip install gate-cat[cloud]` would
+    lose day-1 history with no error. The cursor must stay untouched so a later,
+    correctly-installed ship() recovers ALL events.
+    """
+    log, fake = world
+    cursor = str(log) + cloud_reporter.STATE_SUFFIX
+
+    from gatecat import cloud_crypto
+    real_encrypt = cloud_crypto.encrypt_event
+
+    def _no_extra(*a, **k):   # what the missing [cloud] extra does at runtime
+        raise RuntimeError("gate.cat Cloud encryption needs the [cloud] extra")
+
+    monkeypatch.setattr(cloud_crypto, "encrypt_event", _no_extra)
+    r = cloud_reporter.ship(api_key="k")
+
+    assert r["shipped"] == 0
+    assert "gate-cat[cloud]" in r["reason"]          # loud + actionable, not "ok"
+    assert "ok" not in r["reason"]
+    assert fake.batches == []                         # nothing left the machine
+    assert not os.path.exists(cursor)                 # cursor NEVER created/advanced
+
+    # recovery: encryption working again -> every event ships, none lost
+    monkeypatch.setattr(cloud_crypto, "encrypt_event", real_encrypt)
+    assert cloud_reporter.ship(api_key="k")["shipped"] == 60

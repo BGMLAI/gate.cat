@@ -1,0 +1,96 @@
+# OWNER RUNBOOK — 20 minut do odblokowania
+
+Jeden przebieg, zero decyzji: każdy krok to jedna komenda albo jeden paste.
+Kolejność jest twarda dwa razy: publish 0.4.18 **przed** merge PR #27 (branch
+niesie już niewydany kod 0.4.19), i publish PyPI **przed** deployem docs/
+(llms.txt w tym release reklamuje 0.4.18 i nie może wyprzedzić PyPI).
+Kroki 0–3 wykonaj razem; 4–6 mogą pójść tego samego dnia albo następnego —
+ale 4 (HN) najlepiej PO 2, żeby packs.html i sitemap były już live, kiedy
+przyjdzie ruch.
+
+Stan wykonania odnotuj w `docs/AUTOPILOT-LOOP.md` (sekcja [USER] v2 wskazuje
+na ten plik) — pętla sama zauważy publish/deploy przy następnym przebiegu.
+
+---
+
+## 0. Publish 0.4.18 na PyPI — ✅ **WYKONANE 2026-07-23 07:21 UTC** (PyPI 0.4.18 + GH release v0.4.18; zweryfikowane przez pętlę czystym installem — F9 re-pin). Ostrzeżenie „przed merge PR #27" już NIEAKTUALNE: merge jest teraz bezpieczny. Znany kosmetyczny desync wheela: `gatecat.__version__` drukuje 0.4.17 (fix w 0.4.19, NIE republikuj dla kosmetyki).
+
+Master (commit `8ce3592`, merge PR #26) to dokładnie przygotowany release
+0.4.18. **PR #27 niesie już niewydany kod 0.4.19** (pack hint v2 w
+`gatecat/_pack_hint.py`) — dlatego publish idzie z mastera SPRZED merge'a.
+Pełne gates i re-piny FACTS: [`release_0.4.18_checklist.md`](release_0.4.18_checklist.md).
+
+```bash
+git checkout master && git pull          # musi wskazywać 8ce3592 (merge PR #26)
+python -m pytest -q                      # release-gate: musi być zielony
+python -m build && twine upload dist/*
+pip install --no-cache-dir gate-cat==0.4.18 && gate.cat --help
+```
+
+Potem GitHub release `v0.4.18` (tag na `8ce3592`). Jeśli PR #27 zdążył się
+zmergować wcześniej: `git checkout 8ce3592` zamiast `git checkout master` —
+reszta identyczna.
+
+## 1. Merge PR #27 (1 min)
+
+Draft → ready → merge (CI musi być zielone na ostatnim commicie). Bez tego
+deploy w kroku 2 nie ma packs.html w docs/.
+
+## 2. Deploy docs/ na VPS (3 min)
+
+Z maszyny z kluczem VPS, z katalogu repo:
+
+```bash
+ops/deploy_landing.sh
+```
+
+Skrypt sam robi rsync (additive), weryfikuje sha256 + HTTP 200 na
+teams/partners/**packs** i restartuje fulfillment (port 8791).
+
+**W TYM SAMYM SSH (W1 — pilne, wyciek rule-9):** usuń już-wgrane pliki
+wewnętrzne z publicznego docroota (są dziś LIVE, m.in. pełny stan pętli
+z adresem osoby trzeciej):
+
+```bash
+ssh -i ~/.ssh/vps/id_ed25519 root@204.168.129.200 \
+  'cd /opt/bgml/static/gatecat && rm -f AUTOPILOT-LOOP.md LAUNCH_KIT_2026-07-14.md LAUNCH_0.4.16.md && rm -rf research/'
+```
+
+(deploy_landing.sh ma już `--exclude` na te ścieżki, więc nie wrócą.)
+
+## 3. Snapshot funnela — jeden paste, wynik na czat (2 min)
+
+```bash
+ssh -i ~/.ssh/vps/id_ed25519 root@204.168.129.200 \
+    'cat /var/log/nginx/gatecat-events.log' \
+  | python3 scripts/daily_funnel.py - --date "$(date -u +%F)"
+```
+
+Wklej JSON-linię na czat sesji pętli. To tani test hipotezy packs:
+czy ktokolwiek klika `checkout_click` i z jakiego `source`.
+
+## 4. Show HN (3 min)
+
+Tytuł + tekst + plan pierwszego komentarza: gotowe do wklejenia w
+[`show_hn_ready.md`](show_hn_ready.md). Po publikacji dopisz live URL
+do issue #9 (timestamp + owner).
+
+## 5. Dystrybucja: Reddit / X / awesome-PRs (4 min)
+
+Posty w kolejności z pliku (NIE wszystko naraz):
+[`distribution_kit_2026-07-22.md`](distribution_kit_2026-07-22.md).
+Każdy live URL → issue #9.
+
+## 6. Batch kampanii affiliate — ≤15/dzień (2 min na setup)
+
+Szablony per tier (YouTube / newsletter / mega-kanał) dostarczone na czacie
+sesji 2026-07-22 (T14); lista 27 celów w pliku dostarczonym poza repo
+(zasada: żadnych adresów osób trzecich w publicznym repo). Po **każdej**
+wysyłce dopisz wiersz adresat+data do LEDGER w `docs/AUTOPILOT-LOOP.md` —
+od tej daty liczą się follow-upy day-3/day-7 (U8). Wysłane dotąd: 1/27.
+
+---
+
+**Suma: ~20 min.** Jeśli coś się wywali (mismatch sha256, brak 200, failed
+twine): przerwij i wrzuć błąd na czat sesji pętli — agent zdiagnozuje przy
+najbliższym przebiegu, nic nie forsuj ręcznie.
