@@ -282,7 +282,14 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-24 14:21 UTC — przebieg #49: Y5 SCAFFOLD_OVERWRITE DONE (panel → GO-warn-only → impl).**
+- **2026-07-24 15:21 UTC — przebieg #50: HOLD + potwierdzenie CI zielone na Y5.** Poczta:
+  0 płatności, 0 nowego inbound (bez zmian). Backlog: kolejka v6 WYCZERPANA (Y1 NO-GO,
+  Y3, Y4, Y5 zamknięte; Y2 gated do 2026-07-25). Zweryfikowane: PR #27 HEAD 658822e
+  (zmiana rdzenia guard.py z Y5) — CI **zielone na 3.11/3.12/3.13** (run 30104236929),
+  potwierdza że nowy analizator scaffold nie regresuje nic w CI, nie tylko lokalnie.
+  Panel NIE odpalony (odpalony godzinę temu dla Y5; stan blocked-on-owner niezmienny —
+  nowy panel = wata). Wąskie gardło: merge PR #27 → deploy → publish. Następny ruch:
+  Y2 jutro albo owner.
   Poczta: 0 płatności, 0 nowego inbound (bez zmian od #47). Po 4 holdach: zamiast
   5. holdu odpaliłem adwersarialny panel projektowy (wf_782ad7b9-cfc) na jedynej realnej
   nie-zablokowanej core'owej robocie — luce scaffold-overwrite z incydentu #80730.
