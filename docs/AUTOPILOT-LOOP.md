@@ -282,13 +282,15 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-24 19:22 UTC — przebieg #54: HOLD (bez zmian).** Poczta: 0 płatności, 0 nowego inbound. Kolejka wyczerpana (Y1/Y3/Y4/Y5 done; Y2 gated do 2026-07-25). Bez panelu (wata). PR #27 clean, CI zielone. Wąskie gardło: merge → deploy → publish.
-
-- **2026-07-24 18:21 UTC — przebieg #53: HOLD (bez zmian).** Poczta: 0 płatności, 0 nowego inbound. Kolejka wyczerpana (Y1/Y3/Y4/Y5 done; Y2 gated do 2026-07-25). Bez panelu (wata). PR #27 clean, CI zielone. Wąskie gardło: merge → deploy → publish.
-
-- **2026-07-24 17:21 UTC — przebieg #52: HOLD (bez zmian).** Poczta: 0 płatności, 0 nowego inbound. Kolejka wyczerpana (Y1/Y3/Y4/Y5 done; Y2 gated do 2026-07-25). Zweryfikowane: PR #27 merge-uje się czysto na origin/master (2 za masterem = tylko daily METRICS.log snapshoty, moja gałąź ich nie dotyka → brak konfliktu, bez rebase), CI zielone. Panel nieodpalony (wata). Wąskie gardło: merge → deploy → publish.
-
-- **2026-07-24 16:22 UTC — przebieg #51: HOLD (bez zmian od #50).** Poczta: 0 płatności, 0 nowego inbound (wszystko znane). Kolejka wyczerpana (Y1/Y3/Y4/Y5 done; Y2 gated do 2026-07-25). Panel nieodpalony (Y5-panel godzinę temu; stan blocked-on-owner niezmienny). PR #27 clean, CI zielone. Wąskie gardło: merge → deploy → publish.
+- **2026-07-24 16:22–20:22 UTC — przebiegi #51–#55: HOLD STREAK (rolling, bez zmian).**
+  Każdy przebieg: poczta 0 płatności gate.cat + 0 nowego inbound wymagającego draftu
+  (Stripe = inny biznes; devtalles bounce = cold-send ownera; awesome-ai-devtools
+  template-check = owner; cc58444 stale). Kolejka wyczerpana (Y1 NO-GO, Y3, Y4, Y5 done;
+  Y2 gated do 2026-07-25 — dziś zablokowany). Panel NIE odpalany — stan blocked-on-owner
+  niezmienny od Y5, nowy panel = wata. PR #27 stale clean + CI zielone; #52 potwierdził
+  brak konfliktu z masterem (2 za = tylko daily METRICS.log). Wąskie gardło niezmienne:
+  **merge PR #27 → deploy docs/ → publish 0.4.19/0.4.20.** (Rolling entry — aktualizowany
+  w miejscu zamiast 1 bullet/h, żeby nie zaśmiecać logu identycznymi holdami.)
 
 - **2026-07-24 15:21 UTC — przebieg #50: HOLD + potwierdzenie CI zielone na Y5.** Poczta:
   0 płatności, 0 nowego inbound (bez zmian). Backlog: kolejka v6 WYCZERPANA (Y1 NO-GO,
