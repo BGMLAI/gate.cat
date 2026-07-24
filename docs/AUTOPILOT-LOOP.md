@@ -275,6 +275,20 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-24 14:21 UTC — przebieg #49: PANEL W LOCIE (scaffold-overwrite design).**
+  Poczta: 0 płatności, 0 nowego inbound (bez zmian od #47). Po 4 holdach: zamiast
+  5. holdu odpalam ADWERSARIALNY PANEL PROJEKTOWY (nie „generic co robić" — to by
+  re-derywowało blocked-on-owner) na JEDYNEJ realnej, nie-zablokowanej, core'owej
+  robocie: **polityka scaffold-overwrite** (luka z incydentu #80730 — `npm/pnpm/yarn
+  create` do zapełnionego katalogu nadpisuje go, gate dziś ALLOW). 3 proposery
+  (fable/sonnet/opus, różne soczewki, każdy grounduje werdykty realnym replayem przez
+  gate), 2 adwersarialnych sędziów/propozycję (próba obalenia: false-block regresja
+  vs F1a/F1b, czy granica danger/benign jest obiektywna bez decyzji ownera), synteza
+  opus → GO-implement / GO-warn-only / NO-GO-needs-owner + macierz twin-testów. Run
+  ID wf_782ad7b9-cfc. Po wyniku: implementuję na branchu z twin-testami (owner
+  recenzuje przy merge = nie „silent ship") ALBO parkuję z udokumentowanym powodem.
+  Nie ruszam guard.py bez wyniku panelu (to najczulsza powierzchnia produktu).
+
 - **2026-07-24 14:21 UTC — przebieg #48: HOLD (bez zmian od #47).** Poczta: 0 płatności, 0 nowego inbound (devtalles bounce, awesome-ai-devtools, cc58444 — wszystko znane). Y2 gated do 2026-07-25. Panel NIE odpalony: rozważony i odrzucony jako wata — każda pozostała dźwignia ($: konwersja 2529 instalacji free, publish 0.4.19, listing awesome-ai-devtools, implementacja zaparkowanego scaffold-overwrite) jest downstream akcji/decyzji ownera, więc panel tylko re-derywowałby „blocked on owner" za ~950k tokenów. PR #27 bez zmian (clean, CI zielone). Wąskie gardło niezmienne: merge → deploy → publish.
 
 - **2026-07-24 13:21 UTC — przebieg #47: HOLD (bez zmian; nowość: bounce cold-sendu ownera).**
