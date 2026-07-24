@@ -282,7 +282,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-24 16:22–22:22 UTC — przebiegi #51–#57: HOLD STREAK (rolling, bez zmian).**
+- **2026-07-24 16:22–23:22 UTC — przebiegi #51–#58: HOLD STREAK (rolling, bez zmian).**
   Każdy przebieg: poczta 0 płatności gate.cat + 0 nowego inbound wymagającego draftu
   (Stripe = inny biznes; devtalles bounce = cold-send ownera; awesome-ai-devtools
   template-check = owner; cc58444 stale). Kolejka wyczerpana (Y1 NO-GO, Y3, Y4, Y5 done;
@@ -291,6 +291,11 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
   brak konfliktu z masterem (2 za = tylko daily METRICS.log). Wąskie gardło niezmienne:
   **merge PR #27 → deploy docs/ → publish 0.4.19/0.4.20.** (Rolling entry — aktualizowany
   w miejscu zamiast 1 bullet/h, żeby nie zaśmiecać logu identycznymi holdami.)
+  **NASTĘPNY PRZEBIEG (~00:22 UTC 2026-07-25): Y2 WAVE 1 się otwiera** — day-3 follow-up
+  drafty dla Julian (me@juliangoldie.com, wariant JULIAN zero-friction downgrade) +
+  AI Engineering newsletter (corp@systemdrd.com): per wątek sprawdzić reply po mojej
+  ostatniej wiadomości → bez odpowiedzi draft W WĄTKU (replyToMessageId), numbers-first
+  z followup_templates, liczby TYLKO z FACTS.md, tier z LEDGER; z odpowiedzią POMIŃ; 0 wysyłek.
 
 - **2026-07-24 15:21 UTC — przebieg #50: HOLD + potwierdzenie CI zielone na Y5.** Poczta:
   0 płatności, 0 nowego inbound (bez zmian). Backlog: kolejka v6 WYCZERPANA (Y1 NO-GO,
