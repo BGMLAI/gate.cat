@@ -52,7 +52,7 @@ the fail-closed wiring, and the honest gap map — not the regex.
 ## What gate.cat is NOT
 
 - Not a hallucination / fact-checker (lookup channel empty by default).
-- Not a frontier-model guardrail (signal weakens there — AUC 0.68–0.71 vs 0.77–0.90 on 7–30B).
+- Not a frontier-model guardrail (signal weakens there — AUC 0.68–0.71 vs 0.77–0.90 on 7–30B; internal measurement, artifact not yet published — FACTS F6/F7).
 - Not blanket coverage: it owns OWASP **LLM06 (Excessive Agency)** and part of LLM01/05; it does
   not cover the other seven.
 - Certain only about what it **blocks**. An unmatched action is *unchecked*, not *safe*.

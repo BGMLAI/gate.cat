@@ -59,7 +59,9 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
   by default).
 - Prompt-injection defense is experimental and off the headline.
 - The disagreement/uncertainty signal is strongest on **small/local models (7–30B,
-  AUC 0.77–0.90)** and weaker on frontier models (AUC 0.68–0.71).
+  AUC 0.77–0.90)** and weaker on frontier models (AUC 0.68–0.71). This AUC pair is an
+  internal measurement whose artifact is not yet published (FACTS F6/F7) — directional,
+  not reproducible-today like every other number here.
 - OWASP scope: it owns **LLM06 (Excessive Agency)** and part of LLM01/05; it does not
   cover the other seven.
 

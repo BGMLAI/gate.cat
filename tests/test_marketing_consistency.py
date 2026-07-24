@@ -42,6 +42,36 @@ def test_hook_json_identical_in_readme_and_llms_txt():
     assert readme == expected
 
 
+def test_plugin_hooks_json_matches_setup_cli_entry():
+    """The Claude Code plugin ships plugins/gatecat/hooks/hooks.json; it must
+    register the SAME PreToolUse entry the setup CLI writes and the README/
+    llms.txt document — otherwise `/plugin install` arms a different hook than
+    `gate.cat setup claude-code`. Closes the hook-JSON guard family."""
+    import json
+    from gatecat._setup_cli import HOOK_ENTRY
+
+    hooks = json.loads(
+        (ROOT / "plugins" / "gatecat" / "hooks" / "hooks.json").read_text())
+    assert hooks == {"hooks": {"PreToolUse": [HOOK_ENTRY]}}
+
+
+def test_recall_md_split_matches_the_reproducible_script():
+    """RECALL.md's block/warn split must equal what scripts/recall_danger_axis.py
+    actually prints — a skeptic running the exact command FACTS F1a invites must
+    see the same numbers as the method page. Guards the 31/12 pin without
+    re-running the (slow, import-heavy) corpus here: the doc and scripts/README
+    must agree, and scripts/README must cite the script."""
+    recall = (ROOT / "RECALL.md").read_text()
+    assert "31 `block`, 12 `warn`, **0 allowed**" in recall
+    assert "30 `block`, 13 `warn`" not in recall
+
+    scripts_readme = (ROOT / "scripts" / "README.md").read_text()
+    assert "recall_danger_axis.py" in scripts_readme
+    assert "31 `block`, 12 `warn`" in scripts_readme
+    # the stale hard-coded test count is gone
+    assert "892 green in CI as of v0.4.1" not in scripts_readme
+
+
 def test_readme_comparison_is_veto_axis_not_cache():
     """The Comparison section is the last thing an evaluator reads before
     License — it must position the veto (linking COMPARISON.md), not lead with

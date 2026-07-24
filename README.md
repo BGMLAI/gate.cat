@@ -262,7 +262,10 @@ Every stage that spoke is recorded in `report.stages` for debugging.
 model-agnostic): agents increasingly run on cheap/local models (7-30B via Ollama/vLLM) for cost
 and data-residency. That's where the gate's *uncertainty signal* is strongest (AUC 0.77–0.90,
 measured N=4800) and where frontier-first guardrail vendors don't aim — on frontier models the
-*signal* weakens (AUC 0.68–0.71). The action-veto's deny-list + exec-check does not depend on
+*signal* weakens (AUC 0.68–0.71). Honest caveat, because reproducibility is the brand: this AUC
+pair is an **internal measurement whose artifact isn't published yet** (FACTS F6/F7), so unlike
+every other number here, treat it as directional rather than reproducible-today. The action-veto's
+deny-list + exec-check does not depend on
 model size at all; it protects a Claude Code (frontier) agent exactly as it protects a local one.
 
 *Naming note*: `koryto` (Polish: riverbed) is the project's canonical term for the
