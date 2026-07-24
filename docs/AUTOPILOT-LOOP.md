@@ -275,6 +275,19 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-24 12:21 UTC — przebieg #46: HOLD (kolejka pusta poza gated Y2; panel = wata).**
+  Poczta: 0 płatności gate.cat, 0 nowych inbound (Stripe=inny biznes; awesome-ai-devtools
+  template-check nadal czerwony=owner; cc58444 stale). Backlog: jedyny task to Y2, gated
+  do 2026-07-25 — dziś zablokowany. **NIE odpalam panelu #46:** panel v6 wprost pre-autoryzował
+  „zwracaj pustą kolejkę zamiast waty, jeśli owner nie zmergował/nie opublikował"; stan od v6
+  bez zmian (~40 commitów gałęzi niezmergowane, 0.4.19 niewydane, $0). Nowy panel wygenerowałby
+  repo-polish, który nie może skonwertować dopóki nic z gałęzi nie wyszło = spalone tokeny.
+  Zrobione zamiast tego (tanie, realne): weryfikacja PR #27 — `mergeable_state: clean`, CI
+  zielone na HEAD 9b2925e (3.11/3.12/3.13), 2 za masterem ale merge czysty (brak konfliktu
+  METRICS.log → bez rebase). Wąskie gardło niezmienne: **merge PR #27 → deploy docs/ → publish
+  0.4.19/0.4.20**. Następny przebieg: 2026-07-25 → Y2; wcześniej HOLD dopóki nie ruszy poczta
+  albo owner.
+
 - **2026-07-24 11:21 UTC — przebieg #45: Y4 DONE → KOLEJKA v6 wyczerpana (tylko Y2 gated do jutra).**
   Poczta: 0 płatności gate.cat (Stripe = inny biznes), 0 nowych inbound wymagających
   draftu (awesome-ai-devtools template-check nadal czerwony — PR ownera, już
