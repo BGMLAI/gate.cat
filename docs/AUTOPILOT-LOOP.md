@@ -171,7 +171,8 @@ _Synteza: sędziowie potwierdzili tezę o diminishing returns — z 7 propozycji
   - acceptance: dla każdego wątku z otwartym oknem: draft widoczny w Gmail drafts ALBO marker „reply received — skip" w LEDGER; wszystkie liczby obecne w FACTS.md; 0 wysłanych maili; LEDGER zacommitowany.
   - _(impact: $0-149/30d — baseline 0/11, realistycznie 0-1 odpowiedź, 1 konwersja Team = €149/mo; wartość oczekiwana bliska $0, ale jedyny bezpośredni mechanizm przychodu; effort: S; soczewka: kampania; score: 8/10)_
 
-- [ ] **Y3 — Fix cichego kasowania historii w cloud_reporter.ship() przy braku [cloud] extra**
+- [x] **Y3 — DONE (przebieg #44):** capability-probe w `cloud_reporter.ship()` PRZED dotknięciem kursora — trial `encrypt_event({"_probe": True})` po `load_or_create_key()`; przy RuntimeError (brak `cryptography`/[cloud] extra) natychmiastowy głośny `reason` z `pip install -U 'gate-cat[cloud]'`, ZERO dotykania `.cloud_cursor`, 0 wysłanych. Łapie też uszkodzony plik klucza (dawniej uciekał jako nieobsłużony wyjątek — łamał kontrakt „raises nothing"). Nowy test `test_missing_cloud_extra_fails_loud_without_destroying_history` (monkeypatch `cloud_crypto.encrypt_event → RuntimeError`): udowodniony na PRE-FIX kodzie (padał na `reason=='ok (e2e-encrypted)'` + kursor awansowany do EOF), zielony po fixie; recovery po naprawie szyfrowania odzyskuje wszystkie 60 zdarzeń bez straty. Pełny suite: **1969 passed, 29 skipped.** Jedzie zakolejkowanym publishem 0.4.19/0.4.20.
+- [ ] ~~**Y3 — Fix cichego kasowania historii w cloud_reporter.ship() przy braku [cloud] extra**~~ _(spec poniżej, zrealizowana)_
   - why-now: bug korupcji danych zweryfikowany NIEZALEŻNĄ reprodukcją przez obu sędziów: bez `cryptography` ship() zwraca `{'shipped': 0, 'reason': 'ok (e2e-encrypted)'}` i awansuje kursor do EOF — trwała, cicha utrata CAŁEJ płatnej historii off-machine, raportowana jako sukces. Krytyczne: strona aktywacji (cloud_activate.py) każe uruchomić reportera BEZ wzmianki o `pip install gate-cat[cloud]` — to DOMYŚLNA ścieżka świeżego subskrybenta, nie egzotyka. Jedzie już zakolejkowanym publishem 0.4.19/0.4.20, zero nowej pracy ownera.
   - scope: w `gatecat/cloud_reporter.py::ship()` jednorazowy probe zdolności szyfrowania (trial encrypt_event) PRZED otwarciem/przesunięciem jakiegokolwiek pliku kursora; przy niepowodzeniu natychmiastowy, głośny reason nazywający brakujący extra (`pip install -U 'gate-cat[cloud]'`) i ZERO dotykania `.cloud_cursor`. Test (monkeypatch cloud_crypto → RuntimeError): (a) kursor nie powstaje/nie awansuje, (b) reason wymienia extra, (c) kolejne poprawne ship() odzyskuje wszystkie zdarzenia bez straty.
   - acceptance: nowy test failuje na obecnym kodzie (dowód buga), przechodzi po fixie; istniejący test_cloud_reporter.py zielony; kursor nigdy nie awansuje, gdy ship() nie zwraca pełnego sukcesu.
@@ -272,6 +273,19 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-24 10:21 UTC — przebieg #44: Y3 DONE (zweryfikowany bug korupcji danych naprawiony).**
+  Poczta: 0 płatności gate.cat (oba Stripe = inny biznes: Zeszyty Terapeutyczne
+  / Fundacja LC-Bloom, na jankiewicz3@gmail.com), 0 nowych inbound (wątki Mike i
+  Julian mają moją odpowiedź jako ostatnią wiadomość; reszta to własny SENT z
+  LEDGER + szum). Bez draftu. Backlog: **Y3 done** — capability-probe w
+  `cloud_reporter.ship()` PRZED kursorem; brak [cloud] extra → głośny reason z
+  `pip install -U 'gate-cat[cloud]'`, kursor nietknięty, 0 wysłanych (zamiast
+  cichej utraty CAŁEJ płatnej historii z raportem „ok"). Nowy test udowodniony
+  na pre-fix kodzie (padał na `reason=='ok'`), zielony po fixie + recovery 60/60.
+  Suite **1969 passed, 29 skipped.** PR #27 CI zielony (3.11/3.12/3.13 success);
+  stary mail o failu cc58444 nieaktualny. Y2 wciąż gated do 2026-07-25.
+  Następny odblokowany task kodowy: **Y4** (obsługa błędów cloud CLI, 401).
 
 - **2026-07-24 09:21 UTC — przebieg #43: Y1 → NO-GO (uczciwość ponad dystrybucję).**
   Poczta: 0 płatności gate.cat, 0 odpowiedzi kampanii; jedyny nowy sygnał to
