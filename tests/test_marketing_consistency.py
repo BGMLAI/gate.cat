@@ -127,6 +127,38 @@ def test_teams_page_tracks_cookieless_funnel_events():
     assert "document.cookie" not in teams.split('id="gc-funnel-events"')[1]
 
 
+def test_teams_page_links_the_data_boundary_evidence():
+    """The €149/€399 decision page must let a team lead verify the data
+    boundary in one click — threat model, telemetry field list, and the real
+    sample report — as absolute GitHub blob URLs (the .md docs SPA-fallback or
+    serve as octet-stream on the production site)."""
+    teams = (ROOT / "docs" / "teams.html").read_text()
+
+    for doc in ("docs/THREAT_MODEL.md", "TELEMETRY.md", "docs/SAMPLE_REPORT.md"):
+        assert f"https://github.com/BGMLAI/gate.cat/blob/master/{doc}" in teams, doc
+    # vendor-continuity line, no new numbers
+    assert "if Cloud is down" in teams
+    # footer reaches the orphaned live surfaces
+    assert 'href="/coverage.html"' in teams
+    assert 'href="/answers/"' in teams
+
+
+def test_docs_markdown_evidence_links_resolve_from_their_location():
+    """Relative links inside docs/*.md resolve from docs/, not the repo root.
+    A bare [FACTS.md](FACTS.md) in docs/ 404s on GitHub blob; it must be
+    ../FACTS.md. Guards the two pointers a buyer follows from the sample
+    report and threat model."""
+    sample = (ROOT / "docs" / "SAMPLE_REPORT.md").read_text()
+    assert "[FACTS.md](../FACTS.md)" in sample
+    assert "[FACTS.md](FACTS.md)" not in sample
+
+    threat = (ROOT / "docs" / "THREAT_MODEL.md").read_text()
+    # the "readable Python" verify pointer must carry a real URL now
+    assert "readable Python](../products/cloud/cloud_server.py)" in threat
+    assert "readable Python])" not in threat
+    assert (ROOT / "products" / "cloud" / "cloud_server.py").exists()
+
+
 def test_self_verify_block_on_every_purchase_surface():
     """The reproduce-it block must appear where the buy decision happens, and
     its headline numbers must never travel without their published caveats

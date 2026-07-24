@@ -18,7 +18,7 @@ the record — prove the boundary."* Here is the boundary, both directions.
 | Boundary | Why it holds |
 |---|---|
 | Influence a verdict through Cloud | Cloud is a **reporter**: the server has no route that reaches the client's decision path; the gate never waits for the network |
-| Rewrite off-machine history | the server exposes **no update or delete route** for events — append-only by construction (verify: [`server` source is readable Python]) |
+| Rewrite off-machine history | the server exposes **no update or delete route** for events — append-only by construction (verify: [`server` source is readable Python](../products/cloud/cloud_server.py)) |
 | Recover the bearer token from a server breach | keys are stored as sha256 hashes only |
 | See another tenant's events | every query is scoped to the authenticated key id (tested) |
 | Exfiltrate your command text via the reporter | **hash mode is the default**: the command line never leaves the machine unless you explicitly set `GATECAT_CLOUD_SEND_RAW=1` |

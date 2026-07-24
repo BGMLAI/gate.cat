@@ -231,6 +231,17 @@
   </section>
 
   <section>
+    <h2>Prove the data boundary — before you send a byte</h2>
+    <p class="lead">A team lead's first question is "what leaves our machines, and can your server rewrite our record?" You don't have to take our word — the answers are in readable docs and readable Python:</p>
+    <div class="grid2">
+      <div class="feat"><h3><span class="k">Threat model.</span> both directions</h3><p>Exactly what Cloud can and can't do — including that the reporter server exposes no update/delete route (append-only by construction). <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/THREAT_MODEL.md">Read THREAT_MODEL.md →</a></p></div>
+      <div class="feat"><h3><span class="k">What leaves the box.</span> hash mode default</h3><p>The matched command is sent as a hash by default; raw text is a separate explicit opt-in. Field-by-field. <a href="https://github.com/BGMLAI/gate.cat/blob/master/TELEMETRY.md">Read TELEMETRY.md →</a></p></div>
+      <div class="feat"><h3><span class="k">A real report.</span> redacted sample</h3><p>The monthly report, generated from our own dogfood log, red-team caveats included — the actual artifact, not a mockup. <a href="https://github.com/BGMLAI/gate.cat/blob/master/docs/SAMPLE_REPORT.md">See SAMPLE_REPORT.md →</a></p></div>
+    </div>
+    <p class="note" style="margin-top:14px">Vendor-continuity, plainly: the local gate is Apache-2.0 and blocks with zero network — if Cloud is down, unreachable, or cancelled, the gate keeps working exactly the same. You are never one vendor away from an unprotected machine.</p>
+  </section>
+
+  <section>
     <div class="free">
       <b>Try the free core first — it's the whole engine.</b><br>
       <code class="mono">pip install gate.cat</code> — then wire it into your agent. The paid tiers only add the team layer on top; the protection itself is free and open source (Apache 2.0). Recommend it to your team, roll out Team when you want shared visibility.
@@ -243,7 +254,7 @@
       <a class="btn ghost" href="https://github.com/BGMLAI/gate.cat">Read the code →</a>
     </div>
     <p style="margin-top:22px">
-      <a href="/">gate.cat</a> · <a href="/veto-demo.html">30-second veto demo</a> · <a href="/packs.html">policy packs (€29)</a> · <a href="/partners.html">partner program (30%)</a> · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · Apache 2.0<br>
+      <a href="/">gate.cat</a> · <a href="/coverage.html">what it blocks</a> · <a href="/answers/">answers</a> · <a href="/veto-demo.html">30-second veto demo</a> · <a href="/packs.html">policy packs (€29)</a> · <a href="/partners.html">partner program (30%)</a> · <a href="https://github.com/BGMLAI/gate.cat">github.com/BGMLAI/gate.cat</a> · Apache 2.0<br>
       Deterministic action veto for AI coding agents. Free core forever; Team &amp; Business add the fleet layer.
     </p>
   </footer>
