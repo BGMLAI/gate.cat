@@ -212,6 +212,32 @@ def test_claude_design_landing_uses_the_live_stripe_offer():
     assert "sh /tmp/gatecat-install.sh" in landing
 
 
+def test_landing_has_static_social_meta():
+    """The root domain is the most-shared URL (PyPI, GitHub About, every live
+    channel). Social-preview and answer-engine bots (GPTBot/ClaudeBot/
+    PerplexityBot, invited in robots.txt) do NOT run the bundler JS, so the
+    og/twitter/canonical tags must be in the STATIC <head> — before the
+    bundler manifest — or every share renders a blank card. index.html was the
+    only production page missing them."""
+    landing = (ROOT / "docs" / "index.html").read_text()
+
+    head = landing.split("__bundler", 1)[0]   # everything before the bundle
+    for tag in ('rel="canonical"', 'property="og:image"',
+                'property="og:title"', 'name="twitter:card"',
+                'property="og:url"'):
+        assert tag in head, f"{tag} missing from the static head"
+    # summary_large_image + the shared poster asset (same as teams/partners)
+    assert "summary_large_image" in head
+    assert "https://gate.cat/veto-demo-poster.png" in head
+    # the noscript fallback now carries real value + discovery links, not just
+    # "requires JavaScript"
+    noscript = landing.split("<noscript>", 1)[1].split("</noscript>", 1)[0]
+    assert "github.com/BGMLAI/gate.cat" in noscript
+    assert "pypi.org/project/gate.cat" in noscript
+    # and it does NOT reintroduce the banned bare pip-install install story
+    assert "pip install" not in noscript.lower()
+
+
 def test_landing_tracks_cookieless_funnel_events():
     landing = (ROOT / "docs" / "index.html").read_text()
 
