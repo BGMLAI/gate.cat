@@ -66,7 +66,23 @@ def test_llms_txt_tracks_current_package_and_offer():
     assert "€29 each, one-time" in llms
 
 
-def test_readme_exposes_a_direct_paid_path():
+def test_readme_has_no_relative_markdown_links():
+    """README is the PyPI long_description; PyPI does not rewrite relative
+    paths, so every relative link (evidence docs, examples, LICENSE badge) is
+    a 404 on the biggest discovery surface. Every link target must be absolute
+    (http/https), an in-page anchor, or a mailto. Catches BOTH plain links and
+    image/badge links like `[![x](img)](LICENSE)`."""
+    import re
+
+    readme = (ROOT / "README.md").read_text()
+    # any ](target) whose target is not absolute/anchor/mailto is relative
+    bad = []
+    for m in re.finditer(r"\]\(([^)]+)\)", readme):
+        tgt = m.group(1).strip()
+        if tgt.startswith(("http://", "https://", "#", "mailto:")):
+            continue
+        bad.append(tgt)
+    assert bad == [], f"relative link targets 404 on PyPI: {bad}"
     readme = (ROOT / "README.md").read_text()
 
     assert "Start Solo (€19/mo)" in readme

@@ -41,7 +41,7 @@ Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine u
 
 [![CI](https://github.com/BGMLAI/gate.cat/actions/workflows/ci.yml/badge.svg)](https://github.com/BGMLAI/gate.cat/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/gate.cat)](https://pypi.org/project/gate.cat/)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://github.com/BGMLAI/gate.cat/blob/master/LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/gate.cat)](https://pypi.org/project/gate.cat/)
 [![Site](https://img.shields.io/badge/site-gate.cat-cbdd1a)](https://gate.cat)
 
@@ -53,7 +53,7 @@ a single byte executes — a real terminal, `pip install gate-cat`, no montage:
 
 ![gate.cat blocks a curl-pipe-shell an agent tried to run](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/demo_a.gif)
 
-<sub>Blocks the `curl … | sh` pattern specifically; obfuscated/base64 install tricks still evade — see [OBJECTIONS.md](OBJECTIONS.md). Cast: [`docs/demos/demo_a.cast`](docs/demos/demo_a.cast).</sub>
+<sub>Blocks the `curl … | sh` pattern specifically; obfuscated/base64 install tricks still evade — see [OBJECTIONS.md](https://github.com/BGMLAI/gate.cat/blob/master/OBJECTIONS.md). Cast: [`docs/demos/demo_a.cast`](https://github.com/BGMLAI/gate.cat/blob/master/docs/demos/demo_a.cast).</sub>
 
 ## Install
 
@@ -69,7 +69,7 @@ pip install "gate-cat[all]"         # everything
 **Free forever** — the full local gate, nothing rate-limited. The paid layer is
 optional and off by default: **Cloud Solo €19/mo · Team €149/mo flat (up to 10
 machines) · Business €399/mo · one-time €29 policy packs** — details and honest
-boundaries in [PRICING.md](PRICING.md). Blocking never depends on payment.
+boundaries in [PRICING.md](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md). Blocking never depends on payment.
 
 ## Does it work with my agent?
 
@@ -128,7 +128,7 @@ logs a no-op (`GATECAT_VETO_EPHEMERAL=0` forces it armed).
 Framework adapters (crewAI / LangGraph / AutoGen) exist too, but they are
 in-process convention — a prompt injection can route around them. Only the hook
 is enforcement the agent cannot skip. See
-[`examples/veto_integrations/`](examples/veto_integrations/) for adapter usage.
+[`examples/veto_integrations/`](https://github.com/BGMLAI/gate.cat/tree/master/examples/veto_integrations/) for adapter usage.
 
 ## The gated shell — enforcement for any agent that shells out
 
@@ -224,7 +224,7 @@ to a human — one deterministic gate, three outcomes:
 
 ![gate.cat policy: dev runs, prod denied, staging escalated to a human](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/demo_b.gif)
 
-<sub>Source: [`examples/veto_terraform.py`](examples/veto_terraform.py). Cast: [`docs/demos/demo_b.cast`](docs/demos/demo_b.cast).</sub>
+<sub>Source: [`examples/veto_terraform.py`](https://github.com/BGMLAI/gate.cat/blob/master/examples/veto_terraform.py). Cast: [`docs/demos/demo_b.cast`](https://github.com/BGMLAI/gate.cat/blob/master/docs/demos/demo_b.cast).</sub>
 
 **Honest verdicts** — the pipeline never claims more than it measured:
 
@@ -321,14 +321,14 @@ The reproducible bypass suite catches **178/178** danger shapes it claims —
 and prints its own edges: one published runtime-assembly gap and one benign
 false-block in 129 cases. At scale: **0 real recall misses across 1,085,159
 unique real agent commands** through the full gate. Every number →
-[FACTS.md](FACTS.md).
+[FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md).
 
 **Running agents across a team?** One rogue agent's blast radius is the whole
 team's. The team plan adds a shared off-machine veto history no single agent can
 delete, fleet alerts, and signed policy sync — walked through on the dedicated
 page: **[the team plan → gate.cat/teams.html](https://gate.cat/teams.html)**.
 
-Full boundaries and tier details: [PRICING.md](PRICING.md).
+Full boundaries and tier details: [PRICING.md](https://github.com/BGMLAI/gate.cat/blob/master/PRICING.md).
 
 **Teach AI coding, or write a dev newsletter?** There's a partner program —
 30% recurring, for the lifetime of the subscription, on every paid plan someone
@@ -337,15 +337,15 @@ paywall: **[partner program → gate.cat/partners.html](https://gate.cat/partner
 
 ## Verify the numbers
 
-Every public number traces to a row in [FACTS.md](FACTS.md) (claim → source →
+Every public number traces to a row in [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md) (claim → source →
 allowed wording), and the corpus harnesses behind the headline measurements are
-in [`scripts/`](scripts/README.md) — reproduce them, and if your numbers
+in [`scripts/`](https://github.com/BGMLAI/gate.cat/blob/master/scripts/README.md) — reproduce them, and if your numbers
 disagree with ours, that's a bug report we want. The 14.7k-command half of the
 ~0.6% claim is our own private log (labeled as such in FACTS.md); the public
 corpus half you can re-run yourself.
 
 **Recall** — the claim we care about most (does anything dangerous get through?)
-is measured on two axes in [RECALL.md](RECALL.md). The deterministic one needs no
+is measured on two axes in [RECALL.md](https://github.com/BGMLAI/gate.cat/blob/master/RECALL.md). The deterministic one needs no
 datasets and runs in seconds:
 
 ```bash
@@ -662,8 +662,8 @@ irreversible-action class, enforced *outside* the agent's control flow. The
 honest positioning against the tools people rightly mention — approval flows
 (LangGraph `interrupt`, HumanLayer), detection guardrails (Lakera, Guardrails
 AI, NeMo), and the "just write regexes yourself" objection — is in
-**[COMPARISON.md](COMPARISON.md)**, with the same ground rule as
-[FACTS.md](FACTS.md): only claims we can back, and where a competitor is better
+**[COMPARISON.md](https://github.com/BGMLAI/gate.cat/blob/master/COMPARISON.md)**, with the same ground rule as
+[FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md): only claims we can back, and where a competitor is better
 for a job we say so.
 
 The one-line version: approval flows live in the agent's control flow (they
@@ -673,7 +673,7 @@ step, not a replacement for it.
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](https://github.com/BGMLAI/gate.cat/blob/master/LICENSE).
 
 Built by [BGML.ai](https://bgml.ai) / [Fundacja BLOOM](https://bloom.foundation).
 Policy Packs → [gate.cat/packs.html](https://gate.cat/packs.html?source=pypi)
