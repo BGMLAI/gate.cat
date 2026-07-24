@@ -1339,3 +1339,218 @@ def _looks_like_path_asset(asset_low: str) -> bool:
     bare hostname). A file-delete only matters for path-like assets; a host-like
     asset matters only under a destroy verb (handled above)."""
     return "/" in asset_low or "-" in asset_low and not re.match(r"^[\d.]+$", asset_low)
+
+
+# --------------------------------------------------------------------------
+# Scaffold-overwrite analyzer (SCAFFOLD_OVERWRITE, WARN-ONLY)
+# --------------------------------------------------------------------------
+# A scaffolder that writes into an EXISTING NON-EMPTY directory can irreversibly
+# overwrite its contents (the claude-code #80730 incident: `npm create vite` run
+# inside a populated project deleted a week of uncommitted work). This is not a
+# delete verb and not a git-destructive op, so no other analyzer sees it.
+#
+# WARN-ONLY BY DESIGN. The danger predicate ("scaffolder + non-empty target") is
+# not objective enough to hard-block: create-vite deletes on confirm, but
+# create-react-app/create-next-app abort-on-conflict, and additive initializers
+# (`npm init @eslint/config`, `npx create-storybook`) run in populated dirs on
+# purpose. A hard block would false-block those and regress the 0-false-block
+# headline (F1a). A WARN (log+allow, exit 0, the command still runs and the human
+# sees the notice) surfaces the #80730 shape WITHOUT ever vetoing a legit scaffold
+# — so it cannot produce a false-block and preserves F1a/F1b exactly (a warn is
+# neither a block nor a recall miss). WARN, never block, is this class's contract.
+#
+# v1 FIRE-LIST is deliberately narrow: only the create-vite family (whose
+# emptyDir()-then-delete behavior is source-verified) and degit (documented to
+# default into cwd / overwrite with --force). create-react-app / create-next-app
+# are EXCLUDED (safe-by-refusal); other framework creators (create-vue/-svelte/
+# -astro/-nuxt) await per-tool verification. Extending the list is an owner call.
+
+_SCAFFOLD_MANAGERS = ("npm", "pnpm", "yarn", "bun")
+_SCAFFOLD_INIT_MANAGERS = ("npm", "pnpm")   # `npm init <spec>` == `npm create <spec>`
+_SCAFFOLD_RUNNERS = ("npx", "bunx", "pnpx")
+# initializer names in scope for the `<mgr> create/init <spec>` form (npm expands
+# `create vite` -> the `create-vite` package). Bare `vite` is in scope ONLY here;
+# `npx vite` is the DEV SERVER, not a scaffolder, so the runner form below accepts
+# only `create-vite`, never bare `vite` (avoids a false-warn on `npx vite`).
+_SCAFFOLD_INIT_NAMES = frozenset({"vite", "create-vite"})
+_SCAFFOLD_NOOP_FLAGS = frozenset({"--help", "-h", "--version", "-v",
+                                  "--dry-run", "-n"})
+_SCAFFOLD_PREFIX_WRAPPERS = frozenset({"sudo", "doas", "env", "nice", "ionice",
+                                       "time", "command", "nohup", "stdbuf"})
+# entries that DON'T count as "populated": VCS metadata, editor/OS cruft. NOTE:
+# README.md and LICENSE are DELIBERATELY absent — they are the incident's
+# content-at-risk (create-vite's emptyDir deletes them on confirm).
+_SCAFFOLD_IGNORE = frozenset({
+    ".git", ".gitignore", ".gitattributes", ".DS_Store", "Thumbs.db",
+    ".idea", ".vscode", ".hg", ".svn", ".editorconfig",
+})
+# after $VAR expansion, any of these means the target is unprovable -> WARN
+# (mirrors the delete analyzer's opaque-target contract). Tilde is resolvable
+# (-> home via _normalize) so it is intentionally excluded.
+_SCAFFOLD_OPAQUE = re.compile(r"[$*?{}\[\]`]")
+_SCAFFOLD_ASSIGN_TOKEN = re.compile(r"^\w+=")
+
+
+def _scaffold_strip_spec(name: str) -> str:
+    """basename of an initializer/generator spec, minus a leading @scope/ and a
+    trailing @version: `@org/create-foo@1.2` -> `create-foo`, `vite@latest` ->
+    `vite`, `create-vite` -> `create-vite`."""
+    n = name.strip()
+    at = n.rfind("@")
+    if at > 0:                       # trailing @version (not the leading @scope)
+        n = n[:at]
+    if "/" in n:                     # drop scope / path prefix
+        n = n.rsplit("/", 1)[-1]
+    return n
+
+
+def _scaffold_positionals(rest: Sequence[str]) -> list[str]:
+    """Non-flag tokens BEFORE a lone `--` separator (npm passes flags after `--`
+    to the initializer, so the target dir is always before it)."""
+    out: list[str] = []
+    for t in rest:
+        if t == "--":
+            break
+        if t.startswith("-"):
+            continue
+        out.append(t)
+    return out
+
+
+def _scaffold_target(tokens: list[str]) -> Optional[str]:
+    """For the shlex tokens of ONE segment, return the scaffolder's target dir
+    (`.` when it defaults to cwd), or None if the segment is not an in-scope
+    create-vite-family / degit invocation. A no-op flag (--help/--version/
+    --dry-run) short-circuits to None (never touches the filesystem)."""
+    i = 0
+    while i < len(tokens):            # strip leading VAR=val and prefix wrappers
+        t = tokens[i]
+        if _SCAFFOLD_ASSIGN_TOKEN.match(t) or t in _SCAFFOLD_PREFIX_WRAPPERS:
+            i += 1
+            continue
+        break
+    toks = tokens[i:]
+    if not toks:
+        return None
+    if any(f in _SCAFFOLD_NOOP_FLAGS for f in toks):
+        return None
+    verb = toks[0]
+
+    # (a) manager create/init: {npm,pnpm,yarn,bun} create <spec> [target]
+    if verb in _SCAFFOLD_MANAGERS and len(toks) >= 2:
+        sub = toks[1]
+        if sub == "create" or (sub == "init" and verb in _SCAFFOLD_INIT_MANAGERS):
+            pos = _scaffold_positionals(toks[2:])
+            if not pos:                       # bare `npm init` / `npm create`
+                return None
+            if _scaffold_strip_spec(pos[0]) not in _SCAFFOLD_INIT_NAMES:
+                return None
+            return pos[1] if len(pos) >= 2 else "."
+        return None
+
+    # (b) runner: {npx,bunx,pnpx} <gen> [dest]; gen == create-vite or degit only
+    if verb in _SCAFFOLD_RUNNERS and len(toks) >= 2:
+        pos = _scaffold_positionals(toks[1:])
+        if not pos:
+            return None
+        gen = _scaffold_strip_spec(pos[0])
+        if gen == "create-vite":
+            return pos[1] if len(pos) >= 2 else "."
+        if gen == "degit":                    # npx degit <src> [dest], dest->cwd
+            return pos[2] if len(pos) >= 3 else "."
+        return None
+
+    # (c) standalone degit <src> [dest]
+    if _scaffold_strip_spec(verb) == "degit":
+        pos = _scaffold_positionals(toks[1:])
+        return pos[1] if len(pos) >= 2 else "."
+
+    # (c') standalone create-vite [target]
+    if _scaffold_strip_spec(verb) == "create-vite":
+        pos = _scaffold_positionals(toks[1:])
+        return pos[0] if pos else "."
+
+    return None
+
+
+def _scaffold_apply_cd(target: str, home: str, cwd: str) -> Optional[str]:
+    t = target.strip('"').strip("'")
+    if _SCAFFOLD_OPAQUE.search(t) and not t.startswith("~"):
+        return None                  # unresolvable cd -> keep old cwd
+    return _normalize(t, home, cwd)
+
+
+def _scaffold_target_verdict(target_raw: str, home: str, cwd: str,
+                             env: dict) -> Optional[DeleteVerdict]:
+    """WARN iff the resolved target is an existing dir with a non-ignored entry.
+    Absent / empty / ignore-only / any FS error -> None (ALLOW). Unprovable
+    target -> WARN (advisory)."""
+    import os
+    t = target_raw.strip().strip('"').strip("'")
+    expanded = _expand_vars(t, env)
+    if _SCAFFOLD_OPAQUE.search(expanded):
+        return _warn(
+            "scaffolder target is unresolvable (var/glob/subshell) - cannot prove "
+            "it is empty; review before it may overwrite", target_raw[:60])
+    resolved = _normalize(expanded, home, cwd)
+    if resolved is None:
+        return _warn(
+            "scaffolder target could not be resolved - review before it may "
+            "overwrite existing files", target_raw[:60])
+    try:
+        with os.scandir(resolved) as it:
+            for entry in it:
+                if entry.name not in _SCAFFOLD_IGNORE:
+                    return _warn(
+                        "scaffolder writes into existing non-empty dir '"
+                        + resolved + "' - may overwrite/delete its contents "
+                        "(advisory; scaffold-overwrite class, cf. #80730)",
+                        resolved[:80])
+    except OSError:
+        return None      # absent / not-a-dir / permission -> fresh scaffold: ALLOW
+    return None          # empty or ignore-only -> the dominant fresh case: ALLOW
+
+
+def analyze_scaffold_overwrite(action: str, *, home: str, cwd: str,
+                               env: Optional[dict] = None) -> Optional[DeleteVerdict]:
+    """WARN if a create-vite-family scaffolder / degit would write into an
+    EXISTING NON-EMPTY directory (the #80730 overwrite shape); else None.
+
+    NEVER returns a block: the danger predicate is not objective enough to veto
+    without false-blocking benign scaffolds, so this class is advisory (log+allow).
+    Reads the live filesystem (one non-recursive scandir of the resolved target)
+    — the first analyzer to do so; its verdict is deterministic GIVEN
+    command+cwd+env+fs-state, but machine-state-dependent (see FACTS.md caveat).
+    Any FS error or unprovable target degrades safely (allow / warn), never crash.
+    """
+    if not action or not action.strip():
+        return None
+    if len(action) > _MAX_ACTION_LEN:
+        return None                  # advisory only — never warn-storm huge input
+    try:
+        segments = split_segments(action)
+    except ValueError:
+        return None                  # unbalanced quote -> engine walls own it
+    assignments = _collect_assignments(action, dict(env) if env else {})
+    eff_cwd = cwd
+    for seg in segments:
+        stripped = seg.strip()
+        if not stripped:
+            continue
+        head = stripped.split()
+        if head and head[0] == "cd" and len(head) >= 2:   # track cd for later segs
+            nc = _scaffold_apply_cd(head[1], home, eff_cwd)
+            if nc:
+                eff_cwd = nc
+            continue
+        try:
+            toks = shlex.split(stripped)
+        except ValueError:
+            continue
+        target = _scaffold_target(toks)
+        if target is None:
+            continue
+        verdict = _scaffold_target_verdict(target, home, eff_cwd, assignments)
+        if verdict is not None:
+            return verdict
+    return None

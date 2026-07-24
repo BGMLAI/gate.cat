@@ -185,6 +185,13 @@ _Synteza: sędziowie potwierdzili tezę o diminishing returns — z 7 propozycji
   - acceptance: `tests/test_cloud_cli.py` istnieje i przechodzi; żaden test nie pokazuje Python tracebacku; istniejące zachowanie (brak klucza, brak [cloud] extra, 402/403 upgrade-path) bez zmian; pełny suite zielony.
   - _(impact: $0/30d — usuwa najbardziej prawdopodobną awarię pierwszych 5 minut płatnika (copy-paste klucza), zamienia „produkt crashuje" na „sprawdź klucz"; effort: S; soczewka: płatny onboarding; score: 7/10)_
 
+- [x] **Y5 — DONE (przebieg #49, z panelu adwersarialnego wf_782ad7b9-cfc):** polityka **SCAFFOLD_OVERWRITE** — nowa core'owa klasa wykrywania (luka z incydentu claude-code #80730). Panel (2 żywe propozycje sonnet/opus po padzie fable na creditach, 4 adwersarialnych werdykty, synteza opus) rozstrzygnął **GO-warn-only**: hard-BLOCK NIE przechodzi progu „łap danger ORAZ oszczędź każdy benign twin" (ten sam stan dysku jest destrukcyjny dla create-vite, ale bezpieczny dla create-react-app/create-next-app i additive-initializers `npm init @eslint/config` odpalanych w zapełnionym katalogu Z ZAŁOŻENIA) → BLOCK dałby false-block przeciw F1a 0/13. WARN (log+allow, exit 0, komenda WCIĄŻ się wykonuje, człowiek widzi notkę) rozpuszcza problem: strukturalnie nie może false-blockować, zachowuje F1a/F1b co do liczby (warn ≠ block ≠ recall miss).
+  - impl: `analyze_scaffold_overwrite()` w `action_analysis.py` (reużywa split_segments/_track_cd/_expand_vars/_normalize/_collect_assignments) + `_analyze_scaffold_class()` w `guard.py` (slot `deferred_warn`, po delete-analyzerze; chained hard-block `... && rm -rf /` wciąż wygrywa bo rm jest delete-class); **pierwszy analizator czytający żywy FS** (jeden nierekursywny `os.scandir` na rozwiązanym targecie; błąd FS/niedowodliwy target → degraduje bezpiecznie allow/warn, nigdy crash).
+  - fire-list v1 WĄSKA: create-vite family (`{npm,pnpm,yarn,bun} create vite`, `npm/pnpm init vite`, `npx/bunx/pnpx create-vite`, standalone `create-vite`/`degit`). WYKLUCZONE świadomie: create-react-app/create-next-app (abort-on-conflict), additive initializers, bare `npx vite`/`vite` (dev server — zawężenie względem spec panelu, eliminuje false-warn), cloud verbs, monorepo generators, non-JS, git clone.
+  - test: `tests/test_scaffold_overwrite.py` (43 twin-case'y z realnymi FS fixture'ami) — wszystkie danger→warn, wszystkie benign→allow, chained→block, WARN-only nigdy nie raise. **Pełny suite 2015 passed, 29 skipped; F1a wciąż 43/43 + 0/13; F4 wciąż 178/178 + 1/129** (potwierdzone uruchomieniem recall + bypass). FACTS.md: dodany wiersz **F14** (WARN-only, first-non-static-analyzer caveat, „advisory nie prevention").
+  - **[USER] — 2 pytania produktowe do potwierdzenia PRZY MERGE (nie-blokujące kodu v1):** (A) FIRE-LIST BREADTH: v1 ostrzega tylko dla create-vite+degit (jedyne z zweryfikowanym zachowaniem overwrite); create-vue/-svelte/-astro/-nuxt czekają na per-tool verification — potwierdź wąski zakres albo autoryzuj rozszerzenie. (B) WORDING: to pierwszy analizator zależny od stanu FS (deterministyczny dla cmd+cwd+env+fs, ale nie string-pure) — nigdy nie opisuj WARN jako „prevention"/„blocks", tylko „advisory/auditability"; F14 to koduje, potwierdź.
+  - _(impact: $0/30d bezpośrednio (product wciąż niewydany), ale: zamyka realną lukę rdzenia produktu powiązaną z GŁOŚNYM publicznym incydentem, jedzie na już-przygotowanym release trainie, daje ownerowi UCZCIWY narracyjny hook dystrybucyjny („łapiemy klasę scaffold-overwrite z wątku #80730" — F14-backed, WARN nie block); effort: M; soczewka: rdzeń produktu + dystrybucja; nie-zablokowane na deployu)_
+
 ### ODRZUCONE v6
 - **Zamknięcie luki worktree-discard (git checkout -- . / git restore .) jako 0.4.21** — KILL (honesty): przesłanka FAŁSZYWA. To nie przeoczona luka, tylko świadoma, przetestowana decyzja produktowa zapinowana w `tests/test_v0413_gaps.py::DELIBERATELY_ALLOW` z komentarzem wprost („ALLOWed on purpose… pinned so a future change… is a conscious decision"); implementacja wymagałaby złamania tego strażnika. Rewizja tej decyzji po incydencie #80730 to pytanie do ownera/produktu, nie jednodniowa łatka — a kolejka [USER] jest zamrożona. Ślad zostaje wyłącznie jako uczciwy opis „deliberately allowed" w drafcie Y1.
 - **gate.cat doctor: sekcja Cloud** — KILL (cash): czysto diagnostyczny output bez zmiany zachowania; częściowo redundantny z Y3 (które łapie brak [cloud] extra GŁOŚNO w punkcie awarii); 0 konsumentów w oknie 30 dni; support nie jest wąskim gardłem $ (jest nim brak konwersji + przepustowość ownera). Przy podniesionym progu fazy — wata.
@@ -275,19 +282,20 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-24 14:21 UTC — przebieg #49: PANEL W LOCIE (scaffold-overwrite design).**
+- **2026-07-24 14:21 UTC — przebieg #49: Y5 SCAFFOLD_OVERWRITE DONE (panel → GO-warn-only → impl).**
   Poczta: 0 płatności, 0 nowego inbound (bez zmian od #47). Po 4 holdach: zamiast
-  5. holdu odpalam ADWERSARIALNY PANEL PROJEKTOWY (nie „generic co robić" — to by
-  re-derywowało blocked-on-owner) na JEDYNEJ realnej, nie-zablokowanej, core'owej
-  robocie: **polityka scaffold-overwrite** (luka z incydentu #80730 — `npm/pnpm/yarn
-  create` do zapełnionego katalogu nadpisuje go, gate dziś ALLOW). 3 proposery
-  (fable/sonnet/opus, różne soczewki, każdy grounduje werdykty realnym replayem przez
-  gate), 2 adwersarialnych sędziów/propozycję (próba obalenia: false-block regresja
-  vs F1a/F1b, czy granica danger/benign jest obiektywna bez decyzji ownera), synteza
-  opus → GO-implement / GO-warn-only / NO-GO-needs-owner + macierz twin-testów. Run
-  ID wf_782ad7b9-cfc. Po wyniku: implementuję na branchu z twin-testami (owner
-  recenzuje przy merge = nie „silent ship") ALBO parkuję z udokumentowanym powodem.
-  Nie ruszam guard.py bez wyniku panelu (to najczulsza powierzchnia produktu).
+  5. holdu odpaliłem adwersarialny panel projektowy (wf_782ad7b9-cfc) na jedynej realnej
+  nie-zablokowanej core'owej robocie — luce scaffold-overwrite z incydentu #80730.
+  **Wynik: GO-warn-only** (sędziowie udowodnili replayem, że hard-BLOCK false-blockuje
+  create-react-app/additive-initializers przeciw F1a 0/13; WARN rozpuszcza problem —
+  nie może false-blockować). Zaimplementowane: `analyze_scaffold_overwrite` + hook
+  `_analyze_scaffold_class` (slot deferred_warn, WARN-only, pierwszy analizator z FS I/O),
+  `tests/test_scaffold_overwrite.py` (43 twin-case). **Suite 2015 passed; F1a 43/43+0/13,
+  F4 178/178+1/129 — headline liczby nietknięte** (WARN ≠ block ≠ recall miss). FACTS.md
+  wiersz F14 (advisory/first-non-static caveat). 2 nie-blokujące pytania produktowe do
+  ownera [USER] przy merge (fire-list breadth; wording „advisory nie prevention").
+  Jedzie na release trainie 0.4.19/0.4.20. Następny odblokowany task kodowy: brak
+  (kolejka wyczerpana); Y2 gated do 2026-07-25.
 
 - **2026-07-24 14:21 UTC — przebieg #48: HOLD (bez zmian od #47).** Poczta: 0 płatności, 0 nowego inbound (devtalles bounce, awesome-ai-devtools, cc58444 — wszystko znane). Y2 gated do 2026-07-25. Panel NIE odpalony: rozważony i odrzucony jako wata — każda pozostała dźwignia ($: konwersja 2529 instalacji free, publish 0.4.19, listing awesome-ai-devtools, implementacja zaparkowanego scaffold-overwrite) jest downstream akcji/decyzji ownera, więc panel tylko re-derywowałby „blocked on owner" za ~950k tokenów. PR #27 bez zmian (clean, CI zielone). Wąskie gardło niezmienne: merge → deploy → publish.
 
