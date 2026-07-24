@@ -158,7 +158,8 @@ _POCZEKALNIA v6 (wróć TYLKO gdy warunek spełniony):_
 ### KOLEJKA v6 (panel 2026-07-24, przebieg #42)
 _Synteza: sędziowie potwierdzili tezę o diminishing returns — z 7 propozycji przeżyły 4 (2 zabite jako wata/polish, 1 zabita za FAŁSZYWĄ przesłankę: worktree-discard to świadoma decyzja produktowa zapinowana w tests/test_v0413_gaps.py::DELIBERATELY_ALLOW, nie luka). Zostają: 1 strzał dystrybucyjny z zamykającym się oknem (dziś), 1 jedyny żywy mechanizm $ (gate jutro, dwie fale), 2 zweryfikowane reprodukcją bugi na płatnej ścieżce klienta (jadą już zakolejkowanym publishem, zero nowej pracy ownera). Repo-polish poza pasmem płatnego onboardingu deklaruję za ZAMKNIĘTY — jeśli po tej kolejce owner nadal nie zmergował/nie opublikował, panel #43+ powinien zwracać pustą kolejkę zamiast waty._
 
-- [ ] **Y1 — Draft odpowiedzi z disclosure do anthropics/claude-code #80730 (zweryfikowany replay, uczciwie o obu ALLOW)**
+- [x] **Y1 — ROZSTRZYGNIĘTE: NO-GO (nie wklejać).** Decyzja zapisana w `ops/launch/cc_80730_decision.md`. Warunek NO-GO z samej definicji zadania SPEŁNIONY i zweryfikowany (WebFetch): wątek #80730 eskalował na **legal** — zgłaszający wysłał maile do `legal@anthropic.com`/`support@anthropic.com`, część skoordynowanego raportu (#80728/#80729). Wklejenie promocji adjacentnego produktu na wątku o utracie danych, który ktoś zaniósł do prawnych, czyta się jako żerowanie na cudzym kryzysie — realne ryzyko reputacyjne/prawne za strzał o wariancji $0-20. Zamiast draftu promo powstał rekord decyzji + wychwycony PRAWDZIWY gap produktowy: **scaffold-overwrite** (`npm create`/`pnpm create`/`yarn create`/`degit` z targetem = istniejący niepusty katalog nadpisuje/kasuje jego zawartość; gate.cat dziś tego NIE łapie — dokładnie ta komenda skasowała pracę zgłaszającego). Gap zalogowany jako kandydat do przyszłej polityki (wymaga decyzji produktowej ownera o granicy danger/benign-twin, nie cichego shipu). Revisit tylko jeśli wątek zejdzie z torów prawnych do normalnej dyskusji o permission-system.
+  - _(oryginalna specyfikacja poniżej — zachowana jako ślad; NIE realizować draftu promo)_
   - why-now: wątek <24h, 0 komentarzy, dokładna persona (tydzień niezacommitowanej pracy skasowany przez `npm create vite` bez promptu), autor wprost postuluje deterministyczny klasyfikator komend destrukcyjnych; okno świeżości zamyka się w dni. Warunek poczekalni „realny high-intent wątek github" SPEŁNIONY i zweryfikowany niezależnie przez obu sędziów.
   - scope: `ops/launch/draft_cc_80730.md` — paste-ready komentarz (~150-200 słów) z jawnym „I built gate.cat"; PIERWSZE zdanie merytoryczne uczciwie stwierdza, że gate.cat też dałby ALLOW na `npm create vite` (dokładnie tę komendę, która skasowała pracę zgłaszającego) — replay jako neutralne dane („deterministyczny klasyfikator łapie 2 z 3 klas, które wymieniasz; scaffold-overwrite to open gap"), nie jako „uratowalibyśmy cię". Tabela replayu 5 komend z PRAWDZIWYMI werdyktami z sandboxa (rm -rf → BLOCK [DELETE_ANALYZER], git reset --hard → BLOCK [GIT_DESTRUCTIVE], git clean -fd → BLOCK [DELETE_ANALYZER], npm create → ALLOW, git checkout -- . → ALLOW) + transkrypt uruchomień w pliku. TWARDE OGRANICZENIA z werdyktów: (a) `git checkout -- .`/`git restore .` opisać jako „currently deliberately allowed" (zapinowane w DELIBERATELY_ALLOW, świadomy kompromis false-positive UX) — ŻADNEJ obietnicy „zamknięte w następnym wydaniu"; (b) klasę npm-create/scaffold-overwrite nazwać „known gap, tracked" (SECURITY.md zobowiązuje do fix+credit — ujawnienie tworzy zobowiązanie, nazwać je świadomie); (c) zero pitchu cenowego, jeden link; (d) w pliku sekcja GO/NO-GO dla ownera: nie wklejać, jeśli wątek stał się pile-onem albo skręcił w tory prawne (autor wspomina eskalację legal) — komentarz ma czytać się jako wkład techniczny do dyskusji o permission-system, nie promocja na czyjejś stracie danych.
   - acceptance: plik na branchu; disclosure obecne; każdy werdykt odtworzony realnym uruchomieniem (transkrypt w pliku); npm-create foregrounded jako uczciwy non-catch; checkout-discard opisany jako deliberate-allow (nie bug); sekcja GO/NO-GO obecna; zero liczb spoza FACTS.md; suite zielony (plik nie dotyka kodu).
@@ -271,6 +272,24 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-24 09:21 UTC — przebieg #43: Y1 → NO-GO (uczciwość ponad dystrybucję).**
+  Poczta: 0 płatności gate.cat, 0 odpowiedzi kampanii; jedyny nowy sygnał to
+  GitHub CI notyfikacja `[jamesmurdza/awesome-ai-devtools] Run failed: PR Template
+  Check — add-gate-cat` (PR dystrybucyjny ownera, template-check padł — do
+  ownera, nie wymaga draftu). Backlog: **Y1 rozstrzygnięte jako NO-GO.**
+  Zweryfikowałem (WebFetch), że anthropics/claude-code #80730 eskalował na LEGAL
+  (zgłaszający pisał do legal@anthropic.com, koordynacja z #80728/#80729) — to
+  dokładnie warunek NO-GO zapisany w specyfikacji Y1. Zamiast draftu promo
+  powstał **rekord decyzji** `ops/launch/cc_80730_decision.md`: (a) uzasadnienie
+  NO-GO, (b) replay 5 komend incydentu z sandboxa — gate łapie 3/5, ale **MIJA
+  dokładną komendę, która skasowała pracę** (`npm create vite@latest … --template
+  react` → ALLOW; rm -rf/git reset --hard/git clean -fd → BLOCK; git checkout --
+  . → deliberate ALLOW), (c) nazwana nowa klasa zagrożeń **scaffold-overwrite**
+  jako kandydat do przyszłej polityki (decyzja produktowa ownera, nie cichy ship).
+  Uczciwy gap > oportunistyczny komentarz na cudzej stracie danych. Następny
+  odblokowany task kodowy: **Y3** (zweryfikowany bug korupcji danych; Y2 gated do
+  2026-07-25).
 
 - **2026-07-24 08:21 UTC — przebieg #42: PANEL v6 (diminishing returns).** Poczta:
   bez zmian (Stripe = inny biznes; 11 wysłanych, 0 odp, $0). Panel v6 (1 proposer
