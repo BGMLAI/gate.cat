@@ -173,6 +173,34 @@ def test_teams_page_tracks_cookieless_funnel_events():
     assert "document.cookie" not in teams.split('id="gc-funnel-events"')[1]
 
 
+def test_answers_index_has_no_dangling_links():
+    """Every page linked from the answers index must exist in the repo — the
+    guardrails-across-a-team page shipped only to production for weeks, so the
+    repo link dangled and no drift guard could see the page. Repatriated now."""
+    import re
+
+    answers = ROOT / "docs" / "answers"
+    index = (answers / "index.html").read_text()
+    for href in re.findall(r'href="([a-z0-9-]+\.html)"', index):
+        assert (answers / href).exists(), f"answers/index.html links missing {href}"
+
+
+def test_guardrails_page_separates_f4_and_f1b():
+    """The repatriated page conflated two independent measurements (F4's
+    178/178 bypass suite and F1b's 1,085,159-command replay) into one sentence.
+    They must read as separate numbers, per FACTS allowed wording."""
+    page = (ROOT / "docs" / "answers"
+            / "ai-agent-guardrails-across-a-team.html").read_text()
+    # the conflated phrasing is gone
+    assert "suite, replayed against 1,085,159" not in page
+    # both measurements present, stated separately
+    assert "178/178" in page or "178 of 178" in page
+    assert "0 real recall misses across 1,085,159" in page
+    # and it is in the sitemap now
+    sitemap = (ROOT / "docs" / "sitemap.xml").read_text()
+    assert "ai-agent-guardrails-across-a-team.html" in sitemap
+
+
 def test_teams_page_links_the_data_boundary_evidence():
     """The €149/€399 decision page must let a team lead verify the data
     boundary in one click — threat model, telemetry field list, and the real
