@@ -283,7 +283,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21–07:21 UTC — przebiegi #60–#66: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
+- **2026-07-25 01:21–08:21 UTC — przebiegi #60–#67: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
   0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **#66 NOWE (nie-blokujące, [USER]):**
   Stripe KYC „Provide valid business information for **Blossom sp. z o.o.**" (06:15, jankiewicz3@gmail).
   To NIE płatność gate.cat i NIE mogę tknąć Stripe. Nieznane, czy Blossom = podmiot prawny stojący za
