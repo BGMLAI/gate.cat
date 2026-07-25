@@ -283,11 +283,15 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21–06:21 UTC — przebiegi #60–#65: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
-  0 płatności gate.cat, 0 nowego inbound (devtalles bounce / awesome-ai-devtools znane; brak odp na
-  drafty Julian/AI-Eng). Y2 fala 1 zrobiona (#59); fala 2 (~10 wątków YT z 07-23) gated do 2026-07-26.
-  Reszta kolejki wyczerpana (Y1/Y3/Y4/Y5). Panel = wata. PR #27 clean, CI zielone. Następny realny
-  ruch: fala 2 jutro, odpowiedź na drafty, albo owner (merge → deploy → publish). (Rolling — bump w miejscu.)
+- **2026-07-25 01:21–07:21 UTC — przebiegi #60–#66: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
+  0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **#66 NOWE (nie-blokujące, [USER]):**
+  Stripe KYC „Provide valid business information for **Blossom sp. z o.o.**" (06:15, jankiewicz3@gmail).
+  To NIE płatność gate.cat i NIE mogę tknąć Stripe. Nieznane, czy Blossom = podmiot prawny stojący za
+  Stripe gate.cat czy kolejny biznes ownera (jak Zeszyty/Fundacja Bloom). Zgłoszone userowi jedną linią:
+  jeśli to konto gate.cat, nieobsłużone KYC może zrestrykcjonować konto = zablokować płatności. (Reszta:
+  devtalles bounce / awesome-ai-devtools znane; brak odp na drafty Julian/AI-Eng.) Y2 fala 1 zrobiona (#59);
+  fala 2 (~10 wątków YT z 07-23) gated do 2026-07-26. Reszta kolejki wyczerpana (Y1/Y3/Y4/Y5). Panel = wata.
+  PR #27 clean, CI zielone. Następny ruch: fala 2 jutro, odpowiedź na drafty, albo owner. (Rolling — bump w miejscu.)
 
 - **2026-07-25 00:21 UTC — przebieg #59: Y2 FALA 1 DONE (data przekroczyła gate).** Data wskoczyła
   na 2026-07-25 → okno day-3 fali 1 otwarte. Poczta: 0 płatności gate.cat (Stripe = inny biznes).
