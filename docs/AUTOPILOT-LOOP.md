@@ -283,7 +283,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21–13:21 UTC — przebiegi #60–#72: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
+- **2026-07-25 01:21–14:21 UTC — przebiegi #60–#73: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
   0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Stripe KYC WZORZEC (nie-blokujące, [USER]):**
   seria „Provide valid business information" na jankiewicz3@gmail dla WIELU podmiotów ownera —
   zeszytyterapeutyczne.pl (07-23), **Blossom sp. z o.o.** (07-25 06:15, zgłoszone userowi w #66),
