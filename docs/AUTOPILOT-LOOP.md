@@ -283,9 +283,9 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21 UTC — przebieg #60: HOLD STREAK (rolling, po Y2 fali 1).** Poczta: 0 płatności
-  gate.cat, 0 nowego inbound (devtalles bounce / awesome-ai-devtools znane; brak odp na drafty
-  Julian/AI-Eng). Y2 fala 1 zrobiona (#59); fala 2 (~10 wątków YT z 07-23) gated do 2026-07-26.
+- **2026-07-25 01:21–02:21 UTC — przebiegi #60–#61: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
+  0 płatności gate.cat, 0 nowego inbound (devtalles bounce / awesome-ai-devtools znane; brak odp na
+  drafty Julian/AI-Eng). Y2 fala 1 zrobiona (#59); fala 2 (~10 wątków YT z 07-23) gated do 2026-07-26.
   Reszta kolejki wyczerpana (Y1/Y3/Y4/Y5). Panel = wata. PR #27 clean, CI zielone. Następny realny
   ruch: fala 2 jutro, odpowiedź na drafty, albo owner (merge → deploy → publish). (Rolling — bump w miejscu.)
 
