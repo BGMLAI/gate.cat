@@ -283,7 +283,13 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21–22:21 UTC — przebiegi #60–#81: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
+- **2026-07-25 01:21–23:22 UTC — przebiegi #60–#82: HOLD STREAK (rolling, po Y2 fali 1).** **NASTĘPNY
+  PRZEBIEG (~00:22 UTC 2026-07-26) OTWIERA Y2 FALA 2:** ~10 wątków YouTube z batcha 07-23 21:xx
+  (Jack@aiautomationswithjack, nate@smoothmedia, bart@supportlaunchpad, leon.vanzyl, ask@ai-jason,
+  cole@ottomator, incomestreamsurfer, intheworldzofai, contact@transcribr = Edmund) — per wątek get_thread
+  → bez odpowiedzi po mojej ostatniej: draft day-3 W WĄTKU (replyToMessageId), szablon YouTube/mega z
+  followup_templates, liczby TYLKO z FACTS.md; z odpowiedzią POMIŃ; dopisać wiersze LEDGER; 0 wysyłek.
+  Poczta:
   0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Stripe KYC WZORZEC (nie-blokujące, [USER]):**
   seria „Provide valid business information" na jankiewicz3@gmail dla WIELU podmiotów ownera —
   zeszytyterapeutyczne.pl (07-23), **Blossom sp. z o.o.** (07-25 06:15, zgłoszone userowi w #66),
