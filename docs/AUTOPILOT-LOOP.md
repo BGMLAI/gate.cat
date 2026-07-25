@@ -283,12 +283,15 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21–08:21 UTC — przebiegi #60–#67: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
-  0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **#66 NOWE (nie-blokujące, [USER]):**
-  Stripe KYC „Provide valid business information for **Blossom sp. z o.o.**" (06:15, jankiewicz3@gmail).
-  To NIE płatność gate.cat i NIE mogę tknąć Stripe. Nieznane, czy Blossom = podmiot prawny stojący za
-  Stripe gate.cat czy kolejny biznes ownera (jak Zeszyty/Fundacja Bloom). Zgłoszone userowi jedną linią:
-  jeśli to konto gate.cat, nieobsłużone KYC może zrestrykcjonować konto = zablokować płatności. (Reszta:
+- **2026-07-25 01:21–09:21 UTC — przebiegi #60–#68: HOLD STREAK (rolling, po Y2 fali 1).** Poczta:
+  0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Stripe KYC WZORZEC (nie-blokujące, [USER]):**
+  seria „Provide valid business information" na jankiewicz3@gmail dla WIELU podmiotów ownera —
+  zeszytyterapeutyczne.pl (07-23), **Blossom sp. z o.o.** (07-25 06:15, zgłoszone userowi w #66),
+  **Fundacja Lokalny - Certyfikowany** (07-25 08:36, #68). To NIE płatności gate.cat i NIE tykam Stripe.
+  Żaden z podmiotów nie jest ewidentnie „gate.cat"/„bgml" → Stripe gate.cat nie widnieje wśród flagowanych.
+  Wzorzec (3 podmioty/2 dni) = albo sweep compliance Stripe, albo phishing pod Stripe; guidance dostarczone
+  raz w #68/#66 (zweryfikuj nadawcę + ogarnij podmiot stojący za Stripe gate.cat), per-podmiot re-ping = nękanie.
+  (Reszta:
   devtalles bounce / awesome-ai-devtools znane; brak odp na drafty Julian/AI-Eng.) Y2 fala 1 zrobiona (#59);
   fala 2 (~10 wątków YT z 07-23) gated do 2026-07-26. Reszta kolejki wyczerpana (Y1/Y3/Y4/Y5). Panel = wata.
   PR #27 clean, CI zielone. Następny ruch: fala 2 jutro, odpowiedź na drafty, albo owner. (Rolling — bump w miejscu.)
