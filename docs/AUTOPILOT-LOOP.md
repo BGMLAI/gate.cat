@@ -165,8 +165,9 @@ _Synteza: sędziowie potwierdzili tezę o diminishing returns — z 7 propozycji
   - acceptance: plik na branchu; disclosure obecne; każdy werdykt odtworzony realnym uruchomieniem (transkrypt w pliku); npm-create foregrounded jako uczciwy non-catch; checkout-discard opisany jako deliberate-allow (nie bug); sekcja GO/NO-GO obecna; zero liczb spoza FACTS.md; suite zielony (plik nie dotyka kodu).
   - _(impact: $0-20/30d — najwyższo-wariancyjny strzał dystrybucyjny dostępny agentowi, gotowe audytorium dokładnej persony; effort: S; soczewka: dystrybucja bez czekania na ownera; score: 9/10 — jedyne zadanie z deadline'em „dziś")_
 
-- [~] **Y2 — Day-3 follow-up drafty Gmail, DWIE FALE — FALA 1 DONE (przebieg #59, 2026-07-25), FALA 2 gated do 2026-07-26**
-  - **FALA 1 (2026-07-25) ✅ DONE:** oba wątki bez odpowiedzi od 07-22 → drafty day-3 w wątku (dedupe OK: list_drafts pusty dla obu adresatów, LEDGER, ostatnia wiadomość moja): Julian (wariant JULIAN zero-friction, draft `r-1957033032309741764`) + AI Engineering newsletter (szablon newsletter, draft `r1939415474027940915`). Liczby tylko z FACTS.md (0.4.18 live=F9, bypass_suite cmd=F4, 30% affiliate terms). LEDGER zaktualizowany (markery „drafted"≠„sent"). 0 wysyłek. **FALA 2 (od 2026-07-26):** ~10 wątków YouTube z batcha 07-23 21:xx (Jack/Nate/Bart/Leon/Jason/Cole/Hamish/… — dopisać wiersze LEDGER przy draftowaniu, day-3 = 07-26).
+- [x] **Y2 — Day-3 follow-up drafty Gmail, DWIE FALE — OBIE FALE DONE (fala 1 #59 2026-07-25, fala 2 #83 2026-07-26)**
+  - **FALA 1 (2026-07-25) ✅ DONE:** Julian (wariant JULIAN, draft `r-1957033032309741764`) + AI Engineering newsletter (draft `r1939415474027940915`). Dedupe OK, 0 wysyłek.
+  - **FALA 2 (2026-07-26) ✅ DONE:** 10 draftów day-3 dla batcha YouTube 07-23 (Jack/Nate/Bart/Leon/Jason/Cole/IntheworldzofAI/Edmund + mega: Hamish/Rafa) — wszystkie w wątkach (replyToMessageId), dedupe OK (search: 0 odpowiedzi od żadnego adresata; list_drafts: 0 istniejących). Drafty ID w LEDGER powyżej. **KOREKTA integralności:** szablon YT/mega w followup_templates linkował `gate.cat/packs.html`, ale ta strona jest na NIEZMERGOWANEJ gałęzi i NIEZDEPLOYOWANA → link byłby 404. Zamieniłem „new info" na deploy-niezależny, FACTS-backed hook: v0.4.18 live na PyPI (F9) + reproduce-yourself `python -m gatecat.integrations.bypass_suite` (F4). Zero liczb spoza FACTS.md. 0 wysyłek — wysyła USER.
   - why-now: jedyny żywy mechanizm $ (11 wysłanych, 0 odp, $0) i jedyny, który agent przesuwa bez merge/deploy/publish. Warunek poczekalni otwiera się jutro. KOREKTA z werdyktu honesty (potwierdzona LEDGER-em): due jest rozbite — fala 1 (2026-07-25): Julian (wariant JULIAN: zero-friction downgrade, bez prerezerwacji kodu) + AI Engineering newsletter; fala 2 (2026-07-26): pozostałe 10 wątków YouTube/mega-kanałów. NIE zakładać, że wszystkie 11 odblokowuje się 07-25.
   - scope: w danym dniu przejść LEDGER dla wątków z otwartym oknem; per wątek sprawdzić w Gmail, czy jest odpowiedź — z odpowiedzią POMINĄĆ (oznaczyć „reply received — skip", inbound obsługuje osobna ścieżka); bez odpowiedzi → draft W TYM SAMYM wątku (replyToMessageId), tekst wg followup_templates numbers-first z personalizacją per adresat i tier z LEDGER, liczby TYLKO z FACTS.md. Zaktualizować LEDGER o timestampy „drafted" (≠ „sent"). ZERO wysyłek.
   - acceptance: dla każdego wątku z otwartym oknem: draft widoczny w Gmail drafts ALBO marker „reply received — skip" w LEDGER; wszystkie liczby obecne w FACTS.md; 0 wysłanych maili; LEDGER zacommitowany.
@@ -269,6 +270,17 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f669c061fe1503 | Mike Privette (Return on Security) | 2026-07-22 | **WYSŁANE przez usera 17:11 UTC** (odpowiedź o trakcji); czekamy na odpowiedź Mike'a | **n/a** — on odpowiedział, piłka u niego; reakcja = mike_category_data_pack.md; cisza >14 dni → decyzja panelu |
 | 19f675a02242badf / 19f668f7b6a127eb | Julian Goldie (duplikat wątku) | 2026-07-25 | **DRAFTED day-3 przez agenta 2026-07-25 00:2x UTC** (wariant JULIAN, draft `r-1957033032309741764`, replyTo 19f8a8879020ab04, brak odp od 07-22 → wysyła USER); wcześniej user wysłał klaryfikację 07-22 15:53 | day-3 ✅ drafted 2026-07-25 / **day-7 due 2026-07-29** |
 | 19f8b7e0d95f1895 | AI Engineering newsletter (kampania affiliate 1/27) | 2026-07-25 | **DRAFTED day-3 przez agenta 2026-07-25 00:2x UTC** (szablon newsletter, draft `r1939415474027940915`, replyTo 19f8bb2201dfac97, brak odp od 07-22 → wysyła USER); wcześniej user wysłał propozycję 07-22 21:18 | day-3 ✅ drafted 2026-07-25 / **day-7 due 2026-07-29** |
+| — FALA 2 (batch 07-23 21:xx, day-3 = 2026-07-26) — publiczne handle, adresy w Gmailu pod ID wątku (rule 9) — dedupe OK (0 odp, 0 istniejących draftów) — | | | | |
+| 19f90c515ec33953 | Jack — AI Automations with Jack (YouTube) | 2026-07-26 | **DRAFTED day-3** (szablon YT, draft `r-13400640185020732`); wysyła USER | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c52816d6d94 | Nate — Smooth Media (YouTube, non-coders) | 2026-07-26 | **DRAFTED day-3** (draft `r8480868751360556914`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c53ce9d1521 | Bart — Support Launchpad (YouTube) | 2026-07-26 | **DRAFTED day-3** (draft `r-2161641501178494216`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c60105701cf | Leon van Zyl (YouTube) | 2026-07-26 | **DRAFTED day-3** (draft `r1438498393373663734`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c61522d239f | Jason — AI Jason (YouTube) | 2026-07-26 | **DRAFTED day-3** (draft `r-5522752395392090597`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90ce1b4ba7892 | Cole — Ottomator („run your agent safely" video) | 2026-07-26 | **DRAFTED day-3** (draft `r2929208346675197550`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c6a681bdf18 | IntheworldzofAI (YouTube, local models) | 2026-07-26 | **DRAFTED day-3** (draft `r-6927583426233274219`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c6d56f13afd | Edmund — Transcribr (YouTube) | 2026-07-26 | **DRAFTED day-3** (draft `r8862433669777228122`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c6bc670b0dd | Hamish — Income Stream Surfer (mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r-5258681500585045275`) | day-3 ✅ / day-7 due 2026-07-30 |
+| 19f90c5ea4d15646 | Rafa — Late Checkout (partnerships dla Greg Isenberg, mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r562362032908632679`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f7acd133235366 | (adres w Gmailu pod ID wątku — zredagowany, rule 9) | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user | n/a — bounce |
 | 19f90c6bc670b0dd | Hamish / Income Stream Surfer (YT, CC+strony klientów) | 2026-07-23 | **WYSŁANE przez usera 21:10** (batch #2, hook z dzisiejszego wideo) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90ce1b4ba7892 | Cole Medin / Ottomator (YT; wideo „run your agent safely" Z DZIŚ) | 2026-07-23 | **WYSŁANE przez usera 21:12** — najmocniejszy fit batcha | **2026-07-26 / 2026-07-30** (tier: YouTube) |
@@ -283,13 +295,15 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-25 01:21–23:22 UTC — przebiegi #60–#82: HOLD STREAK (rolling, po Y2 fali 1).** **NASTĘPNY
-  PRZEBIEG (~00:22 UTC 2026-07-26) OTWIERA Y2 FALA 2:** ~10 wątków YouTube z batcha 07-23 21:xx
-  (Jack@aiautomationswithjack, nate@smoothmedia, bart@supportlaunchpad, leon.vanzyl, ask@ai-jason,
-  cole@ottomator, incomestreamsurfer, intheworldzofai, contact@transcribr = Edmund) — per wątek get_thread
-  → bez odpowiedzi po mojej ostatniej: draft day-3 W WĄTKU (replyToMessageId), szablon YouTube/mega z
-  followup_templates, liczby TYLKO z FACTS.md; z odpowiedzią POMIŃ; dopisać wiersze LEDGER; 0 wysyłek.
-  Poczta:
+- **2026-07-26 00:22 UTC — przebieg #83: Y2 FALA 2 DONE → CAŁE Y2 ZAMKNIĘTE.** Data przekroczyła gate
+  fali 2. Poczta: 0 płatności gate.cat (Stripe minus KYC = pusto), 0 nowego inbound. Dedupe fali 2 czysty
+  (search: 0 odpowiedzi od 10 adresatów batcha 07-23; list_drafts: 0 istniejących draftów) → **10 draftów
+  day-3 w wątkach** (8× YT: Jack/Nate/Bart/Leon/Jason/Cole/IntheworldzofAI/Edmund + 2× mega: Hamish/Rafa).
+  **Integralność:** wykryty problem w szablonie (link do niezdeployowanej `packs.html` → 404) — zamieniony
+  na deploy-niezależny hook v0.4.18-live (F9) + reproduce-yourself bypass_suite (F4); zero liczb spoza
+  FACTS.md. 0 wysyłek — wysyła USER. LEDGER + Y2 zaktualizowane (Y2 [x] cały). **Kolejka v6 CAŁA zamknięta**
+  (Y1 NO-GO, Y2 done, Y3/Y4/Y5 done). Następne day-7 due 2026-07-29/30. PR #27 clean, CI zielone.
+  Poczta hist.:
   0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Stripe KYC WZORZEC (nie-blokujące, [USER]):**
   seria „Provide valid business information" na jankiewicz3@gmail dla WIELU podmiotów ownera —
   zeszytyterapeutyczne.pl (07-23), **Blossom sp. z o.o.** (07-25 06:15, zgłoszone userowi w #66),
