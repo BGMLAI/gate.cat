@@ -295,6 +295,13 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-26 01:22 UTC — przebieg #84: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
+  0 płatności gate.cat, 0 nowego inbound, 0 odpowiedzi na 12 draftów kampanii (fala 1+2). Kolejka v6
+  CAŁA zamknięta (Y1 NO-GO, Y2 done, Y3/Y4/Y5 done). Następny ruch agenta: day-7 „ostatni dotyk" due
+  2026-07-29 (Julian/AI-Eng) / 2026-07-30 (batch YT), albo odpowiedź na drafty, albo owner. Panel = wata
+  (blocked-on-owner niezmienny; ~50 commitów gałęzi niezmergowane, 0.4.19 niewydane). PR #27 clean, CI
+  zielone. Wąskie gardło: merge → deploy → publish. (Rolling — bump w miejscu do day-7/reply/owner.)
+
 - **2026-07-26 00:22 UTC — przebieg #83: Y2 FALA 2 DONE → CAŁE Y2 ZAMKNIĘTE.** Data przekroczyła gate
   fali 2. Poczta: 0 płatności gate.cat (Stripe minus KYC = pusto), 0 nowego inbound. Dedupe fali 2 czysty
   (search: 0 odpowiedzi od 10 adresatów batcha 07-23; list_drafts: 0 istniejących draftów) → **10 draftów
