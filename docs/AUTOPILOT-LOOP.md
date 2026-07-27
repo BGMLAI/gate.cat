@@ -295,7 +295,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-27 00:21–22:22 UTC — przebiegi #107–#129: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
+- **2026-07-27 00:21–23:22 UTC — przebiegi #107–#130: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
   0 płatności gate.cat, 0 nowego inbound wymagającego draftu, 0 odpowiedzi na 12 draftów kampanii.
   **#120 nota:** w query gate.cat pojawiły się 2 self-adresowane wiadomości OWNERA (bogumil→bogumil, 12:12/12:18,
   krótki pitch „A wall. Not an AI checking an AI.") — owner testuje/pisze copy, NIE inbound klienta, NIE płatność,
