@@ -295,8 +295,11 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-27 00:21–12:21 UTC — przebiegi #107–#119: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
-  0 płatności gate.cat, 0 nowego inbound, 0 odpowiedzi na 12 draftów kampanii. Kolejka v6 cała zamknięta
+- **2026-07-27 00:21–13:21 UTC — przebiegi #107–#120: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
+  0 płatności gate.cat, 0 nowego inbound wymagającego draftu, 0 odpowiedzi na 12 draftów kampanii.
+  **#120 nota:** w query gate.cat pojawiły się 2 self-adresowane wiadomości OWNERA (bogumil→bogumil, 12:12/12:18,
+  krótki pitch „A wall. Not an AI checking an AI.") — owner testuje/pisze copy, NIE inbound klienta, NIE płatność,
+  self-addressed → bez draftu, bez akcji. (Nie mylić z odpowiedzią kampanii w przyszłych przebiegach.) Kolejka v6 cała zamknięta
   (Y1 NO-GO, Y2 done, Y3/Y4/Y5 done). Następny ruch agenta: day-7 „ostatni dotyk" due 2026-07-29
   (Julian/AI-Eng) / 2026-07-30 (batch YT), albo odpowiedź, albo owner. Panel = wata. PR #27 clean, CI
   zielone. Wąskie gardło: merge → deploy → publish. (Rolling — bump w miejscu do day-7/reply/owner.)
