@@ -295,7 +295,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-27 00:21–04:21 UTC — przebiegi #107–#111: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
+- **2026-07-27 00:21–05:21 UTC — przebiegi #107–#112: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
   0 płatności gate.cat, 0 nowego inbound, 0 odpowiedzi na 12 draftów kampanii. Kolejka v6 cała zamknięta
   (Y1 NO-GO, Y2 done, Y3/Y4/Y5 done). Następny ruch agenta: day-7 „ostatni dotyk" due 2026-07-29
   (Julian/AI-Eng) / 2026-07-30 (batch YT), albo odpowiedź, albo owner. Panel = wata. PR #27 clean, CI
