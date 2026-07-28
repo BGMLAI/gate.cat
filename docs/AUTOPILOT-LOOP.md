@@ -295,6 +295,15 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-28 00:21 UTC — przebieg #131: HOLD (nowy dzień) + NOTA: owner złożył aplikację do YC.**
+  Poczta: 0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Sygnał (owner, nie moja akcja):**
+  potwierdzenie z apply@ycombinator.com — „Your application to the Fall 2026 batch for gate.cat has been
+  submitted" (00:21). To akcja OWNERA (aplikacja do YC Fall 2026), potwierdzenie systemowe — NIE klient,
+  NIE płatność, self/owner → bez draftu, bez akcji ode mnie. Sygnalizuje realne zaangażowanie ownera w
+  pchanie produktu. Backlog: kolejka v6 cała zamknięta (Y1 NO-GO, Y2 done, Y3/Y4/Y5). Następny ruch:
+  day-7 „ostatni dotyk" due 2026-07-29 (Julian/AI-Eng) / 2026-07-30 (batch YT), albo odpowiedź, albo owner.
+  Panel = wata. PR #27 clean, CI zielone. Wąskie gardło: merge → deploy → publish. (Rolling — bump w miejscu.)
+
 - **2026-07-27 00:21–23:22 UTC — przebiegi #107–#130: HOLD STREAK (rolling, cała kolejka v6 zamknięta).** Poczta:
   0 płatności gate.cat, 0 nowego inbound wymagającego draftu, 0 odpowiedzi na 12 draftów kampanii.
   **#120 nota:** w query gate.cat pojawiły się 2 self-adresowane wiadomości OWNERA (bogumil→bogumil, 12:12/12:18,
