@@ -295,7 +295,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-28 00:21–15:21 UTC — przebiegi #131–#146: HOLD (nowy dzień) + owner pcha dystrybucję.**
+- **2026-07-28 00:21–16:21 UTC — przebiegi #131–#147: HOLD (nowy dzień) + owner pcha dystrybucję.**
   Poczta: 0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Sygnały (owner, nie moja akcja):**
   (a) potwierdzenie YC — „application to the Fall 2026 batch for gate.cat submitted" (00:21); (b) owner
   zgłosił gate.cat do **console.dev** (01:15) + boilerplate auto-ack console.dev („we'll review… aren't able
