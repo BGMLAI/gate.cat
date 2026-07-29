@@ -284,7 +284,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c5ea4d15646 | Rafa — Late Checkout (partnerships dla Greg Isenberg, mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r562362032908632679`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f7acd133235366 | (adres w Gmailu pod ID wątku — zredagowany, rule 9) | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user | n/a — bounce |
 | 19fae37935d73b79 | **INBOUND — CloudSecList (Marco Lancini)** | 2026-07-29 | Owner zgłosił gate.cat do CloudSecList (14:11); Marco odpisał (14:24) pitchem sponsoringu („could consider sponsoring… 50% open rate"). Ten sam wzorzec co AlphaSignal (paid). **DRAFT agenta** `r-1703502179894633069` (replyTo 19fae43f7715e52d): uczciwie „to była submisja EDYTORIALNA nie sponsoring; brak budżetu; jeśli fit dla cloud-sec audience — chętnie feature; affiliate 30% jeśli robicie; wrócę z budżetem jeśli tylko paid"; liczby z FACTS (F4 178/178). **[USER] DECYZJA** (paid vs editorial/affiliate). ZERO commitu $. | odpowiedź inbound — piłka u ownera |
-| 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). Agent zrobił draft `r8759546498219095400` (no-spend default). **OWNER OBSŁUŻYŁ SAM 2026-07-29:** Bogumił wysłał 2 własne odpowiedzi w wątku (10:32 + 12:31 UTC — uczciwy solo-founder/no-spend framing, wziął link Calendly). **Mój draft SUPERSEDED** (owner napisał własną wersję). Brak nowej wiadomości od Meredith po 12:31 → piłka u niej; bez akcji agenta. | ZAMKNIĘTE (owner-handled) — reakcja tylko gdy Meredith odpisze |
+| 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). **OWNER OBSŁUŻYŁ SAM 2026-07-29** (2 własne odpowiedzi 10:32+12:31, no-spend/affiliate framing; stary draft agenta `r8759546498219095400` odrzucony/zniknął z list_drafts). **Meredith odpisała 19:15 — grzeczna ODMOWA** („we don't have an affiliate or commission-based program… probably not the right fit… circle back when you're ready to explore a paid placement"). **DRAFT agenta — grzeczne domknięcie** `r9138714036445228051` (replyTo 19faf4dbfe729ac6): podziękowanie + „brak budżetu = nie teraz, wrócę gdy będzie"; ZERO liczb/claimów, zero re-pitchu; wysyła owner. | ZAMYKANIE — grzeczny close drafted, piłka u ownera |
 | 19f90c6bc670b0dd | Hamish / Income Stream Surfer (YT, CC+strony klientów) | 2026-07-23 | **WYSŁANE przez usera 21:10** (batch #2, hook z dzisiejszego wideo) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90ce1b4ba7892 | Cole Medin / Ottomator (YT; wideo „run your agent safely" Z DZIŚ) | 2026-07-23 | **WYSŁANE przez usera 21:12** — najmocniejszy fit batcha | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90c6d56f13afd | Edmund Yong (YT; przez alternatywny kontakt biznesowy) | 2026-07-23 | **WYSŁANE przez usera 21:13** (hook: Mobbin MCP z banku) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
@@ -297,6 +297,17 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-29 19:23 UTC — przebieg #173: AlphaSignal domknięty (Meredith odmówiła) → grzeczny close-draft.**
+  Poczta: 0 płatności gate.cat (Stripe filtr „business information" = pusto), 0 innego nowego inbound. **AlphaSignal:
+  Meredith odpisała 19:15 na własne maile ownera — grzeczna ODMOWA** („brak programu affiliate/commission; not the
+  right fit; circle back for a paid placement"). Dedupe: list_drafts pusty (stary draft `r8759546498219095400`
+  odrzucony przez ownera), brak odpowiedzi po 19:15. **Draft agenta — grzeczne domknięcie** `r9138714036445228051`
+  (replyTo 19faf4dbfe729ac6): podziękowanie + „brak budżetu = nie teraz, wrócę gdy będzie"; ZERO liczb/claimów, zero
+  re-pitchu — wysyła owner. CloudSecList draft `r-1703502179894633069` nadal czeka na decyzję $ ownera. Console.dev
+  auto-acki; YC = potwierdzenie aplikacji. PR #27 **CI ZIELONE 3/3** (head 7e89f71, run 30479724693); 0 za / 163
+  przed masterem (bez ruchu). Kolejka pusta, panel = wata (owner-gated). Bez pisania do usera (owner sam w wątku
+  AlphaSignal; draft = gotowa opcja).
 
 - **2026-07-29 18:23 UTC — przebieg #172: HOLD (rolling; kolejka wyczerpana, wszystko owner-gated).** Poczta: 0 płatności
   gate.cat (Stripe = KYC-sweep INNYCH firm ownera: zeszytyterapeutyczne/Fundacja Lokalny/Blossom), 0 nowego genuine
