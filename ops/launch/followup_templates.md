@@ -7,8 +7,9 @@
   ostatni dotyk, jawnie zamykający. Po day-7: cisza, wątek zamknięty w LEDGER.
 - Wysyła wyłącznie user. Każda wysyłka = wiersz w LEDGER z datami due
   (day-3 = +3 dni, day-7 = +7 dni od PIERWSZEGO maila).
-- Liczby wyłącznie z FACTS.md (stan 2026-07-23: 0.4.18 na PyPI, 2,529 pobrań
-  bez mirrorów w pełnej serii, 0 real misses / 1,085,159, 178/178 z kawetami).
+- Liczby wyłącznie z FACTS.md (0.4.18 na PyPI; 0 real misses / 826,644 —
+  lower bound, recount 2026-07-28; 178/178 z kawetami; pobrania: aktualny pin
+  w F13a). Nigdy nie używaj wycofanej liczby 1,085,159 (double-count, +23,8%).
 - Skrypt due-trackingu: dopiero gdy wysłanych >5 (ODRZUCONE v2).
 - Zero adresów osób trzecich w tym pliku (publiczne repo) — adresaci są w
   LEDGER po ID wątku.

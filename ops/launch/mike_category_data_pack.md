@@ -32,24 +32,28 @@ osób trzecich; incydenty WYŁĄCZNIE po numerach issue (np.
 
 ## 2. Liczby — dozwolone brzmienia (FACTS.md po U5, nie parafrazować)
 
-- **F1b:** "0 real recall misses across 1.085M unique real agent commands
-  through the full gate (the 4 catalog-flagged allows are disposable-artifact
-  cleanups the gate correctly permits — same shape blocks on a real target)"
+- **F1b:** "0 real recall misses across 826,644 unique real agent commands
+  (lower bound, recounted 2026-07-28) through the full gate (the 2
+  catalog-flagged allows are disposable-artifact cleanups the gate correctly
+  permits — same shape blocks on a real target)"
 - **F4:** "the reproducible bypass suite catches 178/178 danger shapes it
-  claims, with one published runtime-assembly gap and one benign false-block
-  in 129 cases"
-- **F13 (świeży pin 2026-07-23):** "2,529 PyPI downloads excluding known
-  mirrors across the full daily series through 2026-07-22"
+  claims, with one benign false-block in 129 cases and 3 published regex-wall
+  gaps — 2 of them (a Unicode homoglyph and a printf-hex assembled rm) slip
+  the whole product, the 3rd the delete-analyzer still blocks"
+- **F13a (świeży pin 2026-07-29):** "2,662 PyPI downloads excluding known
+  mirrors between 3 and 28 July 2026 — downloads, not users"
 - **F9:** "0.4.18 is installable from PyPI and pinned by GitHub release
-  v0.4.18" (re-pin 2026-07-23; wheel drukuje __version__ 0.4.17 — kosmetyczne,
+  v0.4.18" (re-pin 2026-07-29; wheel drukuje __version__ 0.4.17 — kosmetyczne,
   udokumentowane w F9, fix w 0.4.19)
 - **F10:** 71 default policy walls / 73 presets.
 - Incydent kosztowy: runaway loop `microsoft/autogen#7770` (~$106k;
   reprodukcja jako block-verdict: `examples/veto_integrations/repro_autogen_7770.py`).
 
-**Nota korekcyjna (podać tylko gdy poprosi o dane):** mail 07-22 podawał
-"2,528 trailing month" z żywego pypistats; świeży pin metodą pełnej serii
-dziennej to 2,529 (07-03→07-22). Różnica kosmetyczna, metoda odnotowana w F13.
+**Nota korekcyjna (podać tylko gdy poprosi o dane):** wcześniejsze materiały
+podawały 1 085 159 komend ("1.085M") dla korpusu F1b — to liczba WYCOFANA:
+sumowała `unique` per-dataset i liczyła SWE-Hero dwukrotnie (+258 515, +23,8%).
+Ponowny globalny dedup (2026-07-28) daje 826 644 (dolna granica; zakres
+826 644–835 128 po zmianie nazw splitów SWE-Gym w HF). 0 real misses bez zmian.
 
 ## 3. Szkielety odpowiedzi — 3 gałęzie
 
@@ -57,20 +61,22 @@ dziennej to 2,529 (07-03→07-22). Różnica kosmetyczna, metoda odnotowana w F1
 
 > Here's everything, self-contained:
 >
-> - Raw results for the 1,085,159-command replay: [million_recall JSON] —
->   method and the adjudication of the 4 catalog-flagged allows in
+> - Raw results for the 826,644-command replay: [million_recall JSON] —
+>   method and the adjudication of the 2 catalog-flagged allows in
 >   [RECALL.md]. Headline, stated precisely: 0 real recall misses across
->   1.085M unique real agent commands through the full gate; the 4 allows are
->   disposable-artifact cleanups the gate correctly permits.
+>   826,644 unique real agent commands (lower bound, recounted 2026-07-28)
+>   through the full gate; the 2 allows are disposable-artifact cleanups the
+>   gate correctly permits.
 > - Every public number we use, with source artifact and allowed wording:
->   [FACTS.md]. Fresh pin as of Jul 23: 2,529 PyPI downloads excluding known
->   mirrors across the full daily series (the Jul 22 mail said 2,528 from a
->   live read — same curve, method now pinned in the register).
+>   [FACTS.md]. Fresh pin as of Jul 29 (F13a): 2,662 PyPI downloads excluding
+>   known mirrors over the package's full published life (3–28 Jul 2026) —
+>   downloads, not users; mirrors, CI and bots are inside that figure.
 > - Reproduce the bypass numbers yourself, no datasets:
 >   `pip install gate-cat && python -m gatecat.integrations.bypass_suite`
->   — prints 178/178 caught plus its own edges: one named runtime-assembly
->   gap and one benign false-block in 129 cases. We publish the gaps louder
->   than our critics do.
+>   — prints 178/178 caught plus its own edges: 3 named gaps (2 slip the
+>   whole product — a Unicode homoglyph and a printf-hex assembled rm; the
+>   3rd the delete-analyzer still blocks) and one benign false-block in 129
+>   cases. We publish the gaps louder than our critics do.
 >
 > If any number doesn't reproduce on your end, that's a bug report I want.
 
@@ -92,8 +98,9 @@ dziennej to 2,529 (07-03→07-22). Różnica kosmetyczna, metoda odnotowana w F1
 
 ### C) Zaproponuje wspólny content / dane do mapy kategorii
 
-> Happy to. The dataset I'd bring: 1,085,159 real agent commands (5 public
-> datasets), replayed through the full 6-stage gate, with a 43-class danger
+> Happy to. The dataset I'd bring: 826,644 real agent commands (lower bound,
+> recounted 2026-07-28; 5 public datasets), replayed through the full 6-stage
+> gate, with a 43-class danger
 > catalog and per-class verdicts — plus the honest economics: intervention
 > rate ~0.6% on real traffic, and the incident class that anchors pricing
 > (runaway loop microsoft/autogen#7770, ~$106k).

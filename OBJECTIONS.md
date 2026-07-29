@@ -69,10 +69,15 @@ matter on an irreversible action, and which an LLM judge doesn't give you:
 
 And we publish the gate's limits instead of hiding them: the
 [bypass suite](gatecat/integrations/bypass_suite.py)
-runs in CI and prints its own map — 178/178 catch on the dangers it *claims*,
-one benign false-block in 129 cases, and a named runtime-assembly gap printed
-in the output (FACTS.md F4). The honest line is mechanical: the gate is
-certain only about what it **blocks**; everything else is *unchecked, not safe*.
+runs in CI and prints its own map — on 0.4.18 (measured 2026-07-29) it catches
+178/178 of the dangers it *claims*, false-blocks 1 of 129 benign commands, and
+names **3 regex-wall gaps**, of which **2 slip the whole product**: a Unicode
+homoglyph binary name (U+FF52 fullwidth `r` + `m`, which no `rm` pattern matches)
+and `rm` bytes assembled by `printf` and piped to a shell. The third (`rm`
+assembled into a shell variable at runtime) clears the regex wall but the
+delete-analyzer still blocks it downstream. The honest line is mechanical: the
+gate is certain only about what it **blocks**; everything else is *unchecked, not
+safe*. (Register: F4 in [FACTS.md](FACTS.md).)
 
 A smarter judge is a fine *second* layer for the fuzzy cases. But the layer that
 actually stops the $0.03-command-that-costs-$106k should be the boring,

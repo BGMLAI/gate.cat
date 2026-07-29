@@ -1,0 +1,50 @@
+{
+ "unique_global": 826644,
+ "per_repo_new": {
+  "nvidia/Nemotron-RL-Agentic-SWE-Pivot-v1": 20000,
+  "nvidia/SWE-Zero-openhands-trajectories": 300000,
+  "nvidia/SWE-Hero-openhands-trajectories": 300000,
+  "Kwai-Klear/SWE-smith-mini_swe_agent_plus-trajectories-66k": 200000,
+  "SWE-Gym/OpenHands-Sampled-Trajectories": 0,
+  "SWE-Gym/OpenHands-SFT-Trajectories": 0,
+  "nebius/SWE-agent-trajectories": 6644
+ },
+ "per_repo_overlap_skipped": {
+  "nvidia/Nemotron-RL-Agentic-SWE-Pivot-v1": 351640,
+  "nvidia/SWE-Zero-openhands-trajectories": 1293900,
+  "nvidia/SWE-Hero-openhands-trajectories": 1548317,
+  "Kwai-Klear/SWE-smith-mini_swe_agent_plus-trajectories-66k": 271945,
+  "SWE-Gym/OpenHands-Sampled-Trajectories": 0,
+  "SWE-Gym/OpenHands-SFT-Trajectories": 0,
+  "nebius/SWE-agent-trajectories": 8801
+ },
+ "dangers": 303,
+ "neutralized": 301,
+ "passed": 2,
+ "errors": 2,
+ "repos_done": [
+  "nvidia/Nemotron-RL-Agentic-SWE-Pivot-v1",
+  "nvidia/SWE-Zero-openhands-trajectories",
+  "nvidia/SWE-Hero-openhands-trajectories",
+  "Kwai-Klear/SWE-smith-mini_swe_agent_plus-trajectories-66k",
+  "SWE-Gym/OpenHands-Sampled-Trajectories",
+  "SWE-Gym/OpenHands-SFT-Trajectories",
+  "nebius/SWE-agent-trajectories"
+ ],
+ "elapsed_s": 2237.0,
+ "passed_samples": [
+  {
+   "cmd": "cd /workspace/pandas-dev__pandas__1.0 && rm -f test*.csv *.pyc && rm -rf __pycache__",
+   "class": "rm_rf_star",
+   "level": "allow"
+  },
+  {
+   "cmd": "cd /workspace/pandas-dev__pandas__1.0 && rm -f test*.dta test*.csv *.pyc && rm -rf __pycache__",
+   "class": "rm_rf_star",
+   "level": "allow"
+  }
+ ],
+ "naglowek_stary": 1085159,
+ "roznica_vs_stary": 258515,
+ "uwaga": "Stary naglowek sumowal `unique` per dataset i liczyl nvidia/SWE-Hero-openhands-trajectories DWA RAZY (250000+300000). Tutaj: jeden globalny set, kazde repo raz."
+}

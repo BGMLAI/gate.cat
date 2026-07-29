@@ -44,6 +44,7 @@ Semantic cache and Cache-Augmented Synthesis (below) are the supporting engine u
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://github.com/BGMLAI/gate.cat/blob/master/LICENSE)
 [![Python](https://img.shields.io/pypi/pyversions/gate.cat)](https://pypi.org/project/gate.cat/)
 [![Site](https://img.shields.io/badge/site-gate.cat-cbdd1a)](https://gate.cat)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/BGMLAI/gate.cat/badge)](https://scorecard.dev/viewer/?uri=github.com/BGMLAI/gate.cat)
 
 **Real catches, monthly:** [gate.cat](https://gate.cat) publishes *Veto Catches* — a real
 irreversible command an agent tried, and how the wall stopped it.
@@ -125,8 +126,10 @@ see what it's watched and stopped. Fail-closed: a missing or erroring engine
 blocks rather than allowing. In a throwaway CI/sandbox it disarms itself and
 logs a no-op (`GATECAT_VETO_EPHEMERAL=0` forces it armed).
 
-Framework adapters (crewAI / LangGraph / AutoGen) exist too, but they are
-in-process convention — a prompt injection can route around them. Only the hook
+Framework adapters (crewAI / LangGraph) exist too, plus a framework-agnostic
+`guard_callable` that wraps any plain callable — that is the supported route for
+AutoGen and anything else, and there is no AutoGen-specific adapter. All of them
+are in-process convention — a prompt injection can route around them. Only the hook
 is enforcement the agent cannot skip. See
 [`examples/veto_integrations/`](https://github.com/BGMLAI/gate.cat/tree/master/examples/veto_integrations/) for adapter usage.
 
@@ -278,13 +281,14 @@ an accident of translation.
 Sixty seconds of your time, in exchange for:
 
 - a deterministic gate your agent cannot run `terraform destroy`, `rm -rf`,
-  `DROP TABLE` or `gh repo delete` through — 71 default policies for the
-  irreversible-action class, fail-closed, ~0.6% intervention rate measured on
-  real traffic (it won't nag you);
+  `DROP TABLE` or `gh repo delete` through — 71 default policies (51 block,
+  20 warn) for the irreversible-action class, fail-closed, ~0.6% intervention
+  rate measured on real traffic (it won't nag you);
 - a ready-to-paste Claude Code PreToolUse hook — the strongest mode:
   enforcement in the harness, outside the model's control flow;
-- adapters for crewAI / LangGraph / AutoGen (honestly labeled: in-process
-  convention, weaker than the hook);
+- adapters for crewAI / LangGraph, plus a framework-agnostic `guard_callable` for
+  everything else, AutoGen included (honestly labeled: in-process convention,
+  weaker than the hook);
 - one-line uninstall if it's not for you. Worst case, you lost a minute.
 
 What we ask back — this project runs on one currency:
@@ -321,9 +325,11 @@ python -m gatecat.integrations.bypass_suite
 ```
 
 The reproducible bypass suite catches **178/178** danger shapes it claims —
-and prints its own edges: one published runtime-assembly gap and one benign
-false-block in 129 cases. At scale: **0 real recall misses across 1,085,159
-unique real agent commands** through the full gate. Every number →
+and prints its own edges: 3 named regex-wall gaps (2 slip the whole product —
+a Unicode homoglyph binary name and an rm assembled from printf-hex; the 3rd
+the delete-analyzer still blocks) and one benign false-block in 129 cases. At
+scale: **0 real recall misses across 826,644 unique real agent commands**
+(lower bound, recounted 2026-07-28) through the full gate. Every number →
 [FACTS.md](https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md).
 
 **Running agents across a team?** One rogue agent's blast radius is the whole
@@ -478,7 +484,7 @@ Validated with 100-question benchmark across 5 domains: **0.892 mean quality rat
 Ollama, NIM, OpenRouter, vLLM and LM Studio all speak the OpenAI API, so **one
 proxy in front of them protects them all** — your agent changes one `base_url`,
 writes no code. When the model asks to run a tool, the proxy checks the proposed
-call against the 71 default policy walls (plus any policy packs you load) and **blocks the dangerous ones before the
+call against the 71 default policies — 51 that block outright, 20 that warn — (plus any policy packs you load) and **blocks the dangerous ones before the
 agent executes them** (`rm -rf`, `terraform destroy`, `DROP TABLE`, disk wipes,
 repo deletion, ...).
 

@@ -187,15 +187,16 @@ def test_answers_index_has_no_dangling_links():
 
 def test_guardrails_page_separates_f4_and_f1b():
     """The repatriated page conflated two independent measurements (F4's
-    178/178 bypass suite and F1b's 1,085,159-command replay) into one sentence.
+    178/178 bypass suite and F1b's 826,644-command replay) into one sentence.
     They must read as separate numbers, per FACTS allowed wording."""
     page = (ROOT / "docs" / "answers"
             / "ai-agent-guardrails-across-a-team.html").read_text()
-    # the conflated phrasing is gone
-    assert "suite, replayed against 1,085,159" not in page
+    # the conflated phrasing is gone (retired corpus number must not reappear)
+    assert "suite, replayed against 826,644" not in page
+    assert "1,085,159" not in page
     # both measurements present, stated separately
     assert "178/178" in page or "178 of 178" in page
-    assert "0 real recall misses across 1,085,159" in page
+    assert "0 real recall misses across 826,644" in page
     # and it is in the sitemap now
     sitemap = (ROOT / "docs" / "sitemap.xml").read_text()
     assert "ai-agent-guardrails-across-a-team.html" in sitemap
@@ -245,9 +246,12 @@ def test_self_verify_block_on_every_purchase_surface():
         assert "python -m gatecat.integrations.bypass_suite" in text, surface
         assert "178/178" in text, surface
         # honesty coupling: the caveats ride along or the number doesn't ship
-        assert "runtime-assembly gap" in text, surface
+        assert "regex-wall gap" in text, surface
         assert "benign false-block in 129 cases" in text, surface
-        assert "1,085,159" in text, surface
+        # corpus figure = the recounted 826,644 lower bound; the retired
+        # 1,085,159 (double-counted, +23.8%) must never ship in live copy
+        assert "826,644" in text, surface
+        assert "1,085,159" not in text, surface
         assert "FACTS.md" in text, surface
 
 

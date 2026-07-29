@@ -30,9 +30,11 @@ reinstate). Wording z FACTS.md i OBJECTIONS.md. Publikuje wyłącznie owner.
 > Fair — revenue is day-zero and we say so out loud. What exists and is
 > checkable today: the full gate is on PyPI (Apache-2.0), and every public
 > number has a row in FACTS.md pinned to a reproducible artifact — including
-> 0 real recall misses across 1,085,159 real agent commands replayed through
-> the full gate. Run `python -m gatecat.integrations.bypass_suite` yourself:
-> it prints 178/178 caught plus its own named gap and its own false-block.
+> 0 real recall misses across 826,644 real agent commands (lower bound,
+> recounted 2026-07-28) replayed through the full gate. Run
+> `python -m gatecat.integrations.bypass_suite` yourself: it prints 178/178
+> caught plus its own 3 named gaps (2 slip the whole product) and its own
+> false-block.
 > Judge the evidence, not the customer count.
 
 ## 4. „Wystarczy sandbox / kontener"

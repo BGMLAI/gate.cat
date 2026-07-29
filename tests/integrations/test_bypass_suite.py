@@ -71,6 +71,41 @@ def test_catch_rate_is_total_over_claimed_dangers():
     assert m["known_gaps"] >= 1
 
 
+def test_silent_gap_count_is_pinned_to_the_published_number():
+    """The 'silent limits' we publish on veto-catches.html / the honest-limits
+    doc = gaps that slip the WHOLE product, not just this regex wall. That count
+    is pinned here so the page and the mechanized suite can never drift apart
+    (fatal flaw #2, launch council V3: the proof must be bulletproof).
+
+    Exactly TWO product-silent gaps are published: the homoglyph 'rm' and the
+    printf-hex 'rm'. The runtime-assembled $'\\x72m' is a regex-WALL gap only -
+    the delete-analyzer still catches it downstream - so it is NOT silent."""
+    m = bs.metrics(bs.run())
+    silent = [c for c in bs.KNOWN_GAP if c.expect == "gap" and c.product_silent]
+    assert m["product_silent_gaps"] == len(silent) == 2, (
+        "silent-gap count drifted from the published '2 silent limits' - "
+        "update veto-catches.html/honest-limits doc IN THE SAME CHANGE"
+    )
+    # a product-silent gap must genuinely be a wall gap too (blocked is False)
+    by_text = {r.case.text: r for r in bs.run()}
+    for c in silent:
+        assert by_text[c.text].blocked is False, f"silent gap now blocked, relabel: {c.text}"
+    # the runtime-assembled gap stays WALL-ONLY (not published as silent)
+    runtime_gap = [c for c in bs.KNOWN_GAP
+                   if c.expect == "gap" and "runtime" in c.note and not c.product_silent]
+    assert len(runtime_gap) == 1, "the $'\\x72m' regex-wall-only gap must stay non-silent"
+
+
+def test_report_reconciles_wall_and_silent_gaps_and_is_ascii():
+    """The published report must (a) survive cp1252 even though a gap carries a
+    non-ASCII homoglyph, and (b) show the wall-vs-silent split so a reader who
+    runs the suite AND reads the page sees the same reconciliation."""
+    report = bs.format_report()
+    report.encode("ascii")  # D1: homoglyph must be backslash-escaped, not raw
+    assert "[SILENT]" in report and "[WALL-ONLY]" in report
+    assert "\\uff52m" in report  # the homoglyph rendered as its codepoint, not raw bytes
+
+
 def test_report_is_ascii_and_lists_gaps():
     """The published artifact must be cp1252-safe (D1) and actually contain the
     gap map + honest line - it's the map we point HN at, not marketing."""

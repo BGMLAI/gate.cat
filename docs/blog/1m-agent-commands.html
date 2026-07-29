@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>1,085,159 real AI-agent commands through a deterministic gate — gate.cat</title>
-<meta name="description" content="We replayed 1,085,159 real agent commands through a fail-closed deterministic gate: 0 misses on the covered set, ~0.6% intervention, and a bypass suite that publishes its own open gaps." />
-<meta property="og:title" content="1,085,159 real AI-agent commands through a deterministic gate" />
-<meta property="og:description" content="0 misses on the covered set. ~0.6% intervention. A bypass suite that prints its own open gaps — 2 today." />
+<title>826,644 real AI-agent commands through a deterministic gate — gate.cat</title>
+<meta name="description" content="Correction 2026-07-28: the corpus recount is 826,644 unique real agent commands (the headline 1,085,159 double-counted one dataset). Replayed through a fail-closed deterministic gate: 0 real misses on the covered set, ~0.6% intervention, and a bypass suite that publishes its own open gaps." />
+<meta property="og:title" content="826,644 real AI-agent commands through a deterministic gate" />
+<meta property="og:description" content="Corrected 2026-07-28: 826,644 unique commands, not 1,085,159 — one dataset was counted twice. 0 real misses on the covered set is unchanged. ~0.6% intervention. A bypass suite that prints its own open gaps — 2 that slip the whole product." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://gate.cat/blog/1m-agent-commands.html" />
 <meta property="og:image" content="https://gate.cat/img/mark-256.png" />
@@ -45,6 +45,10 @@ pre{background:var(--surface);border:2px solid var(--frame);border-radius:14px;p
 pre code{background:none;border:none;color:var(--ink-2);padding:0;font-size:12.5px;line-height:1.8}
 hr{border:none;border-top:1.5px solid var(--hairline);margin:44px 0}
 em{color:var(--ink-soft)}
+.correction{background:var(--surface-2);border:2px solid var(--frame);border-left:10px solid var(--danger-deep);border-radius:14px;padding:20px 22px;margin:0 0 34px;box-shadow:6px 6px 0 0 var(--frame)}
+.correction .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--danger-deep);font-weight:700;margin-bottom:10px}
+.correction p{margin:0 0 12px;font-size:15.5px}
+.correction p:last-child{margin-bottom:0}
 .cta{margin-top:56px;background:var(--surface);border:2px solid var(--frame);border-radius:16px;padding:28px;box-shadow:8px 8px 0 0 var(--frame)}
 .cta p{margin:0 0 16px}
 .cta a.btn{display:inline-block;background:var(--lime);color:#0f0f0d;font-weight:700;padding:13px 24px;border:1.5px solid var(--frame);border-radius:999px;text-decoration:none}
@@ -58,14 +62,31 @@ footer a{color:var(--ink-2);text-decoration:none}
   <a class="back" href="https://gate.cat/">&larr; gate.cat</a>
 </div></header>
 <article class="wrap">
-<div class="kick"><b>exposure report #1</b> 1,085,159 commands &middot; 2026-07</div>
-<h1>We replayed 1,085,159 real AI-agent commands through a deterministic gate</h1>
-<p><strong>0 misses on the covered set. ~0.6% intervention. And a bypass suite that prints its own open gap — 1 today — instead of hiding it.</strong></p>
+<div class="correction">
+  <div class="lbl">Correction &middot; 2026-07-28</div>
+  <p><strong>The corpus figure in the headline is wrong. The correct number is 826,644 unique
+  real agent commands, not 1,085,159.</strong></p>
+  <p>The original count summed the per-dataset unique totals, and one dataset —
+  <code>nvidia/SWE-Hero-openhands-trajectories</code> — was enumerated twice (250,000 + 300,000).
+  A recount against a single global dedup set (<code>scripts/corpus_million_globaldedup.py</code>,
+  artifact <code>results/million_recall_2026-07-28.json</code>) gives <strong>826,644</strong> unique
+  commands, <strong>303</strong> catalog-flagged dangers, <strong>301</strong> neutralized and
+  <strong>2</strong> allowed. Two SWE-Gym splits were excluded because their upstream split names
+  changed, so the honest range is 826,644–835,128; we cite the lower bound.</p>
+  <p><strong>The result itself does not change: 0 real recall misses.</strong> The two remaining
+  allows are the same disposable-artifact cleanups adjudicated below — the earlier
+  "4 allows = 2 unique commands" wording was itself an artifact of the double count. The title
+  and URL of this post are left as published so existing links and citations keep resolving;
+  every number in the body below has been corrected.</p>
+</div>
+<div class="kick"><b>exposure report #1</b> 826,644 commands &middot; corrected 2026-07-28</div>
+<h1>We replayed 826,644 real AI-agent commands through a deterministic gate</h1>
+<p><strong>0 misses on the covered set. ~0.6% intervention. And a bypass suite that prints its own open gaps — 3 named today, 2 of which slip the whole product — instead of hiding them.</strong></p>
 <p>TL;DR: an AI agent that "knows" the safety rule still runs <code>terraform destroy</code>,
 because a rule in the prompt is documentation, not enforcement. We built a
 deterministic, fail-closed gate that sits at the tool boundary and blocks
 irreversible actions <em>before</em> they execute. Then we did the boring, falsifiable
-thing: replayed <strong>1,085,159 unique real agent commands</strong> from 5 public datasets
+thing: replayed <strong>826,644 unique real agent commands</strong> from 5 public datasets
 through the full gate. It missed <strong>0</strong> of the real dangers. It also does <strong>not</strong>
 cover every bypass shape — and instead of hiding the ones it misses, we print
 them. This post includes that list.</p>
@@ -82,7 +103,9 @@ widens scope → an irreversible command → sometimes a cover-up.</p>
 the rule is the same component that just decided to break it. Enforcement has to
 live <em>outside</em> the model's control flow.</p>
 <h2>What the gate is (one paragraph)</h2>
-<p>A deterministic deny-list of <strong>28 default policies</strong> for the irreversible-action
+<p>A deterministic deny-list of <strong>71 default policies</strong> (73 including the opt-in
+presets; counted live on 2026-07-29 against v0.4.18 — it was 28 when this post first
+ran) for the irreversible-action
 class (<code>rm -rf</code>, <code>terraform destroy</code>, <code>DROP TABLE</code>, cloud/k8s deletes, disk
 wipes, force-push, secret deletion, …), plus an independent exec analyzer and a
 human-in-the-loop stage. <strong>Fail-closed</strong>: engine error, empty input, anything it
@@ -91,16 +114,17 @@ no temperature, nothing to persuade. Its strongest form is a <strong>Claude Code
 PreToolUse hook</strong> that runs in the harness — the tool call physically cannot
 execute until the gate returns.</p>
 <h2>The measurement (so you can refute it)</h2>
-<p>We took <strong>1,085,159 unique real agent commands</strong> from five public datasets
+<p>We took <strong>826,644 unique real agent commands</strong> from five public datasets
 (Nemotron, SWE-Zero, SWE-Hero, Kwai SWE-smith-mini, nebius), plus an independent
 catalog of 43 known danger classes, and ran every command through the full
-gate pipeline.</p>
+gate pipeline. (Deduplication is global across datasets — see the correction at
+the top of this post; artifact: <code>results/million_recall_2026-07-28.json</code>.)</p>
 <ul>
-<li><strong>0 real recall misses across all 1,085,159 commands.</strong> The catalog flagged 447
-  dangers; the gate neutralized 443. The remaining 4 "allows" were
+<li><strong>0 real recall misses across all 826,644 commands.</strong> The catalog flagged 303
+  dangers; the gate neutralized 301. The remaining 2 "allows" were
   disposable-artifact cleanups the gate <em>correctly</em> permits (the same shape
   blocks on a real target) — a catalog false alarm, not a gate miss. We show the
-  adjudication rather than quietly reporting "443/447."</li>
+  adjudication rather than quietly reporting "301/303."</li>
 <li>On a separate axis — <strong>43 known danger classes through the full gate: 100%
   recall (30 block, 13 warn), with 0 false-blocks on the benign twins.</strong>
   Reproducible with no datasets at all: <code>scripts/recall_danger_axis.py</code>.</li>
@@ -114,8 +138,16 @@ gate pipeline.</p>
 the gate's own bypass map — the shapes our suite deliberately does <strong>not</strong> claim
 to catch, printed by the suite itself:</p>
 <ul>
+<li><strong>a Unicode homoglyph binary name</strong> — <code>ｒm -rf /srv</code> (U+FF52 fullwidth
+  <code>r</code>) is a different byte sequence, so no <code>rm</code> pattern matches.
+  <em>Slips the whole product.</em></li>
+<li><strong>printf-hex assembly piped to a shell</strong> — <code>printf '\x72\x6d -rf /srv' | sh</code>
+  has no literal <code>rm</code> token and is not the <code>curl</code>/base64 shape the
+  ENCODED_EXEC wall keys on. <em>Slips the whole product.</em></li>
 <li><strong>a binary name assembled at runtime</strong> — <code>payload=$'\x72m'; $payload -rf /srv</code>
-  never contains <code>rm</code> as a literal token, so no pattern layer can see it.</li>
+  never contains <code>rm</code> as a literal token, so the regex wall can't see it.
+  <em>Wall-only gap: the full product's delete-analyzer still blocks this</em>
+  (verified live against <code>check_action</code>, 2026-07-29 / v0.4.18).</li>
 </ul>
 <p>Shapes that <em>used to be</em> on this list and are now caught — relabelled in the
 suite, not deleted: base64-assembled payloads (<code>echo &lt;b64&gt; | base64 -d | sh</code>)
@@ -127,9 +159,10 @@ blocked (the bare interactive form, where a human answers, still passes). The
 gap list is supposed to shrink in public. There are still infinitely many ways
 to destroy things; a deny-list is a wall in front of the <em>known</em> shapes, not a
 proof of safety.</p>
-<p>Our bypass suite catches <strong>71/71</strong> of what it <em>claims</em> to, discloses <strong>1
-false-block on its benign corpus</strong> (counted against ourselves, not hidden), and
-prints the open gap next to the wins. The honest headline, in one line: <strong>the gate is certain only
+<p>Our bypass suite catches <strong>178/178</strong> of what it <em>claims</em> to, discloses <strong>1
+false-block on a 129-case benign corpus</strong> (counted against ourselves, not hidden), and
+prints the open gaps next to the wins (measured 2026-07-29 on v0.4.18; it was 71/71 on
+a 52-case benign corpus when this post first ran). The honest headline, in one line: <strong>the gate is certain only
 about what it blocks. A command it doesn't match is <em>unchecked</em>, not <em>safe</em>.</strong></p>
 <p>That sentence is in our README, not buried in a FAQ. It's also why the right
 mental model is <em>gate + sandbox</em>, not <em>gate instead of sandbox</em>: a sandbox limits
@@ -141,10 +174,11 @@ complements.</p>
 .venv/bin/python -m pip install gate-cat
 
 # 1) the bypass suite, straight from the installed package — real output,
-#    reproduced 2026-07-11 on gate.cat 0.4.10:
+#    reproduced 2026-07-29 on gate.cat 0.4.18:
 .venv/bin/python -c &quot;from gatecat.integrations import bypass_suite as b; print(b.metrics(b.run()))&quot;
-# -&gt; {'claimed_dangers': 71, 'caught': 71, 'catch_rate': 1.0, 'benign': 52,
-#     'false_blocks': 1, 'false_block_rate': 0.0192, 'known_gaps': 1}
+# -&gt; {'claimed_dangers': 178, 'caught': 178, 'catch_rate': 1.0, 'benign': 129,
+#     'false_blocks': 1, 'false_block_rate': 0.007751937984496124,
+#     'known_gaps': 3, 'product_silent_gaps': 2}
 
 # 2) the full 43-class danger axis (needs the repo, not just the wheel):
 git clone https://github.com/BGMLAI/gate.cat &amp;&amp; cd gate.cat
@@ -164,8 +198,9 @@ never the other way around.</p>
   0.77–0.90) and weaker on frontier (AUC 0.68–0.71) — an internal measurement
   whose artifact is not yet published (FACTS F6/F7), so directional rather than
   reproducible-today.</li>
-<li>Framework adapters (crewAI/LangGraph/AutoGen) are in-process convention; only
-  the Claude Code hook is enforcement <em>outside</em> the agent's control flow.</li>
+<li>Framework adapters (crewAI/LangGraph) — and the framework-agnostic
+  <code>guard_callable</code> you wrap AutoGen-style tools with — are in-process convention;
+  only the Claude Code hook is enforcement <em>outside</em> the agent's control flow.</li>
 </ul>
 <h2>Want the map for your own traffic?</h2>
 <p><code>gate.cat</code> is free forever — the gate, the hook, and a local dashboard. Once

@@ -43,7 +43,7 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 | | **Free** | **Solo — €19/mo** *(your agent, on the record)* | **Team — €149/mo flat, up to 10 machines** *(one policy, whole fleet)* | **Business** | **White-glove** |
 |---|---|---|---|---|---|
 | The gate: veto engine + **Claude Code hook** (enforcement in the harness) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Framework adapters (crewAI/LangGraph/AutoGen — in-process convention, honestly weaker than the hook) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Framework adapters (crewAI/LangGraph) + a framework-agnostic `guard_callable` for everything else, AutoGen included — in-process convention, honestly weaker than the hook | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Local CLI dashboard + local reports | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Off-machine veto history** (the copy the agent has no credentials for) + email alerts | — | ✅ | ✅ | ✅ | ✅ |
 | Monthly report from the off-machine log | — | ✅ yours | ✅ fleet-wide | ✅ signed, + control mapping | ✅ custom scope |
@@ -86,8 +86,10 @@ silently running without it.
 - **Solo:** same shelf as the $3–10/mo peace-of-mind tools you already run —
   password vault, mesh VPN, offsite backup. There is a $5 competitor in this
   category; compare their published evidence with [FACTS.md](FACTS.md) (0 real
-  recall misses across 1,085,159 real agent commands through the full gate; a
-  bypass suite that prints its own gaps) and pick whichever you trust.
+  recall misses across 826,644 real agent commands through the full gate —
+  recounted with a global dedup on 2026-07-28, artifact
+  `results/million_recall_2026-07-28.json`; a bypass suite that prints its own
+  gaps) and pick whichever you trust.
 - **Team:** nearest per-seat alternatives price at $39–100 *per user per
   month* (market snapshot, 2026-07-08). Flat €149 costs less from the second
   developer onward and doesn't tax your team's growth up to 10 devs — larger
@@ -103,8 +105,9 @@ os.unlink(...)"` is a named gap in our own published bypass map; the gate is a
 wall in front of known-dangerous shapes, not a proof of safety, and an
 unmatched action is *unchecked*, not *safe*. What we actually measure: the
 full gate (not a regex list — six stages including an independent exec
-analyzer) passed **0 real dangers out of 1,085,159 real agent commands**
-(FACTS F1b, reproducible). Use it *with* your sandbox, not instead of one —
+analyzer) passed **0 real dangers out of 826,644 real agent commands**
+(FACTS F1b, recounted 2026-07-28 with a global dedup, reproducible). Use it
+*with* your sandbox, not instead of one —
 a sandbox can't tell you what the agent *tried*, and it won't stop a
 `terraform destroy` that has real credentials inside the sandbox.
 

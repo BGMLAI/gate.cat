@@ -7,7 +7,7 @@ wymaga tagu `show`. Sugerowane tagi: `show`, `security`, `ai`.
 ## Tytuł
 
 ```
-Gate.cat: deterministic action veto for AI coding agents (0 real misses across a 1M-command replay)
+Gate.cat: deterministic action veto for AI coding agents (0 real misses across an 826k-command replay)
 ```
 
 ## Tekst (pole "Text")
@@ -17,7 +17,7 @@ gate.cat vetoes irreversible shell commands (rm -rf, DROP TABLE, terraform destr
 
 Enforcement points: a Claude Code hook (runs in the harness, outside the agent's control flow), a gated shell for any CLI agent (gatecat-shell), and a local OpenAI-API proxy (one base_url change covers Ollama/vLLM/OpenRouter).
 
-Measurement over marketing: 1,085,159 unique real agent commands from 5 public datasets replayed through the full gate → 0 real misses after adjudication (the 4 catalog-flagged allows are disposable-artifact cleanups, adjudicated in the repo). The bypass suite catches 178/178 danger shapes it claims and prints its own known gap (runtime assembly) + 1 benign false-block in 129 cases. Every public number is pinned in FACTS.md to a reproducible artifact.
+Measurement over marketing: 826,644 unique real agent commands from 5 public datasets replayed through the full gate → 0 real misses after adjudication (the 4 catalog-flagged allows are disposable-artifact cleanups, adjudicated in the repo). The bypass suite catches 178/178 danger shapes it claims and prints its own known gap (runtime assembly) + 1 benign false-block in 129 cases. Every public number is pinned in FACTS.md to a reproducible artifact.
 
 Honest limit: the gate is certain only about what it blocks — an unmatched action is unchecked, not safe. It's a complement to a sandbox, not a substitute.
 

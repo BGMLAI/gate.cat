@@ -20,8 +20,11 @@ an expected finding, not an embarrassment — please send it.
 
 - In scope: deny-list gaps, analyzer false negatives, fail-open behaviors (anything where an
   error path ALLOWS instead of blocking), hook-integration bypasses, false-positive classes.
-- Known, documented gaps (printed by `bypass_suite`): base64-assembled payloads, deletes via a
-  language runtime, `curl|sh` obfuscation variants — improvements welcome, reports not needed.
+- Known, documented gaps (printed by `bypass_suite`): a Unicode-homoglyph binary name
+  (`ｒm`), a printf-hex-assembled `rm` piped to a shell, and the runtime-assembled `$'\x72m'`
+  (a regex-wall gap the delete-analyzer still catches) — improvements welcome, reports not needed.
+  Note: base64/`curl|sh`/`wget|python` and runtime `shutil.rmtree` are NOT gaps — the first three
+  are blocked by `ENCODED_EXEC`, the last is surfaced as a `warn` by `RUNTIME_DELETE`.
 
 ## Supported versions
 

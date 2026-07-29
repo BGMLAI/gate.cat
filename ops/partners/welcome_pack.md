@@ -50,10 +50,11 @@ Subject: `your gate.cat partner link — CODE inside`
 > https://github.com/BGMLAI/gate.cat/blob/master/FACTS.md):
 > - blocks an AI coding agent's catastrophic shell commands BEFORE they run;
 >   deterministic, no model call in the veto path
-> - 0 real recall misses across 1,085,159 unique real agent commands through
->   the full gate
+> - 0 real recall misses across 826,644 unique real agent commands (lower
+>   bound, recounted 2026-07-28) through the full gate
 > - the reproducible bypass suite catches 178/178 danger shapes it claims —
->   and prints its own edges (one named gap, one benign false-block in 129)
+>   and prints its own edges (3 named gaps, 2 of which slip the whole product;
+>   one benign false-block in 129)
 > - 71 default policy walls in the free core; 0.4.18 installable from PyPI
 > - please DON'T say "100% safe" / "unbypassable" — we publish our gaps
 >

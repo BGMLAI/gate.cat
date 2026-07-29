@@ -1,0 +1,89 @@
+{
+  "version": "v1.0.0",
+  "entity": {
+    "type": "individual",
+    "role": "owner",
+    "name": "Bogumil Jankiewicz",
+    "email": "bgml@bgml.ai",
+    "description": "Independent maintainer working on runtime safety for tool-using AI agents. I build and publish deterministic, measurable controls rather than model-based judgement: the gate either matches an action or it does not, and every claim it makes is backed by a reproducible script. I also run bgml.ai, an empirical benchmarking project on small local language models, where negative results are published as readily as positive ones.",
+    "webpageUrl": {
+      "url": "https://gate.cat"
+    }
+  },
+  "projects": [
+    {
+      "guid": "gate-cat",
+      "name": "gate.cat",
+      "description": "A deterministic, fail-closed action veto for tool-using AI agents. gate.cat inspects a proposed tool call - a shell command, a file write, an HTTP request - before it executes, and blocks the irreversible ones: rm -rf on a real path, force-push, disk wipe, terraform destroy -auto-approve, or data leaving the machine. The veto is a deny-list plus an exec-check plus a human-in-the-loop step applied at the tool-call boundary; no model reviews the action, so the control itself cannot be prompt-injected. It ships as a Python library (from gatecat import check_action) and as a Claude Code hook, which is the only mode that enforces outside the agent's own control flow. Evidence: 43 of 43 known danger classes neutralised through the full gate with 0 of 13 benign twins false-blocked; 826,644 globally deduplicated real agent commands from public trajectory datasets replayed through the gate, with 0 real recall misses after adjudication (of 303 catalogue dangers, 301 were neutralised and the 2 allowed are disposable-artifact cleanups the gate correctly permits); a reproducible bypass suite that catches 178 of the 178 danger shapes it claims and prints its own remaining gaps on every run. Honest limit, stated in the README: the gate is certain only about what it blocks - an action it does not match is unchecked, not safe.",
+      "webpageUrl": {
+        "url": "https://gate.cat"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/BGMLAI/gate.cat",
+        "wellKnown": "https://github.com/BGMLAI/gate.cat/blob/master/.well-known/funding-manifest-urls"
+      },
+      "licenses": [
+        "spdx:Apache-2.0"
+      ],
+      "tags": [
+        "security",
+        "ai-safety",
+        "agent-security",
+        "python",
+        "developer-tools",
+        "supply-chain-security",
+        "llm",
+        "static-analysis"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "site-checkout",
+        "type": "payment-provider",
+        "address": "https://gate.cat",
+        "description": "Card payment through the checkout links on the project website. The open-source core stays Apache-2.0 regardless of any payment."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "security-audit",
+        "status": "active",
+        "name": "Independent security audit of the policy engine",
+        "description": "Fund a scoped external review of the component that parses adversarial command strings and decides whether to block. It has never been read by anyone but the maintainer, and it is the component whose failure hurts users most: a bypass in a guardrail leaves people worse off than no guardrail, because the vigilance it replaced is gone. The report would be published.",
+        "amount": 25000,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "site-checkout"
+        ]
+      },
+      {
+        "guid": "fuzzing-and-ci",
+        "status": "active",
+        "name": "Continuous fuzzing and hardening of the command parser",
+        "description": "Stand up continuous fuzzing on the parser, close the published runtime-assembly gap (base64-assembled payloads and deletes performed via a language runtime) without raising the measured false-block rate, and raise test coverage on the least-covered paths. Coverage is 73 percent of statements today and is printed by CI on every run.",
+        "amount": 5000,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "site-checkout"
+        ]
+      },
+      {
+        "guid": "maintenance",
+        "status": "active",
+        "name": "Maintainer time",
+        "description": "Sustained maintenance by the sole maintainer: triaging reported bypasses within the 72-hour window promised in SECURITY.md, extending the public danger catalogue, and keeping the measurement scripts reproducible so that anyone can re-run the published numbers instead of trusting them.",
+        "amount": 2500,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "site-checkout"
+        ]
+      }
+    ],
+    "history": []
+  }
+}
