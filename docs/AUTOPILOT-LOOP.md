@@ -282,6 +282,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c6bc670b0dd | Hamish — Income Stream Surfer (mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r-5258681500585045275`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f90c5ea4d15646 | Rafa — Late Checkout (partnerships dla Greg Isenberg, mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r562362032908632679`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f7acd133235366 | (adres w Gmailu pod ID wątku — zredagowany, rule 9) | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user | n/a — bounce |
+| 19fae37935d73b79 | **INBOUND — CloudSecList (Marco Lancini)** | 2026-07-29 | Owner zgłosił gate.cat do CloudSecList (14:11); Marco odpisał (14:24) pitchem sponsoringu („could consider sponsoring… 50% open rate"). Ten sam wzorzec co AlphaSignal (paid). **DRAFT agenta** `r-1703502179894633069` (replyTo 19fae43f7715e52d): uczciwie „to była submisja EDYTORIALNA nie sponsoring; brak budżetu; jeśli fit dla cloud-sec audience — chętnie feature; affiliate 30% jeśli robicie; wrócę z budżetem jeśli tylko paid"; liczby z FACTS (F4 178/178). **[USER] DECYZJA** (paid vs editorial/affiliate). ZERO commitu $. | odpowiedź inbound — piłka u ownera |
 | 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). **DRAFT odpowiedzi agenta** `r8759546498219095400` (replyTo 19fa9aea0cb5a858): uczciwie „brak budżetu na paid sponsoring; oferuję 30% lifetime-recurring commission; jeśli robicie affiliate/performance — chętnie call; jeśli tylko paid — wrócę gdy będzie budżet"; ZERO commitu wydatku; liczby z FACTS (F13 ~2529 downloads, downloads≠users). **[USER] DECYZJA:** zapłacić za placement AlphaSignal (Twoje pieniądze, Twój call) vs. pchać affiliate vs. odpuścić — draft = bezpieczny default no-spend, wysyłasz/edytujesz Ty. | odpowiedź inbound — piłka u ownera |
 | 19f90c6bc670b0dd | Hamish / Income Stream Surfer (YT, CC+strony klientów) | 2026-07-23 | **WYSŁANE przez usera 21:10** (batch #2, hook z dzisiejszego wideo) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90ce1b4ba7892 | Cole Medin / Ottomator (YT; wideo „run your agent safely" Z DZIŚ) | 2026-07-23 | **WYSŁANE przez usera 21:12** — najmocniejszy fit batcha | **2026-07-26 / 2026-07-30** (tier: YouTube) |
@@ -295,6 +296,15 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-29 15:22 UTC — przebieg #169: DRUGI INBOUND SPONSORINGOWY (CloudSecList) → draft no-spend.**
+  Owner zgłosił gate.cat do CloudSecList (14:11); Marco Lancini odpisał (14:24) pitchem sponsoringu. Dedupe
+  czysty. **Draft agenta** `r-1703502179894633069`: uczciwie „submisja edytorialna nie sponsoring; brak
+  budżetu; feature jeśli fit; affiliate 30% jeśli robicie; wrócę z budżetem". Liczby z FACTS (F4). **Teraz
+  2 drafty czekają na decyzję ownera:** AlphaSignal (`r8759546498219095400`) + CloudSecList
+  (`r-1703502179894633069`) — oba to paid-vs-affiliate calls ownera, ZERO commitu $ z mojej strony. Wzorzec:
+  owner robi outreach do newsletterów, dostaje pitche sponsoringu; ja draftuję uczciwy no-spend default.
+  0 płatności gate.cat. PR #27 clean, CI zielone. Do usera: flag o 2 draftach do decyzji.
 
 - **2026-07-29 01:22–15:22 UTC — przebiegi #154–#168: HOLD STREAK (rolling; AlphaSignal draft pending owner).** Poczta:
   0 płatności gate.cat, 0 nowego inbound. AlphaSignal: draft `r8759546498219095400` gotowy, czeka na
