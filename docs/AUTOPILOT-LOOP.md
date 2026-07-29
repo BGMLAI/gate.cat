@@ -284,7 +284,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c5ea4d15646 | Rafa — Late Checkout (partnerships dla Greg Isenberg, mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r562362032908632679`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f7acd133235366 | (adres w Gmailu pod ID wątku — zredagowany, rule 9) | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user | n/a — bounce |
 | 19fae37935d73b79 | **INBOUND — CloudSecList (Marco Lancini)** | 2026-07-29 | Owner zgłosił gate.cat do CloudSecList (14:11); Marco odpisał (14:24) pitchem sponsoringu („could consider sponsoring… 50% open rate"). Ten sam wzorzec co AlphaSignal (paid). **DRAFT agenta** `r-1703502179894633069` (replyTo 19fae43f7715e52d): uczciwie „to była submisja EDYTORIALNA nie sponsoring; brak budżetu; jeśli fit dla cloud-sec audience — chętnie feature; affiliate 30% jeśli robicie; wrócę z budżetem jeśli tylko paid"; liczby z FACTS (F4 178/178). **[USER] DECYZJA** (paid vs editorial/affiliate). ZERO commitu $. | odpowiedź inbound — piłka u ownera |
-| 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). **DRAFT odpowiedzi agenta** `r8759546498219095400` (replyTo 19fa9aea0cb5a858): uczciwie „brak budżetu na paid sponsoring; oferuję 30% lifetime-recurring commission; jeśli robicie affiliate/performance — chętnie call; jeśli tylko paid — wrócę gdy będzie budżet"; ZERO commitu wydatku; liczby z FACTS (F13 ~2529 downloads, downloads≠users). **[USER] DECYZJA:** zapłacić za placement AlphaSignal (Twoje pieniądze, Twój call) vs. pchać affiliate vs. odpuścić — draft = bezpieczny default no-spend, wysyłasz/edytujesz Ty. | odpowiedź inbound — piłka u ownera |
+| 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). Agent zrobił draft `r8759546498219095400` (no-spend default). **OWNER OBSŁUŻYŁ SAM 2026-07-29:** Bogumił wysłał 2 własne odpowiedzi w wątku (10:32 + 12:31 UTC — uczciwy solo-founder/no-spend framing, wziął link Calendly). **Mój draft SUPERSEDED** (owner napisał własną wersję). Brak nowej wiadomości od Meredith po 12:31 → piłka u niej; bez akcji agenta. | ZAMKNIĘTE (owner-handled) — reakcja tylko gdy Meredith odpisze |
 | 19f90c6bc670b0dd | Hamish / Income Stream Surfer (YT, CC+strony klientów) | 2026-07-23 | **WYSŁANE przez usera 21:10** (batch #2, hook z dzisiejszego wideo) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90ce1b4ba7892 | Cole Medin / Ottomator (YT; wideo „run your agent safely" Z DZIŚ) | 2026-07-23 | **WYSŁANE przez usera 21:12** — najmocniejszy fit batcha | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90c6d56f13afd | Edmund Yong (YT; przez alternatywny kontakt biznesowy) | 2026-07-23 | **WYSŁANE przez usera 21:13** (hook: Mobbin MCP z banku) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
@@ -297,6 +297,22 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-29 17:26 UTC — przebieg #171: domknięcie residuum #170 (F4 3-gap) + PR #27 CI ZIELONE + AlphaSignal owner-handled.**
+  **PR #27 CI: 3/3 green** (test 3.11/3.12/3.13 success na head 31c0de5, run 30472706060) — reconciliation z #170
+  potwierdzona nie tylko lokalnie; merge PR #27 robi mastera zielonym. Gałąź 0 za / 161 przed masterem (master się nie
+  ruszył). **Backlog:** dokończony sweep spójności z FACTS 2026-07-29 — znalazłem i naprawiłem 1 przeoczoną instancję
+  F4 w `reply_bank_objections.md` (obiekcja #5 „security theater": „own named runtime-assembly gap" → „3 named gaps,
+  2 slip the whole product"; runtime-assembly to ten ŁAPANY, nie silent — poprawka jest też mocniejsza retorycznie).
+  Weryfikacja szeroka: 0 stale download-figures (2,529/2,019) i 0 stale test-counts (1863/1933) w LIVE copy — cała
+  publiczna powierzchnia zgodna z FACTS (826 644 / F4 3-gap / F13a 2 662 / F3 1 956 collected). **Poczta:** 0 płatności
+  gate.cat (Stripe = KYC-sweep dla INNYCH firm ownera: zeszytyterapeutyczne/Fundacja Lokalny/Blossom — nie gate.cat);
+  0 nowego genuine inbound. **AlphaSignal: OWNER OBSŁUŻYŁ SAM** (2 własne wysłane odpowiedzi 10:32+12:31) → mój draft
+  `r8759546498219095400` SUPERSEDED, LEDGER zamknięty. CloudSecList draft `r-1703502179894633069` nadal czeka na
+  decyzję $ ownera. Console.dev = auto-acki; YC Fall 2026 = potwierdzenie aplikacji (automat). **Kolejka pusta**
+  (Y1-Y5 done, przestrzeń wyczerpana i owner-gated: merge→deploy→publish→wysyłka draftów→decyzje sponsoringowe) —
+  panel POMINIĘTY (zgodnie z normą „panel = wata" gdy actionable-space wyczerpany; ten przebieg miał realną pracę
+  = residuum). PR #27 opis zaktualizowany o notę reconciliation. Bez pisania do usera (nic nowego ponad już-zgłoszone).
 
 - **2026-07-29 16:48 UTC — przebieg #170: MERGE MASTERA (recount korpusu) → gałąź zsynchronizowana + sweep WYCOFANEJ liczby.**
   Owner przeliczył korpus F1b globalnym dedupem: **1 085 159 → 826 644** (dolna granica; zakres do 835 128 po zmianie

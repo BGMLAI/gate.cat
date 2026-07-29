@@ -49,8 +49,10 @@ reinstate). Wording z FACTS.md i OBJECTIONS.md. Publikuje wyłącznie owner.
 ## 5. „Security theater — obfuskacja to obejdzie"
 
 > Partly true, and we say it louder than our critics: the bypass suite in
-> the repo prints its own named runtime-assembly gap, and the docs state
-> that an unmatched action is unchecked, not safe. It's a deterministic
+> the repo prints its own 3 named gaps — 2 of them (a Unicode homoglyph and
+> an rm assembled from printf-hex) slip the whole product, the 3rd the
+> delete-analyzer still catches — and the docs state that an unmatched
+> action is unchecked, not safe. It's a deterministic
 > wall in front of known-dangerous shapes — the class of mistake agents
 > actually make daily — not a proof of safety. Theater hides its gaps;
 > this ships a suite that prints them in CI.
