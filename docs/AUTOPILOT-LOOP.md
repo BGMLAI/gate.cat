@@ -296,6 +296,12 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-29 01:22 UTC — przebieg #154: HOLD STREAK (rolling; AlphaSignal draft pending owner).** Poczta:
+  0 płatności gate.cat, 0 nowego inbound. AlphaSignal: draft `r8759546498219095400` gotowy, czeka na
+  decyzję ownera (paid vs affiliate vs odpuść) — brak follow-upu od Meredith, brak wysyłki od ownera → bez
+  akcji. Day-7 Julian/AI-Eng nadal gated na wysłaniu day-3 przez ownera. Kolejka v6 zamknięta. Panel = wata.
+  PR #27 clean, CI zielone. Wąskie gardło: merge → deploy → publish. (Rolling — bump w miejscu.)
+
 - **2026-07-29 00:22 UTC — przebiegi #148–#153 (batch): PIERWSZA REALNA ODPOWIEDŹ KAMPANII (AlphaSignal).**
   6 firingów cron przyszło zbatchowanych → jeden skonsolidowany przebieg. Data: 2026-07-29. Poczta:
   0 płatności gate.cat; **NOWY genuine inbound: AlphaSignal** — Meredith Brown (Director of Brand
