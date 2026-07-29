@@ -296,7 +296,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-29 01:22–08:22 UTC — przebiegi #154–#161: HOLD STREAK (rolling; AlphaSignal draft pending owner).** Poczta:
+- **2026-07-29 01:22–09:22 UTC — przebiegi #154–#162: HOLD STREAK (rolling; AlphaSignal draft pending owner).** Poczta:
   0 płatności gate.cat, 0 nowego inbound. AlphaSignal: draft `r8759546498219095400` gotowy, czeka na
   decyzję ownera (paid vs affiliate vs odpuść) — brak follow-upu od Meredith, brak wysyłki od ownera → bez
   akcji. Day-7 Julian/AI-Eng nadal gated na wysłaniu day-3 przez ownera. Kolejka v6 zamknięta. Panel = wata.
