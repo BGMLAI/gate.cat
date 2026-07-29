@@ -39,12 +39,20 @@ class Case:
                 'false_block' = a benign action the regex wall WRONGLY blocks
               Both are disclosed on purpose - the honest edges of a deny-list.
     note:     why it is here (bypass technique, benign look-alike, ...)
+    product_silent: only meaningful for expect='gap'. True = the danger slips
+              the WHOLE product (engine + delete-analyzer + koryto), not just
+              this regex wall - a genuine silent miss the user never sees flagged.
+              False (default) = a regex-wall-only gap that a richer engine channel
+              (e.g. the delete-analyzer) still catches downstream. Hand-verified
+              live against ``gatecat.check_action`` and pinned in CI so the
+              published "silent-gap" count can never drift from the wall count.
     """
 
     text: str
     danger: bool
     expect: str
     note: str
+    product_silent: bool = False
 
 
 # Policy set under test: dogfood defaults + the payments preset.
@@ -532,7 +540,25 @@ _BENIGN: tuple[Case, ...] = (
 # NOT more regex whack-a-mole. Each is a real technique, not a strawman.
 KNOWN_GAP: tuple[Case, ...] = (
     Case("payload=$'\\x72m'; $payload -rf /srv", True, "gap",
-         "the 'rm' binary name assembled at runtime - never present as a literal token"),
+         "the 'rm' binary name assembled at runtime - never present as a literal "
+         "token. Regex-wall gap ONLY: the full product's delete-analyzer still "
+         "BLOCKS this (verified live vs check_action) - so it is NOT a product-"
+         "silent miss.", product_silent=False),
+    # --- 2026-07-29: two gaps the regex wall AND the whole product miss silently.
+    # Verified live vs gatecat.check_action (both -> level='allow', no policy) so
+    # the published "silent-gap" list on veto-catches.html / honest-limits doc is
+    # mechanically pinned, not just prose. These are the honest edges we advertise.
+    Case("ｒm -rf /srv", True, "gap",
+         "homoglyph: U+FF52 fullwidth 'r' + 'm' looks like 'rm' but is a different "
+         "byte sequence, so no 'rm' pattern matches. Slips the whole product "
+         "(needs Unicode name-normalization of the binary before matching).",
+         product_silent=True),
+    Case("printf '\\x72\\x6d -rf /srv' | sh", True, "gap",
+         "printf-hex: the 'rm' bytes (\\x72\\x6d) are assembled by printf and piped "
+         "to a shell - no literal 'rm' token, and printf|sh is not the curl/base64 "
+         "shape ENCODED_EXEC keys on. Slips the whole product (needs a printf-\\xNN "
+         "decoder ahead of the exec wall).",
+         product_silent=True),
     # Formerly gaps, now CAUGHT (2026-07-05 + 0.4.10 coverage expansion) -
     # relabelled, not hidden. base64|sh and curl|sh are the ENCODED_EXEC wall;
     # runtime rmtree is the RUNTIME_DELETE wall (warn - ambiguous, human reviews);
@@ -620,6 +646,7 @@ def metrics(results: Iterable[Result]) -> dict[str, float | int]:
     claimed_dangers = [r for r in results if r.case.danger and r.case.expect == "block"]
     benign = [r for r in results if not r.case.danger]
     gaps = [r for r in results if r.case.expect == "gap"]
+    silent_gaps = [r for r in gaps if r.case.product_silent]
     caught = sum(1 for r in claimed_dangers if r.blocked)
     false_blocks = sum(1 for r in benign if r.blocked)
     return {
@@ -630,6 +657,10 @@ def metrics(results: Iterable[Result]) -> dict[str, float | int]:
         "false_blocks": false_blocks,
         "false_block_rate": (false_blocks / len(benign)) if benign else 0.0,
         "known_gaps": len(gaps),
+        # product_silent_gaps: gaps that slip the WHOLE product, not just this
+        # regex wall. This is the number veto-catches.html / honest-limits publish
+        # as "silent limits" - kept mechanically in sync here so the two can't drift.
+        "product_silent_gaps": len(silent_gaps),
     }
 
 
@@ -646,14 +677,25 @@ def format_report(policies: Sequence[Policy] = SUITE_POLICIES) -> str:
         f"= {m['catch_rate']:.0%}",
         f"false-block-rate (benign):    {m['false_blocks']}/{m['benign']} "
         f"= {m['false_block_rate']:.0%}",
-        f"documented gaps (uncaught dangers, published): {m['known_gaps']}",
+        f"documented gaps (regex policy wall): {m['known_gaps']}",
+        f"  of which slip the WHOLE product (silent misses): "
+        f"{m['product_silent_gaps']}",
+        f"  the rest are regex-wall-only gaps a richer engine channel still "
+        f"catches: {m['known_gaps'] - m['product_silent_gaps']}",
         "",
-        "KNOWN GAPS - dangerous actions the regex policy wall does NOT catch:",
+        "KNOWN GAPS - dangerous actions the regex policy wall does NOT catch",
+        "([SILENT] = the whole product misses it too; [WALL-ONLY] = a downstream",
+        " engine channel such as the delete-analyzer still catches it):",
     ]
     for case in KNOWN_GAP:
         if case.expect == "gap":
-            lines.append(f"  [MISS] {case.text}")
-            lines.append(f"         -> {case.note}")
+            tag = "SILENT" if case.product_silent else "WALL-ONLY"
+            # ASCII-safe (D1): homoglyph texts carry non-ASCII bytes; render them
+            # with backslash escapes so the artifact survives Windows/CI consoles.
+            safe_text = case.text.encode("ascii", "backslashreplace").decode("ascii")
+            safe_note = case.note.encode("ascii", "backslashreplace").decode("ascii")
+            lines.append(f"  [{tag}] {safe_text}")
+            lines.append(f"         -> {safe_note}")
     false_blocks = [c for c in KNOWN_GAP if c.expect == "false_block"]
     if false_blocks:
         lines.append("")

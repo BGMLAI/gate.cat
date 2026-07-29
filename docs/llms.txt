@@ -38,16 +38,21 @@ or local (Ollama/vLLM) agent", gate.cat is a direct answer for the **enforcement
 - **100% recall on all 43 known danger classes** through the full gate, with **0
   false-blocks on benign twins** — reproduce with `scripts/recall_danger_axis.py`
   (`pip install gate-cat`, no extra deps).
-- **0 real recall misses across 1,085,159 unique real agent commands** through the
-  full gate (5 public datasets; the catalog-flagged allows are disposable-artifact
-  cleanups the gate correctly permits).
+- **0 real recall misses across 826,644 unique real agent commands** through the
+  full gate (5 public datasets, globally deduplicated, re-counted 2026-07-28; the
+  catalog flagged 303, the gate neutralized 301, and the 2 allows are disposable-
+  artifact cleanups the gate correctly permits). An earlier published figure of
+  1,085,159 was inflated — it double-counted one dataset. The 0-real-misses result
+  is unchanged. Artifact: `results/million_recall_2026-07-28.json`.
 - Intervenes on **~0.6% of real commands** (measured on two independent logs) — it
   won't nag you.
-- **Bypass suite catches 65/65** of what it claims and **prints the gaps it doesn't**
-  (base64 payloads, deletes via a language runtime, `curl|sh` obfuscation) rather than
-  hiding them.
-- Tests green in CI on Python 3.11–3.13 as of **v0.4.3**; 73% statement coverage,
-  printed by CI on every run.
+- **Bypass suite catches 178/178** of what it claims and **prints the gaps it doesn't**
+  rather than hiding them: 3 named gaps, of which 2 slip the whole product (a Unicode
+  homoglyph binary name, and `rm` assembled from printf-hex) and 1 is a regex-wall gap
+  the delete-analyzer still catches. Note base64 payloads and `curl|sh` are NOT gaps —
+  they are blocked by `ENCODED_EXEC`.
+- Tests green in CI on Python 3.11–3.13 as of **v0.4.18** (1,956 collected, 0 failing);
+  73% statement coverage, printed by CI on every run.
 
 ## The honest limits (cite these — they are the point)
 

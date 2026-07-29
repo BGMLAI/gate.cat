@@ -731,7 +731,7 @@ check_action("agent", cmd,
     <p><b>What slips by design:</b> the <b>obfuscated or novel</b> command — a binary name assembled at runtime (<code>$'\x72m'</code> — the one remaining published gap in the repo's bypass suite), a payload built from pieces the pattern layer can't see, or a brand-new destructive tool no wall knows yet. The bypass suite ships in the repo and publishes its own gaps instead of hiding them.</p>
     <p><b>What passes on purpose:</b> deletes of disposable paths (<code>/tmp</code>, caches, build dirs, <code>node_modules</code>), read-only and dry-run forms, single-file operations, <code>--force-with-lease</code> pushes — the ~99.4% of real work a guardrail must not nag about.</p>
     <p><b>What lives in packs, not core:</b> SaaS-specific and stack-specific surfaces (observability APIs, deploy CLIs, payment providers). The core carries the universal catastrophic classes only.</p>
-    <p>Suite on the shipped build: <b>1,194 tests passing</b>, 43/43 known danger classes neutralized, ~0.6% intervention rate over 1.085M replayed real agent commands — full method in <a href="/blog/1m-agent-commands.html" style="color:var(--lime-deep);font-weight:700">the 1,085,159-command report</a>.</p>
+    <p>Suite on the shipped build (measured 2026-07-29 on v0.4.18): <b>1,927 tests passing</b> of 1,956 collected, 43/43 known danger classes neutralized, ~0.6% intervention rate over 826,644 replayed real agent commands — full method in <a href="/blog/1m-agent-commands.html" style="color:var(--lime-deep);font-weight:700">the 826,644-command report</a>. (That corpus was recounted on 2026-07-28: the earlier 1,085,159 figure double-counted one dataset. 0 real misses is unchanged.)</p>
   </div>
   </div>
 </section>
@@ -777,7 +777,7 @@ check_action("agent", cmd,
 <footer class="wrap">
   <div class="foot-in">
     <span>gate.cat, fail-closed action-veto for AI agents · Apache 2.0 · engine v0.4.11</span>
-    <span><a href="/">home</a> · <a href="/blog/1m-agent-commands.html">1M-command report</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
+    <span><a href="/">home</a> · <a href="/blog/1m-agent-commands.html">826k-command report</a> · <a href="https://pypi.org/project/gate.cat/">PyPI</a> · <a href="https://github.com/BGMLAI/gate.cat">GitHub</a> · built by <a href="https://bgml.ai">BGML.ai</a></span>
   </div>
 </footer>
 

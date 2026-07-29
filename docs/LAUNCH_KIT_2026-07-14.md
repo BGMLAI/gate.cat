@@ -24,8 +24,8 @@ The check is deterministic string + path analysis. No model call in the path. Su
 
 Numbers (measured, not claimed):
 - 178/178 dangerous commands blocked in the test suite
-- 1,085,159 real agent commands replayed — 1 documented false-block (it's in the repo, we didn't hide it)
-- 69 default policies, Apache 2.0, zero dependencies
+- 826,644 real agent commands replayed (recount with global dedup, 2026-07-28) — 1 documented false-block (it's in the repo, we didn't hide it)
+- 71 default policies, Apache 2.0, zero dependencies
 
 Free forever. Cloud adds tamper-evident off-machine logs + fleet alerts (€9/mo founding).
 
@@ -85,7 +85,7 @@ Claude Code can run shell commands. Sometimes it runs the wrong ones. gate.cat i
 
 Setup: add gatecat-hook to your .claude/settings.json. That's it. Every command Claude proposes goes through the gate first.
 
-178/178 dangerous commands blocked in testing. 1,085,159 real commands replayed. 1 false-block — documented publicly in the repo with the fix and regression test.
+178/178 dangerous commands blocked in testing. 826,644 real commands replayed. 1 false-block — documented publicly in the repo with the fix and regression test.
 
 Free, Apache 2.0, zero dependencies. Cloud adds tamper-evident off-machine logging (so the blocked process can't tamper with its own trail) + fleet alerts.
 
@@ -108,7 +108,7 @@ Built a Python package that blocks AI agents from executing irreversible shell c
 
 pip install gate.cat
 
-69 default policies covering: recursive delete, disk wipe, DB drop/truncate, cloud teardown (aws/gcloud/az), k8s delete, git force push, secret exfiltration, guard self-defense (agent can't kill the gate), fork bombs.
+71 default policies covering: recursive delete, disk wipe, DB drop/truncate, cloud teardown (aws/gcloud/az), k8s delete, git force push, secret exfiltration, guard self-defense (agent can't kill the gate), fork bombs.
 
 Also: paid policy packs for domain-specific coverage (Fintech, PaaS, HTTP-API breadth) at €29 one-time.
 
@@ -132,7 +132,7 @@ your AI agent can run `rm -rf /`.
 gate.cat blocks it before the shell sees it.
 
 178/178 dangerous commands blocked.
-1,085,159 real commands replayed.
+826,644 real commands replayed.
 1 false-block — public in the repo.
 
 deterministic. sub-millisecond. apache 2.0.
@@ -157,7 +157,7 @@ the check is not an LLM call. it's deterministic string + path analysis.
 
 sub-millisecond. zero dependencies. zero model cost.
 
-69 default policies: recursive delete, disk wipe, DB drop, cloud teardown, git force-push, secret exfil, guard self-defense, fork bombs.
+71 default policies: recursive delete, disk wipe, DB drop, cloud teardown, git force-push, secret exfil, guard self-defense, fork bombs.
 ```
 
 **Tweet 4:**
@@ -233,7 +233,7 @@ Body:
 - **PyPI:** https://pypi.org/project/gate.cat/
 - **Install:** `pip install gate.cat`
 - **Integrations:** Claude Code hook, gated shell (Codex/aider), API proxy (Copilot/Ollama/vLLM)
-- **Test coverage:** 178/178 dangerous commands blocked, 1,085,159 real commands replayed, 1 documented false-block (public in repo)
+- **Test coverage:** 178/178 dangerous commands blocked, 826,644 real commands replayed, 1 documented false-block (public in repo)
 ```
 
 ### awesome-security
@@ -241,7 +241,7 @@ Body:
 Title: Add gate.cat — AI agent action veto (deterministic, fail-closed)
 
 Body:
-gate.cat blocks irreversible shell commands before AI coding agents execute them. Deterministic string + path analysis (no ML in the critical path). 69 policies covering: recursive delete, disk wipe, DB destruction, cloud teardown, k8s deletion, git history destruction, secret exfiltration, guard self-defense, fork bombs. Apache 2.0, zero deps.
+gate.cat blocks irreversible shell commands before AI coding agents execute them. Deterministic string + path analysis (no ML in the critical path). 71 policies covering: recursive delete, disk wipe, DB destruction, cloud teardown, k8s deletion, git history destruction, secret exfiltration, guard self-defense, fork bombs. Apache 2.0, zero deps.
 
 https://github.com/BGMLAI/gate.cat
 ```
@@ -281,7 +281,7 @@ Hi TLDR team,
 
 gate.cat blocks irreversible shell commands (rm -rf, DROP TABLE, terraform destroy) before AI coding agents execute them — not after.
 
-Deterministic, sub-millisecond, zero dependencies, Apache 2.0. 178/178 test suite pass, 1,085,159 real commands replayed, 1 documented false-block (public in the repo).
+Deterministic, sub-millisecond, zero dependencies, Apache 2.0. 178/178 test suite pass, 826,644 real commands replayed, 1 documented false-block (public in the repo).
 
 Free core. Cloud tier €9/mo for tamper-evident off-machine logs + fleet alerts.
 

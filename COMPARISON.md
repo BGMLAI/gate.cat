@@ -18,8 +18,9 @@ These are the closest neighbors and the most common "you're reinventing this" co
 | Determinism | Flow logic, app-defined | Deterministic deny-list; same command → same verdict |
 | Best for | Rich human-in-the-loop UX, arbitrary approval logic | A hard floor under the approval step, for when it never got called |
 
-**Honest limit:** gate.cat's *own* framework adapters (crewAI/LangGraph/AutoGen) are the **same
-in-process trust class** as `interrupt` — a prompt injection can route around them. Only the
+**Honest limit:** gate.cat's *own* framework adapters (crewAI/LangGraph) — and the
+framework-agnostic `guard_callable` you wrap any other tool with, AutoGen included — are the
+**same in-process trust class** as `interrupt` — a prompt injection can route around them. Only the
 Claude Code hook is real enforcement. Use `interrupt`/HumanLayer for the UX; use gate.cat's hook
 for the floor. Not "instead of" — underneath.
 
@@ -43,11 +44,18 @@ was talked into it, and stop the `terraform destroy` at the boundary anyway.
 
 ## vs. the "just use regexes yourself" objection
 
-You could. gate.cat is ~21 curated policies for the irreversible-action class + an independent
-exec analyzer + human-in-the-loop + a bypass suite that **prints its own known gaps** (base64
-payloads, deletes via a language runtime, `curl|sh`) instead of pretending they don't exist,
+You could. gate.cat is 71 curated default policies for the irreversible-action class — 73 counting
+the opt-in presets, counted live on 2026-07-29 against v0.4.18 — + an independent
+exec analyzer + human-in-the-loop + a bypass suite that **prints its own known gaps** instead of
+pretending they don't exist,
 + the harness integration that makes it enforcement rather than advice. The value is the curation,
 the fail-closed wiring, and the honest gap map — not the regex.
+
+That gap map, measured live on 2026-07-29 against v0.4.18: **178/178** catch on the dangers the
+suite claims, **1 false-block in 129** benign commands, and **3 named regex-wall gaps** — **2 of
+them slip the whole product** (a Unicode homoglyph binary name, and `rm` bytes assembled by
+`printf` and piped to a shell); the third clears the regex wall but the delete-analyzer still
+blocks it. See F4 in [FACTS.md](FACTS.md).
 
 ## What gate.cat is NOT
 
