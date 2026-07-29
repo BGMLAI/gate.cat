@@ -282,6 +282,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c6bc670b0dd | Hamish — Income Stream Surfer (mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r-5258681500585045275`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f90c5ea4d15646 | Rafa — Late Checkout (partnerships dla Greg Isenberg, mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r562362032908632679`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f7acd133235366 | (adres w Gmailu pod ID wątku — zredagowany, rule 9) | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user | n/a — bounce |
+| 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). **DRAFT odpowiedzi agenta** `r8759546498219095400` (replyTo 19fa9aea0cb5a858): uczciwie „brak budżetu na paid sponsoring; oferuję 30% lifetime-recurring commission; jeśli robicie affiliate/performance — chętnie call; jeśli tylko paid — wrócę gdy będzie budżet"; ZERO commitu wydatku; liczby z FACTS (F13 ~2529 downloads, downloads≠users). **[USER] DECYZJA:** zapłacić za placement AlphaSignal (Twoje pieniądze, Twój call) vs. pchać affiliate vs. odpuścić — draft = bezpieczny default no-spend, wysyłasz/edytujesz Ty. | odpowiedź inbound — piłka u ownera |
 | 19f90c6bc670b0dd | Hamish / Income Stream Surfer (YT, CC+strony klientów) | 2026-07-23 | **WYSŁANE przez usera 21:10** (batch #2, hook z dzisiejszego wideo) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90ce1b4ba7892 | Cole Medin / Ottomator (YT; wideo „run your agent safely" Z DZIŚ) | 2026-07-23 | **WYSŁANE przez usera 21:12** — najmocniejszy fit batcha | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90c6d56f13afd | Edmund Yong (YT; przez alternatywny kontakt biznesowy) | 2026-07-23 | **WYSŁANE przez usera 21:13** (hook: Mobbin MCP z banku) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
@@ -294,6 +295,19 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-29 00:22 UTC — przebiegi #148–#153 (batch): PIERWSZA REALNA ODPOWIEDŹ KAMPANII (AlphaSignal).**
+  6 firingów cron przyszło zbatchowanych → jeden skonsolidowany przebieg. Data: 2026-07-29. Poczta:
+  0 płatności gate.cat; **NOWY genuine inbound: AlphaSignal** — Meredith Brown (Director of Brand
+  Partnerships) odpisała 07-28 17:03 na outreach ownera, chce call o „marketing goals" (Calendly). To
+  ścieżka PŁATNEGO SPONSORINGU (nie affiliate). Dedupe czysty (0 draftów do alphasignal, moja/owner
+  odpowiedź jeszcze nie istniała). **Draft agenta** `r8759546498219095400`: uczciwy no-spend default —
+  „brak budżetu na paid sponsoring; 30% lifetime-recurring commission; jeśli robicie performance/affiliate,
+  chętnie call; jeśli tylko paid — wrócę z budżetem"; liczby z FACTS (F13). **Wymaga decyzji ownera**
+  (płacić za placement = jego pieniądze). **Day-7 Julian/AI-Eng (due dziś 07-29): POMINIĘTY** — sprawdzone
+  in:sent: owner NIE wysłał draftów day-3 → day-7 „ostatni dotyk" bezsensowny bez wysłanego day-3 (nie
+  stackuję niewysłanych draftów). Kolejka v6 zamknięta; PR #27 clean, CI zielone. Wąskie gardło: merge →
+  deploy → publish. Do usera: flag o AlphaSignal (decyzja $).
 
 - **2026-07-28 00:21–16:21 UTC — przebiegi #131–#147: HOLD (nowy dzień) + owner pcha dystrybucję.**
   Poczta: 0 płatności gate.cat, 0 nowego inbound wymagającego draftu. **Sygnały (owner, nie moja akcja):**
