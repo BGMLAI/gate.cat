@@ -43,10 +43,11 @@ początku każdego przebiegu i aktualizuje go na końcu. Kolejność przebiegu:
 
 | Metryka | Wartość | Stan na |
 |---|---|---|
-| Przychód gate.cat (potwierdzony w Gmail/Stripe) | **$0 / $2,000** | 2026-07-22 |
-| Pobrania PyPI (trailing month, bez mirrorów) | 2,529 (F13 re-pin; pełna seria od 2026-07-03) | 2026-07-23 |
-| Płacący klienci Cloud/Packs | 0 | 2026-07-22 |
-| Wersja na PyPI | **0.4.18** (F9 re-pin; GH release v0.4.18 07:21 UTC; wheel ma kosmetyczny desync `__version__`=0.4.17, fix w 0.4.19) | 2026-07-23 |
+| Przychód gate.cat (potwierdzony w Gmail/Stripe) | **$0 / $2,000** | 2026-07-29 |
+| Pobrania PyPI (bez mirrorów, cały okres publikacji) | **2,662** (F13a re-pin; 3–28 lip 2026; downloads ≠ users) | 2026-07-29 |
+| Płacący klienci Cloud/Packs | 0 | 2026-07-29 |
+| Wersja na PyPI | **0.4.18** (F9 re-pin 07-29; GH release v0.4.18; wheel ma kosmetyczny desync `__version__`=0.4.17, fix w 0.4.19) | 2026-07-29 |
+| Korpus F1b (recall na realnym ruchu) | **826 644** komend (dolna granica; recount 2026-07-28) — liczba 1 085 159 WYCOFANA (double-count SWE-Hero, +23,8%) | 2026-07-29 |
 
 Znane fakty operacyjne:
 - Nudge post-veto z 0.4.17 kieruje na `gate.cat/teams.html` — **strona nie istnieje (404)** → T1.
@@ -296,6 +297,29 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-29 16:48 UTC — przebieg #170: MERGE MASTERA (recount korpusu) → gałąź zsynchronizowana + sweep WYCOFANEJ liczby.**
+  Owner przeliczył korpus F1b globalnym dedupem: **1 085 159 → 826 644** (dolna granica; zakres do 835 128 po zmianie
+  nazw splitów SWE-Gym w HF; SWE-Hero liczony 2× = +258 515, +23,8%). Przy okazji odświeżył FACTS 2026-07-29: F3
+  (1 956 collected / 0 failed, v0.4.18), **F4 3 named gaps** (2 slip whole product: homoglyph + printf-hex; 3.
+  runtime-assembly łapie delete-analyzer — było „1 gap"), F9/F10 re-pin, **F13a 2 662** downloads. Gałąź: 11 za / 159
+  przed masterem. **Zmergowano origin/master** — 7 konfliktów (FACTS, COMPARISON, OBJECTIONS, llms.txt, show_hn,
+  blog, index.html) rozwiązane wg zasady: claims/liczby → wersja mastera (nowsza, uczciwsza); **F14 (scaffold) + moje
+  V2 OG-cardy zachowane**; blog: obie poprawki zmergowane (F6/F7 „artifact not published" caveat + `guard_callable`
+  nota). **Sweep wycofanej liczby 1 085 159 w LIVE copy** (owner poprawił tylko pliki mastera; moje branch-only
+  artefakty niosły starą liczbę): README:329, packs/teams/partners/answers html, welcome_pack, reply_bank, followup,
+  pakiet Mike'a → **826 644 (lower bound, recount 2026-07-28)** + „4 allows"→„2 allows" + F4 „1 gap"→„3 gaps (2
+  silent)"; testy `test_marketing_consistency` zsynchronizowane (asercje 198/250 → 826 644; 248 „runtime-assembly
+  gap"→„regex-wall gap"; dodany strażnik „1 085 159 not in"). Wycofana liczba zostaje TYLKO w kontekstach
+  historycznych (CHANGELOG, RECALL/blog/llms/coverage correction-notes, LOG PĘTLI). **Weryfikacja:** pełny suite
+  **2017 passed / 29 skipped / 0 failed**; bypass_suite live = 178/178 + 1/129 + 3 gaps (2 silent) — zgodne z F4.
+  Poczta: 0 płatności gate.cat, 0 genuine inbound (tylko szum: 2× GitHub CI-fail + 2× Claude.ai auth-link).
+  **DIAGNOZA: master CI RED** (d64839b, aa85346; job CI/test 3.x): `test_marketing_consistency.py:65`
+  `assert "document.cookie" not in landing` — master ma na landingu first-party cookie-funnel (`readCookie`/
+  `writeCookie` dla atrybucji UTM), a test wciąż tego zabrania → 2 faily (`test_claude_design_landing_uses_the_live_
+  stripe_offer`, `test_landing_tracks_cookieless_funnel_events`). NIEZALEŻNE od recountu; moje V2 pogodziło obie
+  strony (funnel + test) → **merge PR #27 robi mastera zielonym**. Do usera: reconciliation + przyczyna master-CI +
+  fix; 2 drafty (AlphaSignal `r8759546498219095400`, CloudSecList `r-1703502179894633069`) nadal czekają na decyzję $.
 
 - **2026-07-29 15:22 UTC — przebieg #169: DRUGI INBOUND SPONSORINGOWY (CloudSecList) → draft no-spend.**
   Owner zgłosił gate.cat do CloudSecList (14:11); Marco Lancini odpisał (14:24) pitchem sponsoringu. Dedupe
