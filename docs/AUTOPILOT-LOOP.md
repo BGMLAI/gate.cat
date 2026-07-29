@@ -283,7 +283,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c6bc670b0dd | Hamish — Income Stream Surfer (mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r-5258681500585045275`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f90c5ea4d15646 | Rafa — Late Checkout (partnerships dla Greg Isenberg, mega) | 2026-07-26 | **DRAFTED day-3** (szablon mega, draft `r562362032908632679`) | day-3 ✅ / day-7 due 2026-07-30 |
 | 19f7acd133235366 | (adres w Gmailu pod ID wątku — zredagowany, rule 9) | 2026-07-19 | bounce (serwer odbiorcy); brak akcji agenta — nr tel. ma user | n/a — bounce |
-| 19fae37935d73b79 | **INBOUND — CloudSecList (Marco Lancini)** | 2026-07-29 | Owner zgłosił gate.cat do CloudSecList (14:11); Marco odpisał (14:24) pitchem sponsoringu („could consider sponsoring… 50% open rate"). Ten sam wzorzec co AlphaSignal (paid). **DRAFT agenta** `r-1703502179894633069` (replyTo 19fae43f7715e52d): uczciwie „to była submisja EDYTORIALNA nie sponsoring; brak budżetu; jeśli fit dla cloud-sec audience — chętnie feature; affiliate 30% jeśli robicie; wrócę z budżetem jeśli tylko paid"; liczby z FACTS (F4 178/178). **[USER] DECYZJA** (paid vs editorial/affiliate). ZERO commitu $. | odpowiedź inbound — piłka u ownera |
+| 19fae37935d73b79 | **INBOUND — CloudSecList (Marco Lancini)** | 2026-07-29 | Owner zgłosił gate.cat do CloudSecList (14:11); Marco odpisał (14:24) pitchem sponsoringu („could consider sponsoring… 50% open rate"). Ten sam wzorzec co AlphaSignal (paid). **DRAFT agenta** `r-1703502179894633069` (replyTo 19fae43f7715e52d): uczciwie „to była submisja EDYTORIALNA nie sponsoring; brak budżetu; jeśli fit dla cloud-sec audience — chętnie feature; affiliate 30% jeśli robicie; wrócę z budżetem jeśli tylko paid"; liczby z FACTS (F4 178/178). **OWNER OBSŁUŻYŁ SAM 2026-07-29:** wysłał własną odmowę 15:28 („solo founder, brak budżetu, sponsoring off the table") + osobną korektę liczb 16:56. **Mój draft `r-1703502179894633069` SUPERSEDED.** Brak nowej wiadomości od Marco po tym. | ZAMKNIĘTE (owner-handled) |
 | 19fa9aea0cb5a858 | **INBOUND — AlphaSignal (Meredith Brown, Director of Brand Partnerships)** | 2026-07-29 | **PIERWSZA REALNA ODPOWIEDŹ KAMPANII.** Meredith odpisała (07-28 17:03) na outreach ownera do AlphaSignal — chce call o „marketing goals" (Calendly). To BRAND PARTNERSHIPS = płatny sponsoring (AlphaSignal sprzedaje placementy). **OWNER OBSŁUŻYŁ SAM 2026-07-29** (2 własne odpowiedzi 10:32+12:31, no-spend/affiliate framing; stary draft agenta `r8759546498219095400` odrzucony/zniknął z list_drafts). **Meredith odpisała 19:15 — grzeczna ODMOWA** („we don't have an affiliate or commission-based program… probably not the right fit… circle back when you're ready to explore a paid placement"). **DRAFT agenta — grzeczne domknięcie** `r9138714036445228051` (replyTo 19faf4dbfe729ac6): podziękowanie + „brak budżetu = nie teraz, wrócę gdy będzie"; ZERO liczb/claimów, zero re-pitchu; wysyła owner. | ZAMYKANIE — grzeczny close drafted, piłka u ownera |
 | 19f90c6bc670b0dd | Hamish / Income Stream Surfer (YT, CC+strony klientów) | 2026-07-23 | **WYSŁANE przez usera 21:10** (batch #2, hook z dzisiejszego wideo) | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 | 19f90ce1b4ba7892 | Cole Medin / Ottomator (YT; wideo „run your agent safely" Z DZIŚ) | 2026-07-23 | **WYSŁANE przez usera 21:12** — najmocniejszy fit batcha | **2026-07-26 / 2026-07-30** (tier: YouTube) |
@@ -297,6 +297,19 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 | 19f90c515ec33953 | Jack / AI Automations with Jack (YT; 3-4 agentic wideo/tydz.) | 2026-07-23 | **WYSŁANE przez usera 21:37** | **2026-07-26 / 2026-07-30** (tier: YouTube) |
 
 ## LOG PĘTLI
+
+- **2026-07-29 22:23 UTC — przebiegi #174-176 (batch 3 firingów): owner wykonał dużą falę outreachu + korekty liczb; CloudSecList też owner-handled.**
+  Poczta: 0 płatności gate.cat (Stripe filtr „business information" = pusto). **Owner bardzo aktywny 13:30-16:57:**
+  ~12 cold-maili affiliate/newsletter (YouTuberzy KR/FR/DE/IT + security newslettery — hook bank z W2) + submisje do
+  6 newsletterów (DevOps Weekly, The New Stack, SE Daily, The Hacker News, Pragmatic Engineer, CloudSecList) — WSZYSTKO
+  wysyła owner (cold-outreach = wyłącznie jego rola). **Owner sam wysłał 6 korekt „two numbers were wrong" (16:51-16:57)**
+  — niezależnie złapał wycofaną liczbę w swoich submisjach; dokładnie potwierdza sens recountu z #170-171. **CloudSecList:
+  owner obsłużył SAM** (własna odmowa 15:28 + korekta 16:56) → mój draft `r-1703502179894633069` SUPERSEDED, LEDGER
+  zamknięty (wzorzec jak AlphaSignal). Jeden cold-mail ownera zbił się (zła domena odbiorcy — bounce; adres NIE w repo,
+  rule 9). Brak NOWEGO third-party reply wymagającego draftu (fala dopiero wyszła; jedyne INBOX = szum CI-fail + pitch
+  Marco już obsłużony + bounce). AlphaSignal close-draft `r9138714036445228051` (#173) nadal czeka na wysyłkę ownera.
+  PR #27 **CI ZIELONE 3/3** (head 40ee0fe, run 30484262003); 0 za / 164 przed masterem (bez ruchu). Kolejka pusta,
+  panel = wata (owner-gated). Bez pisania do usera (wszystko owner-driven; brak decyzji dla mnie).
 
 - **2026-07-29 19:23 UTC — przebieg #173: AlphaSignal domknięty (Meredith odmówiła) → grzeczny close-draft.**
   Poczta: 0 płatności gate.cat (Stripe filtr „business information" = pusto), 0 innego nowego inbound. **AlphaSignal:
