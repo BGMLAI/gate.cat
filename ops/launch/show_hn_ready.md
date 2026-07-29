@@ -4,7 +4,7 @@ Poprawki vs docs/LAUNCH_KIT_2026-07-14.md (fixy sędziów panelu 2026-07-22):
 konflacja "1M replay → 1 false-block" rozdzielona na F1b (0 real misses) i F4
 (bypass suite, 1/129 benign); 69→71 policies (F10); €9→€19 (PRICING.md);
 "zero dependencies"→"zero-dependency core" (pyproject: `dependencies = []`,
-extras opt-in). Wersja: 0.4.17 (F9).
+extras opt-in). Wersja: 0.4.18 (F9).
 
 **KIEDY:** najlepiej PO merge PR #26 + deploy (USER-2) — ruch ma trafiać na
 działające gate.cat/teams.html. Optymalnie wt–czw, 14:00–16:00 UTC.
@@ -34,10 +34,10 @@ The check is deterministic string + path analysis plus an independent exec analy
 
 Numbers, measured not claimed (every public number has a row in FACTS.md in the repo, pinned to a reproducible artifact):
 
-- 1,085,159 unique real agent commands (5 public datasets) replayed through the full 6-stage gate: 0 real misses after adjudication — the 4 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits, and the adjudication is in the repo
+- 826,644 unique real agent commands (5 public datasets) replayed through the full 6-stage gate: 0 real misses after adjudication — the 4 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits, and the adjudication is in the repo
 - the reproducible bypass suite catches 178/178 danger shapes it claims — and prints its own known gap (runtime assembly) plus 1 benign false-block in 129 cases; we publish the misses instead of hiding them
 - 71 default policy walls (73 presets incl. opt-in), ~0.6% intervention rate on real commands (two independent logs)
-- Apache-2.0, zero-dependency core, 0.4.17 on PyPI
+- Apache-2.0, zero-dependency core, 0.4.18 on PyPI
 
 Honest limits, because that's the whole brand: the gate is certain only about what it blocks — an unmatched action is unchecked, not safe. It's a wall in front of known-dangerous shapes, not a proof of safety. Use it with your sandbox, not instead of one: a sandbox can't tell you what the agent tried, and it won't stop a terraform destroy that has real credentials inside the sandbox.
 

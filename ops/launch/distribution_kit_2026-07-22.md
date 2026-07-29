@@ -1,8 +1,8 @@
 # Pakiet dystrybucyjny — WSZYSTKO paste-ready (fact-check: FACTS.md, 2026-07-22)
 
 Zastępuje sekcje 2–6 z docs/LAUNCH_KIT_2026-07-14.md (tamte mają stale liczby:
-€9, 69 policies, konflację 1M-replay z false-blockiem). Show HN osobno:
-`ops/launch/show_hn_ready.md`. Liczby tu użyte: F1b (0 real misses / 1,085,159),
+€9, 71 policies, konflację 1M-replay z false-blockiem). Show HN osobno:
+`ops/launch/show_hn_ready.md`. Liczby tu użyte: F1b (0 real misses / 826,644, recounted 2026-07-28),
 F4 (178/178 + 1/129 benign + named gap), F10 (71/73), F2 (~0.6%), PRICING (€19/149/399, packi €29).
 
 ## KOLEJNOŚĆ PUBLIKACJI (ważne — nie wszystko naraz)
@@ -30,7 +30,7 @@ Claude Code runs shell commands. Sometimes the wrong ones. gate.cat is a PreTool
 Setup: pip install gate.cat, add gatecat-hook to .claude/settings.json (matcher "Bash|Write|Edit"). That's it.
 
 Measured, not claimed (every number is pinned in FACTS.md in the repo to a reproducible artifact):
-- 1,085,159 unique real agent commands from 5 public datasets replayed through the full 6-stage gate: 0 real misses after adjudication
+- 826,644 unique real agent commands from 5 public datasets replayed through the full 6-stage gate: 0 real misses after adjudication
 - the bypass suite catches 178/178 danger shapes it claims — and prints its own known gap (runtime assembly) plus 1 benign false-block in 129 cases; we publish the misses instead of hiding them
 - 71 default policy walls, ~0.6% intervention rate on real commands (two independent logs)
 
@@ -55,7 +55,7 @@ If you run local models with tool use (Ollama, vLLM, LM Studio, OpenRouter — a
 Also works as a gated shell for CLI agents (gatecat-shell) and as a Claude Code hook.
 
 Numbers with receipts (FACTS.md in the repo pins every claim to a reproducible artifact):
-- 1,085,159 unique real agent commands replayed through the full gate → 0 real misses after adjudication
+- 826,644 unique real agent commands replayed through the full gate → 0 real misses after adjudication
 - bypass suite: 178/178 danger shapes caught, 1 benign false-block in 129, and it prints its own known gap — we'd rather you read our misses than trust a clean number
 - 71 default policy walls covering recursive delete, disk wipe, DB drop, cloud teardown, git history destruction, secret exfil, fork bombs, guard self-defense
 
@@ -82,7 +82,7 @@ pip install gate.cat
 
 Three integration modes: Claude Code hook, gated shell wrapper for any CLI agent, local OpenAI-API proxy.
 
-The part I'd actually like feedback on: we publish our own bypass map. The suite catches 178/178 danger shapes it claims, and prints its known gap (runtime assembly) plus 1 benign false-block in 129 cases. 1,085,159 real agent commands replayed → 0 real misses after adjudication. All pinned in FACTS.md with reproduction scripts — if your numbers disagree, that's a bug report we want.
+The part I'd actually like feedback on: we publish our own bypass map. The suite catches 178/178 danger shapes it claims, and prints its known gap (runtime assembly) plus 1 benign false-block in 129 cases. 826,644 real agent commands replayed → 0 real misses after adjudication. All pinned in FACTS.md with reproduction scripts — if your numbers disagree, that's a bug report we want.
 
 https://github.com/BGMLAI/gate.cat · https://pypi.org/project/gate.cat/
 ```
@@ -94,7 +94,7 @@ https://github.com/BGMLAI/gate.cat · https://pypi.org/project/gate.cat/
 
 gate.cat blocks it before the shell sees it.
 
-1,085,159 real agent commands replayed → 0 real misses.
+826,644 real agent commands replayed → 0 real misses.
 the bypass suite prints its own known gap.
 
 deterministic. fail-closed. apache 2.0.
@@ -159,7 +159,7 @@ https://github.com/BGMLAI/gate.cat
 ### awesome-ai-agents / awesome-security / awesome-python / awesome-claude-code
 Wspólny opis (dostosuj długość do konwencji danej listy):
 ```
-gate.cat — deterministic, fail-closed action veto for AI coding agents. Blocks irreversible shell commands (rm -rf, DROP TABLE, terraform destroy, secret exfil) before execution: Claude Code hook, gated shell, or OpenAI-API proxy. 71 default policies, zero-dependency core, Apache 2.0. Publishes its own bypass map: 178/178 claimed danger shapes caught (1 benign false-block in 129, known gap printed); 1,085,159 real agent commands replayed → 0 real misses. https://github.com/BGMLAI/gate.cat
+gate.cat — deterministic, fail-closed action veto for AI coding agents. Blocks irreversible shell commands (rm -rf, DROP TABLE, terraform destroy, secret exfil) before execution: Claude Code hook, gated shell, or OpenAI-API proxy. 71 default policies, zero-dependency core, Apache 2.0. Publishes its own bypass map: 178/178 claimed danger shapes caught (1 benign false-block in 129, known gap printed); 826,644 real agent commands replayed → 0 real misses. https://github.com/BGMLAI/gate.cat
 ```
 Krótka wersja (awesome-python, jedna linia):
 ```
