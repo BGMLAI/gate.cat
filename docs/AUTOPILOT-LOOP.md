@@ -305,11 +305,11 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-30 08:22 UTC — przebieg #186: HOLD (rolling; panel v7 = monitoring-only) + sync mastera.** Master ruszył
+- **2026-07-30 08:22–09:22 UTC — przebiegi #186-187: HOLD (rolling; panel v7 = monitoring-only) + sync mastera.** Master ruszył
   (daily-metrics Action: `2ce5a62`, +1 linia METRICS.log) → **zmergowany do gałęzi czysto** (0 konfliktów; gałąź 0 za /
-  175 przed). Poczta: 0 płatności gate.cat, 0 nowego inbound (wątki domknięte; fala outreachu wciąż bez odpowiedzi
+  master). Poczta: 0 płatności gate.cat, 0 nowego inbound (wątki domknięte; fala outreachu wciąż bez odpowiedzi
   twórców). Zgodnie z werdyktem **PANEL v7: BEZ re-panelowania** — monitoring-only aż do zdarzenia bramkującego $
-  (owner merge/publish PR #27 LUB odpowiedź z fali outreachu). PR #27 CI zielone; master zsynchronizowany. Bez pisania
+  (owner merge/publish PR #27 LUB odpowiedź z fali outreachu). PR #27 CI zielone 3/3; master zsynchronizowany. Bez pisania
   do usera. (Rolling — kolejne HOLD-y bumpują ten wpis.)
 
 - **2026-07-30 07:22 UTC — przebieg #185: PANEL v7 (adversarialny, wieloмodelowy) → WYCZERPANIE, HOLD.** Poczta: 0 płatności
