@@ -307,13 +307,16 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-30 15:22–20:22 UTC — przebiegi #193-198: HOLD (rolling; monitoring-only) + sync mastera (korekta landingu ownera).**
+- **2026-07-30 15:22–21:22 UTC — przebiegi #193-199: HOLD (rolling; monitoring-only) + sync mastera (korekta landingu ownera).**
   Master ruszył 2 commitami ownera: `073ae27` (korekta liczb na docs/index.html: 69→71 policy walls, usunięty stale
   token 0.4.11) + `42194c9` (launch_metrics: split page_views vs bot-hits) → **zmergowane czysto** (index.html
-  auto-merge bez konfliktu; gałąź 0 za / master). Poczta: 0 płatności gate.cat, 0 NOWEGO inbound — drafty
-  klaryfikacyjne Julian `r-6752863379386098879` + Melvyn `r1068399915179941169` (#192) nadal czekają na wysyłkę
-  ownera; reszta wątków domknięta. Panel v7: monitoring-only. PR #27 CI zielone 3/3; master zsynchronizowany. Bez
-  pisania do usera. (Rolling — kolejne HOLD-y bumpują ten wpis.)
+  auto-merge bez konfliktu; gałąź 0 za / master). Poczta: 0 płatności gate.cat, 0 NOWEGO inbound wymagającego akcji —
+  drafty klaryfikacyjne Julian `r-6752863379386098879` + Melvyn `r1068399915179941169` (#192) nadal czekają na wysyłkę
+  ownera; reszta wątków domknięta. **Obserwacja #199:** siostrzana rutyna „gate.cat MONITOR" (3×/dzień 09/15/21 PL,
+  no-reply-claude@) zaraportowała do bgml@bgml.ai 2 okazje HN ≥60 (najlepsza: resubmit „Anatomy of a Frontier Lab
+  Agent Intrusion", ~4-5h okno) — **HN = owner-gated dystrybucja, ZERO akcji agenta**; owner ma to bezpośrednio z
+  własnej rutyny. Panel v7: monitoring-only. PR #27 CI zielone 3/3; master zsynchronizowany. Bez pisania do usera.
+  (Rolling — kolejne HOLD-y bumpują ten wpis.)
 
 - **2026-07-30 14:22 UTC — przebieg #192: PIERWSZE ODPOWIEDZI Z FALI OUTREACHU (Julian + Melvyn) → 2 drafty klaryfikacyjne.**
   Panel v7 „resume trigger" (odpowiedź z fali) ODPALIŁ. **Julian Goldie** (thread `19facf70e...`) odpisał 13:40 pitchem
