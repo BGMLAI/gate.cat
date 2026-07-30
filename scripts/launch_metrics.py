@@ -71,11 +71,21 @@ def paid_customers():
 def real_funnel():
     """REAL human funnel from the nginx events log (JS-fired events = humans with a
     browser), NOT bot-inflated PyPI. Counts page_view / install_copy / checkout_click."""
+    # A path-enumeration bot probes a fixed dictionary of generic SaaS paths
+    # (/impressum, /alternatives, /free-trial, /testimonials, ...). Each SPA-falls-
+    # back to index.html and fires track("page_view"), inflating the "real human"
+    # number ~4x. A genuine landing arrival has referer path "/" (root, +/- query).
+    # We report BOTH raw page_view and landing-only (referer == gate.cat root) so the
+    # STOP/PIVOT tripwire reads true qualified traffic, not bot enumeration.
     remote = (
         "L=/var/log/nginx/gate.cat.events.log; "
         "if [ -f \"$L\" ]; then "
         "for e in page_view install_copy checkout_click pypi_click github_click; do "
         "n=$(grep -oE \"e=$e\\b\" \"$L\" 2>/dev/null | wc -l); echo \"$e=$n\"; done; "
+        # landing-only page_view: referer path is exactly "/" (root), optional ?query
+        "lp=$(grep 'e=page_view' \"$L\" 2>/dev/null | "
+        "grep -cE '\\\"https://gate\\.cat/(\\?[^\\\"]*)?\\\"$'); "
+        "echo \"page_view_landing=$lp\"; "
         "else echo 'no_events_log'; fi"
     )
     try:
@@ -127,11 +137,21 @@ def main():
 
     rf = real_funnel()
     if "error" not in rf and "no_events_log" not in rf:
+        pv_raw = rf.get('page_view', 0)
+        pv_land = rf.get('page_view_landing', '?')
         print("REAL human funnel (nginx events, NOT bot PyPI):")
-        print(f"  page_views={rf.get('page_view','?')}  install_copy={rf.get('install_copy','?')}  "
+        print(f"  page_views={pv_raw} (raw)  landing_page_views={pv_land} (referer=/, bot-filtered)")
+        print(f"  install_copy={rf.get('install_copy','?')}  "
               f"checkout_click={rf.get('checkout_click','?')}  pypi_click={rf.get('pypi_click','?')}  "
               f"github_click={rf.get('github_click','?')}")
-        print(f"  ^ THIS is real traction; PyPI 'downloads' above are bot/mirror/CI inflated.\n")
+        if isinstance(pv_land, int) and isinstance(pv_raw, int) and pv_raw:
+            bot_pct = (pv_raw - pv_land) / pv_raw * 100
+            print(f"  ^ ~{bot_pct:.0f}% of raw page_views are path-enumeration BOT hits (SPA fallback on")
+            print(f"    /impressum, /alternatives, /free-trial ...). Qualified human traffic = landing_page_views.")
+            print(f"    0 clicks at {pv_land} real landing views = TRAFFIC problem (get qualified traffic),")
+            print(f"    not a page problem. This is the STOP/PIVOT tripwire signal.\n")
+        else:
+            print(f"  ^ THIS is real traction; PyPI 'downloads' above are bot/mirror/CI inflated.\n")
     else:
         print(f"REAL funnel: {rf}\n")
 
