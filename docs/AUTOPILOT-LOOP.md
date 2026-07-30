@@ -298,11 +298,12 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-30 00:21–03:21 UTC — przebiegi #178-181: HOLD (rolling; czekamy na odpowiedzi z fali outreachu ownera).** Poczta: 0
+- **2026-07-30 00:21–04:22 UTC — przebiegi #178-182: HOLD (rolling; czekamy na odpowiedzi z fali outreachu ownera).** Poczta: 0
   płatności gate.cat (Stripe filtr = pusto), 0 nowego inbound (AlphaSignal + CloudSecList domknięte przez ownera;
-  Console.dev auto-acki; fala affiliate/newsletter 13:30-16:57 wciąż bez odpowiedzi twórców). PR #27 **CI ZIELONE 3/3**
-  (head 3c3ba74); 0 za / 169 przed masterem (master bez ruchu — daily-metrics Action nie odpalił dziś jeszcze).
-  Kolejka pusta, panel = wata (owner-gated). Bez akcji, bez pisania do usera. (Rolling — kolejne HOLD-y bumpują ten wpis.)
+  Console.dev auto-acki; fala affiliate/newsletter 13:30-16:57 wciąż bez odpowiedzi twórców). PR #27 **CI ZIELONE 3/3 +
+  `mergeable_state: clean`** (head 23b6a42 — w pełni gotowy do merge, bez konfliktów); 0 za / 170 przed masterem (master
+  bez ruchu — daily-metrics Action nie odpalił dziś jeszcze). Kolejka pusta, panel = wata (owner-gated). Bez akcji, bez
+  pisania do usera. (Rolling — kolejne HOLD-y bumpują ten wpis.)
 
 - **2026-07-29 23:22 UTC — przebieg #177: oba wątki sponsoringowe DOMKNIĘTE przez ownera.** Poczta: 0 płatności
   gate.cat (Stripe filtr = pusto), 0 nowego third-party reply wymagającego draftu. **AlphaSignal: owner wysłał grzeczne
