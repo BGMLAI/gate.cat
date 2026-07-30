@@ -307,7 +307,7 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
-- **2026-07-30 15:22–19:22 UTC — przebiegi #193-197: HOLD (rolling; monitoring-only) + sync mastera (korekta landingu ownera).**
+- **2026-07-30 15:22–20:22 UTC — przebiegi #193-198: HOLD (rolling; monitoring-only) + sync mastera (korekta landingu ownera).**
   Master ruszył 2 commitami ownera: `073ae27` (korekta liczb na docs/index.html: 69→71 policy walls, usunięty stale
   token 0.4.11) + `42194c9` (launch_metrics: split page_views vs bot-hits) → **zmergowane czysto** (index.html
   auto-merge bez konfliktu; gałąź 0 za / master). Poczta: 0 płatności gate.cat, 0 NOWEGO inbound — drafty
