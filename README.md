@@ -76,9 +76,10 @@ pip install "gate-cat[all]"         # everything
 > Quote the extras (`"gate-cat[openai]"`) — zsh treats bare `[...]` as a glob.
 
 **Free forever** — the full local gate, nothing rate-limited. The paid layer is
-optional and off by default: **Cloud Solo €19/mo · Team €149/mo flat (up to 10
-machines) · Business €399/mo · one-time €29 policy packs** — details and honest
-boundaries in [PRICING.md](PRICING.md). Blocking never depends on payment.
+optional and off by default: **Cloud Team €299/mo (up to 25 seats) · Business
+€399/mo (evidence log in your own infra) · Compliance from €900/mo**, plus
+**Solo €19/mo** for a single developer — details and honest boundaries in
+[PRICING.md](PRICING.md). Blocking never depends on payment.
 
 ## The hook — the strongest mode
 
@@ -284,13 +285,15 @@ What we ask back — this project runs on one currency:
 **The local gate is free forever — including local reports.** The paid layer,
 **gate.cat Cloud**, is the off-machine copy of your veto history — the one an
 agent with shell access can't delete or rewrite (a local log is inside its
-blast radius). Launch prices: **Solo €19/mo · Team €149/mo flat (up to 10
-machines) · Business €399/mo**. Stripe checkout is live with automatic
-activation and subscription lifecycle handling. The local gate remains
-free forever.
+blast radius). Prices: **Team €299/mo up to 25 seats · Business €399/mo with
+the evidence log self-hosted in your own infrastructure · Compliance from
+€900/mo** with control mapping and questionnaire support, plus **Solo €19/mo**
+for a single developer. Stripe checkout is live with automatic activation and
+subscription lifecycle handling; Team and Compliance also go by VAT invoice and
+bank transfer. The local gate remains free forever.
+[Business (€399/mo)](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) ·
 [Start Solo (€19/mo)](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09) ·
-[Team — €149/mo flat, up to 10 machines](https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a) ·
-[Business (€399/mo)](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) —
+[Team and Compliance — talk to us](mailto:bogumil@bgml.ai?subject=gate.cat%20Team) —
 or buy a one-time €29 policy pack:
 [Fintech](https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c) ·
 [PaaS](https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d) ·
@@ -630,7 +633,21 @@ Built-in embedders: `minilm` (text), `clip` (image, coming soon), `clap` (voice,
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+**Everything you `pip install` is Apache 2.0 and stays that way** — the veto
+engine, all 71 default policy walls, the reproducible bypass suite, the Claude
+Code hook and every framework adapter. Free forever, complete, nothing held
+back. See [LICENSE](LICENSE).
+
+The large-corpus evaluation harness and its adjudicated result artifacts
+(`scripts/corpus_million*.py`, `results/million_recall_*.json`) are licensed
+separately from 2026-07-31 under the [Corpus & Benchmark Licence](LICENSE-CORPUS)
+— **you may still read them, re-run them and publish results that contradict
+ours, for free and without asking**; a commercial licence is needed to
+redistribute them or to publish your own product's figures measured against
+them. The 43-class recall catalog you need to reproduce our headline claim
+(`scripts/recall_danger_axis.py`) is deliberately left under Apache 2.0.
+
+Full map: [LICENSING.md](LICENSING.md).
 
 Built by [BGML.ai](https://bgml.ai) / [Fundacja BLOOM](https://bloom.foundation).
 Policy Packs → [gate.cat/#packs](https://gate.cat/#packs)

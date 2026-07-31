@@ -14,15 +14,18 @@ def test_llms_txt_tracks_current_package_and_offer():
 
     assert f"version {project['project']['version']}" in llms
     assert "71 default policies" in llms
+    assert "Team €299/month" in llms
+    assert "Business €399/month" in llms
+    assert "Compliance from €900/month" in llms
     assert "Solo €19/month" in llms
-    assert "Team €149/month" in llms
-    assert "€29 each, one-time" in llms
 
 
 def test_readme_exposes_a_direct_paid_path():
     readme = (ROOT / "README.md").read_text()
 
+    assert "Business (€399/mo)" in readme
     assert "Start Solo (€19/mo)" in readme
+    assert "https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b" in readme
     assert "https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09" in readme
     assert "https://buy.stripe.com/dRm5kw6Bn3iMfFS1Rk67S0c" in readme
     assert "https://buy.stripe.com/3cI5kw3pbaLeeBO2Vo67S0d" in readme
@@ -33,11 +36,12 @@ def test_claude_design_landing_uses_the_live_stripe_offer():
     landing = (ROOT / "docs" / "index.html").read_text()
 
     assert "your agent runs shell commands" in landing
-    assert "https://buy.stripe.com/14AaEQ6BncTmctGbrU67S0f" in landing
-    assert landing.count("https://buy.stripe.com/") == 6
+    # Business is the primary paid CTA: the price a team on client infra can
+    # sign off, and the only high tier whose Stripe link already exists.
+    assert "https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b" in landing
+    assert "start business · €399/mo" in landing
+    assert landing.count("https://buy.stripe.com/") == 5
     assert "lemonsqueezy.com" not in landing
-    assert "start solo · €9" in landing
-    assert "founding price — locked for life, then €19" in landing
     assert "pip install" not in landing.lower()
     assert "install safely →" in landing
     assert "curl -fsSL https://gate.cat/install.sh" in landing
@@ -69,6 +73,43 @@ def test_landing_tracks_cookieless_funnel_events():
     # analytics tracker regressing to cookies) trips this.
     assert '"gc_ref"' in landing
     assert landing.count("document.cookie") == 2  # readCookie + writeCookie for gc_ref only
+
+
+def test_no_public_surface_advertises_a_price_pricing_md_does_not_carry():
+    """Every price shown to a buyer must exist in PRICING.md.
+
+    The 2026-07-29 incident was a number leaving the building ahead of its
+    source of truth. Prices are the same failure mode with an invoice attached:
+    a landing page that says €299 while Stripe charges €149 is a chargeback and
+    a refund, not a typo. PRICING.md is the register; the surfaces mirror it.
+    """
+    pricing = (ROOT / "PRICING.md").read_text()
+    surfaces = {
+        "landing": (ROOT / "docs" / "index.html").read_text(),
+        "llms.txt": (ROOT / "docs" / "llms.txt").read_text(),
+        "README": (ROOT / "README.md").read_text(),
+    }
+    # Retired ladder — these must not survive anywhere a buyer can read them.
+    for retired in ("€149", "up to 10 machines", "founding price"):
+        assert retired not in pricing, f"PRICING.md still carries {retired!r}"
+        for name, text in surfaces.items():
+            assert retired not in text, f"{name} still advertises {retired!r}"
+
+    for live in ("€299", "€399", "€900", "€19"):
+        assert live in pricing, f"PRICING.md lost the {live} tier"
+
+
+def test_unresolved_stripe_placeholders_never_reach_a_buyer():
+    """Tiers whose Stripe object does not exist yet must not render a CTA.
+
+    Team €299 and the maintained packs are marked with a placeholder in
+    PRICING.md until the Stripe products exist. The placeholder is allowed to
+    sit in PRICING.md — that is the to-do list — but a placeholder on the
+    landing page is a dead buy button.
+    """
+    for surface in ("docs/index.html", "docs/llms.txt", "README.md"):
+        text = (ROOT / surface).read_text()
+        assert "⟦STRIPE:" not in text, f"{surface} carries an unresolved Stripe placeholder"
 
 
 def test_landing_html_cannot_keep_stale_install_copy():
