@@ -138,6 +138,33 @@ Generyczny hak psuje eksperyment w sposób, którego wynik nie pokaże.
 rozmowę, linku do checkoutu, art. 50 AI Act. Sprzedajemy pomiar, nie ochronę —
 nikt nie kupuje ochrony przed ryzykiem, którego nie zmierzył.
 
+### 3.1. Wariant dla prospekta, który już się instrumentuje — szablon się WYWRACA
+
+Wykryte na prospekcie #1 (31.07). Firma zbudowała i otworzyła własne narzędzie
+wysyłające ślady sesji Claude Code do Langfuse, a w README ma wprost: *„tool
+spans for each tool call (Bash, Read, Edit…) with input/output"*, z tagowaniem
+per repo, branch, user i host.
+
+**Oni już mają każdą komendę Basha swoich agentów.** Wysłanie im maila 1
+(„mam narzędzie, które policzy Wam komendy") byłoby dowodem, że nie
+przeczytaliśmy ich repo — czyli dokładną odwrotnością efektu, który hak ma dać.
+
+Dla takiego prospekta:
+
+- **Nie oferować zbierania. Oferować klasyfikację i weto.** Ich luka nie jest w
+  danych, tylko w tym, że ślad *opisuje* zdarzenie po fakcie i **nie odmawia**.
+- **Powiedzieć wprost, że mogą nas pominąć** — skoro mają spany w Langfuse,
+  mogą sklasyfikować u siebie i nie uruchamiać naszego narzędzia wcale. To nie
+  jest ustępstwo, tylko jedyna wersja, w której inżynier nam uwierzy: liczby są
+  celem, narzędzie jest środkiem.
+- **Mówić ich językiem inżynierskim.** Jeśli napisali swoje w Ruście „for fast
+  startup and zero runtime dependencies", to nasze „zero zależności, tylko
+  stdlib, zero sieci" jest tym samym argumentem, a nie naszą ulotką.
+
+Reguła ogólna: **im mocniejszy dowód adopcji, tym bardziej mail 1 musi odejść
+od szablonu.** Firmy z wynikiem adopcji 35 dostają mail pisany pod nie, nie
+wypełniony wzorzec.
+
 ## 4. Mail 2 — po 3 dniach
 
 Jedno zdanie z **naszego** raportu jako przykład kształtu wyniku (liczba z
