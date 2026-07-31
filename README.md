@@ -62,7 +62,7 @@ blanket block):
 
 ![gate.cat stops rm -rf, a disk wipe, a curl-pipe-shell, and a prod DROP TABLE — while git status passes](https://raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/veto_catches.gif)
 
-<sub>Real engine output, not a mockup — reproduce it with [`docs/demos/veto_catches.sh`](docs/demos/veto_catches.sh). Each verdict names the rule (`RM_RF`, `DISK_DESTROY`, `ENCODED_EXEC`, `DB_DESTRUCTIVE`); a command outside the deny-list is *unchecked*, not *safe*. Cast: [`docs/demos/veto_catches.cast`](docs/demos/veto_catches.cast).</sub>
+<sub>Real engine output, not a mockup — reproduce it with [`docs/demos/veto_catches.sh`](https://github.com/BGMLAI/gate.cat/blob/master/docs/demos/veto_catches.sh). Each verdict names the rule (`RM_RF`, `DISK_DESTROY`, `ENCODED_EXEC`, `DB_DESTRUCTIVE`); a command outside the deny-list is *unchecked*, not *safe*. Cast: [`docs/demos/veto_catches.cast`](https://github.com/BGMLAI/gate.cat/blob/master/docs/demos/veto_catches.cast).</sub>
 
 ## Install
 
