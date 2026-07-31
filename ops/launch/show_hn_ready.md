@@ -34,8 +34,8 @@ The check is deterministic string + path analysis plus an independent exec analy
 
 Numbers, measured not claimed (every public number has a row in FACTS.md in the repo, pinned to a reproducible artifact):
 
-- 826,644 unique real agent commands (5 public datasets) replayed through the full 6-stage gate: 0 real misses after adjudication — the 4 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits, and the adjudication is in the repo
-- the reproducible bypass suite catches 178/178 danger shapes it claims — and prints its own known gap (runtime assembly) plus 1 benign false-block in 129 cases; we publish the misses instead of hiding them
+- 826,644 unique real agent commands (5 public datasets, lower bound — recounted 2026-07-28 with a global dedup) replayed through the full 6-stage gate: 0 real misses after adjudication — the 2 catalog-flagged allows are disposable-artifact cleanups the gate correctly permits, and the adjudication is in the repo
+- the reproducible bypass suite catches 178/178 danger shapes it claims — and prints 3 named regex-wall gaps (2 slip the whole product: a Unicode homoglyph and a printf-hex assembled rm; the 3rd, runtime-assembly, the delete-analyzer still catches) plus 1 benign false-block in 129 cases; we publish the misses instead of hiding them
 - 71 default policy walls (73 presets incl. opt-in), ~0.6% intervention rate on real commands (two independent logs)
 - Apache-2.0, zero-dependency core, 0.4.18 on PyPI
 
@@ -65,6 +65,20 @@ downvoty; checkout jest 1 klik od teams.html/#pricing. Surowe linki masz
 w PRICING.md, gdybyś wolał inaczej.
 
 ---
+
+## Asset: demo GIF gotowy (2026-07-31)
+
+README repo (`https://github.com/BGMLAI/gate.cat`) otwiera się teraz breadth-demo
+GIF-em [`docs/demos/veto_catches.gif`](../../docs/demos/veto_catches.gif) — 15 s,
+REALNY output silnika (`gate.cat why "<cmd>"`): `rm -rf`, disk-wipe, `curl|bash`,
+prod `DROP TABLE` → STOPPED, a `git status` przechodzi (nie blanket-block).
+Każdy werdykt nazywa regułę. Odtwarzalny: `docs/demos/veto_catches.sh`.
+
+Więc każdy klikający repo z Show HN widzi od razu „co to faktycznie łapie" —
+najczęstsze pytanie czytelnika. Opcjonalnie w pierwszym komentarzu można dać
+link do GIF-a (`raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/veto_catches.gif`),
+bo terminalowy GIF na Show HN mocno podbija engagement — ale nie jest wymagany,
+bo README i tak nim wita.
 
 ## Gałęzie odpowiedzi modów HN (V1, 2026-07-23; mail second-chance wysłany 07:33 UTC)
 
