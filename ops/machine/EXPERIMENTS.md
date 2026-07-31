@@ -11,7 +11,7 @@ znaczy zmianę kierunku, nie „popracujmy nad copy". Ten plik istnieje po to,
 | E-3 | `gatecat upgrade` w CLI | — | — | nieuruchomiony |
 | E-4 | Trial z kartą | — | — | nieuruchomiony |
 | E-5 | Product Hunt daje dystrybucję do B2B security tooling | wzrost pobrań | 29.07 → 30.07 | ❌ **NEGATYWNY.** 5 upvote'ów, 16 followersów, 0 komentarzy zewnętrznych, 0 przyrostu pobrań. Kanał zamknięty bez relaunchu. |
-| **E-6** | **Darmowy retro-scan na danych prospekta otwiera rozmowę, której nie otwiera żaden komunikat marketingowy** | **≥2 z 16** prospektów przyjmuje skan I umawia rozmowę o wersji płatnej — mianownik ustalony 31.07 (patrz niżej) | **03.08 → 11.08** | — |
+| **E-6** | **Darmowy retro-scan na danych prospekta otwiera rozmowę, której nie otwiera żaden komunikat marketingowy** | **≥2 z 20** prospektów przyjmuje skan I umawia rozmowę o wersji płatnej — mianownik ustalony 31.07 (patrz niżej) | **03.08 → 11.08** | — |
 | E-7 | Licencja korpusu ma kupca | ≥1 rozmowa handlowa z dostawcą harnessu/sandboxa | 15.08 → 15.09 | — |
 
 ## E-5 — czego ten wynik NIE dowodzi
@@ -20,18 +20,32 @@ Nie dowodzi, że produkt jest zły, ani że nikt nie zapłaci. Dowodzi, że Prod
 Hunt nie konwertuje na B2B security tooling. Próba na pytanie „czy ktoś
 zapłaci" ma nadal rozmiar zero.
 
-## E-6 — dlaczego mianownik to 16, a nie 20
+## E-6 — skąd mianownik 20
 
-Research 31.07 zakwalifikował **16** firm z **potwierdzoną** adopcją agentów
-(artefakt w publicznym repo — `CLAUDE.md` / `AGENTS.md` / `.cursorrules` we
-własnym, nie sforkowanym repo, albo `Co-Authored-By: Claude` w historii
-commitów; metoda w `E6_METODA.md` §1.1). Osiem kolejnych firm ma idealny profil
-infrastrukturalny, ale **niezweryfikowaną** adopcję.
+Poprzedni zapis mówił „≥2/16" i był ostrożnościowy: pierwsza tura researchu
+potwierdziła adopcję agentów u 16 firm, ale odpowiedzialność za infrastrukturę
+klienta tylko u 11 z nich. Poszerzony research (31.07, wieczór) zamknął listę
+na **20 firmach, gdzie zweryfikowane są OBA warunki** — agent u nich pracuje
+*i* firma odpowiada kontraktowo za produkcję klienta. To jest ostrzejszy próg
+niż poprzedni, mimo wyższego mianownika.
 
-Mianownik zostaje na 16. Dopchnięcie do 20 firmami z niezweryfikowaną adopcją
-podniosłoby próg procentowo, nie podnosząc szansy — i zamieniłoby wynik w
-liczbę, której nie da się zinterpretować. **Próg zapisany 31.07, przed
-pierwszą wysyłką.** Ośmiu z tieru 3 nie wysyłamy w turze 1.
+Rezerwa: 10 firm tuż pod cięciem (kilka z lepszym ICP niż dolna połowa
+dwudziestki, tylko z nieodrobionym decydentem) i 8 z idealną infrą, ale
+niezweryfikowaną adopcją — tych **nie wysyłamy w turze 1**, bo psułyby
+mianownik.
+
+**Próg zapisany 31.07, przed pierwszą wysyłką.**
+
+### Wariant listy — zapisać PRZED 03.08, nie po
+
+Zagrożenie, które trzeba unieważnić z góry: gdyby lista powstała z blogów i
+prelekcji, wybierałaby firmy **gadatliwe**, a nie firmy **w bólu** — i wynik
+E-6 mierzyłby skłonność do publikowania, nie istnienie problemu.
+
+Nie powstała. **16 z 20 pozycji opiera się na artefaktach w repo i na
+ogłoszeniach o pracę** — sygnałach, których nikt nie publikuje dla wizerunku.
+Prelekcje dały zero. Ten zapis istnieje po to, żeby 11.08 nie dało się
+tłumaczyć wyniku doborem listy — ani w jedną, ani w drugą stronę.
 
 ## E-6 — protokół odczytu
 

@@ -49,6 +49,39 @@ nieuwierzytelnione REST API kończy się na 60 zapytaniach/h — HTML wystarcza.
 projektu to plik *upstreamu*, nie dowód na tę firmę. Na kilkanaście trafień
 cztery okazały się forkami i nie liczą się.
 
+### 1.2. Ranking kanałów — zmierzony, nie zgadnięty
+
+Na 20 zakwalifikowanych firm:
+
+| Kanał | Ile potwierdzeń | Wniosek |
+|---|---|---|
+| Artefakt w publicznym repo | **~12/20** | najmocniejszy i najtańszy |
+| **Ogłoszenia o pracę nazywające narzędzie** | **~4/20** | niedoceniony — trzeba nazwać narzędzie, żeby zrekrutować |
+| Blog inżynierski | ~4/20 | słabszy, niż zakładaliśmy |
+| **Prelekcje konferencyjne** | **0/20** | **kanał martwy — nie szukać tam ponownie** |
+
+Wniosek, który jest jednocześnie argumentem sprzedażowym: **firmy, które
+odpowiadają kontraktowo za produkcję klienta, nie piszą o tym, że dopuszczają
+do niej agenta.** Ale `CLAUDE.md` muszą zacommitować, żeby agent działał, i
+muszą nazwać narzędzie, żeby kogoś zatrudnić. Najostrzejszy przypadek: firma
+prowadząca wyłącznie zarządzany AWS/K8s, milcząca o AI wszędzie, ma pięć
+commitów Claude'a **wewnątrz modułów Terraform**.
+
+To jest też dowód, że lista nie wybiera firm gadatliwych — patrz
+`EXPERIMENTS.md`, „Wariant listy".
+
+### 1.3. Zasada weryfikacji — po incydencie z 31.07
+
+**Podsumowania wyszukiwarki sfabrykowały fakty co najmniej pięć razy w jednej
+sesji researchu** — zmyślone nazwiska autorów, metryki jednej firmy przypisane
+drugiej, nieistniejące ogłoszenie o pracę, wymyślona statystyka „85%".
+
+Reguła: **hak i dowód adopcji muszą pochodzić z pobranej strony albo z pliku
+odczytanego przez `gh`, nigdy ze streszczenia wyników wyszukiwania.** Przed
+wysyłką hak sprawdzić jednym kliknięciem. Mail z halucynowanym hakiem
+(„widziałem Waszą prelekcję o…", której nie było) kosztuje więcej niż brak
+maila — i psuje E-6 w sposób, którego wynik nie pokaże.
+
 **Dyskwalifikacja bezwzględna:** CISO w enterprise (poproszą o nasz SOC 2,
 którego nie mamy), solo-dev i freelancer (jest własnym audytorem — nie kupi w
 żadnej cenie), body-leasing bez odpowiedzialności za infrę, firma produktowa
