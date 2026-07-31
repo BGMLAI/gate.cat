@@ -173,6 +173,42 @@ def test_no_surface_sells_email_alerts_while_no_mailer_exists():
         assert not offending, f"{surface} sells email alerts: {offending[:1]}"
 
 
+def test_site_pages_make_no_third_party_requests():
+    """No page we serve may hand a visitor's IP to anyone we have not declared.
+
+    We sell "no third-party analytics, one first-party cookie". A Google Fonts
+    stylesheet undoes that quietly: the browser connects, and the IP plus
+    User-Agent arrive at Google before the page has rendered. `coverage.html`
+    did exactly this and `index.html` kept `preconnect` hints to Google while
+    loading no font from it — the handshake happened for nothing. Both removed
+    2026-07-31; docs/legal/SUBPROCESSORS.md carries the dated entry.
+
+    Only tags that make the browser fetch something are checked. Prose and
+    example commands legitimately mention third-party hostnames — the whole
+    product is a wall in front of destructive calls to them.
+    """
+    import re
+
+    allowed = (
+        "gate.cat", "github.com", "githubusercontent.com", "pypi.org",
+        "buy.stripe.com", "js.stripe.com", "w3.org", "schema.org",
+    )
+    fetching = re.compile(
+        r'<(?:link|script|img|iframe|source|video|audio)\b[^>]*?'
+        r'(?:href|src)\s*=\s*\\?["\']https?://([a-z0-9.-]+)',
+        re.IGNORECASE,
+    )
+    for page in ("index.html", "coverage.html", "teams.html", "partners.html"):
+        path = ROOT / "docs" / page
+        if not path.exists():
+            continue
+        for host in fetching.findall(path.read_text()):
+            assert any(host == a or host.endswith("." + a) for a in allowed), (
+                f"docs/{page} fetches from {host} — declare it in "
+                f"docs/legal/SUBPROCESSORS.md or drop it"
+            )
+
+
 def test_landing_html_cannot_keep_stale_install_copy():
     nginx_site = (ROOT / "ops" / "nginx" / "gatecat.site.conf").read_text()
 
