@@ -63,3 +63,19 @@ Uwaga: świadomie linkuję stronę cenową zamiast surowych linków buy.stripe.c
 na HN goły checkout-link w komentarzu autora czytany jest jako spam i zbiera
 downvoty; checkout jest 1 klik od teams.html/#pricing. Surowe linki masz
 w PRICING.md, gdybyś wolał inaczej.
+
+---
+
+## Asset: demo GIF gotowy (2026-07-31)
+
+README repo (`https://github.com/BGMLAI/gate.cat`) otwiera się teraz breadth-demo
+GIF-em [`docs/demos/veto_catches.gif`](../../docs/demos/veto_catches.gif) — 15 s,
+REALNY output silnika (`gate.cat why "<cmd>"`): `rm -rf`, disk-wipe, `curl|bash`,
+prod `DROP TABLE` → STOPPED, a `git status` przechodzi (nie blanket-block).
+Każdy werdykt nazywa regułę. Odtwarzalny: `docs/demos/veto_catches.sh`.
+
+Więc każdy klikający repo z Show HN widzi od razu „co to faktycznie łapie" —
+najczęstsze pytanie czytelnika. Opcjonalnie w pierwszym komentarzu można dać
+link do GIF-a (`raw.githubusercontent.com/BGMLAI/gate.cat/master/docs/demos/veto_catches.gif`),
+bo terminalowy GIF na Show HN mocno podbija engagement — ale nie jest wymagany,
+bo README i tak nim wita.

@@ -62,7 +62,13 @@ def test_landing_tracks_cookieless_funnel_events():
     assert "utm_source" in landing
     assert "utm_medium" in landing
     assert "utm_campaign" in landing
-    assert "document.cookie" not in landing
+    # Funnel analytics stay cookieless (sendBeacon/Image, no cookie). The
+    # affiliate ref-capture legitimately sets ONE first-party attribution
+    # cookie (gc_ref), added after this guard — so the guarantee is "the only
+    # cookie is gc_ref", not "no cookie at all". Any new/extra cookie (e.g. an
+    # analytics tracker regressing to cookies) trips this.
+    assert '"gc_ref"' in landing
+    assert landing.count("document.cookie") == 2  # readCookie + writeCookie for gc_ref only
 
 
 def test_landing_html_cannot_keep_stale_install_copy():
