@@ -28,7 +28,7 @@ i które zmieniają listę zadań:
 
 | Pozycja | Stan wg .docx (30.07) | Stan faktyczny (31.07) |
 |---|---|---|
-| CI na masterze | 🔴 czerwone od 29.07, „logów nie odczytam — przeglądarka niezalogowana" | Awaria z 29.07 minęła. Ostatnia czerwień (`7eb5596`) miała inną przyczynę: `test_marketing_consistency` wykrył martwy JS Lemon Squeezy na landingu. Commit `5b46e90` to naprawia, CI leci. **`gh` jest zalogowane jako BGMLAI — logi CI są czytelne z terminala, blokada „nie mam dostępu" nie istnieje.** |
+| CI na masterze | 🔴 czerwone od 29.07, „logów nie odczytam — przeglądarka niezalogowana" | Awaria z 29.07 minęła. Ostatnia czerwień (`7eb5596`) miała inną przyczynę: `test_marketing_consistency` wykrył martwy JS Lemon Squeezy na landingu. Commit `5b46e90` to naprawił i **CI na masterze jest zielone** (run 30658644573, wszystkie trzy joby 3.11/3.12/3.13). Czyli `FACTS.md` F3 „CI green on Python 3.11–3.13" jest znów prawdziwe i wolno go cytować. **`gh` jest zalogowane jako BGMLAI — logi CI są czytelne z terminala, blokada „nie mam dostępu" nie istnieje.** |
 | Landing: „69 policies", „V0.4.11" | 🔴 do naprawy przez człowieka, wymaga deployu | ✅ Naprawione w repo (`073ae27`): 71 polityk, 826 644, stary token wersji usunięty. **Zostaje sam deploy na VPS.** |
 | `ops/tools/gatecat_retroscan.py` | ✅ „ZBUDOWANE 29.07, 45/45 testów" | ❌ **Nie istnieje w tym repo.** Powstało na maszynie Windows i nigdy nie trafiło do gita. Odbudowane 31.07 (patrz §7). |
 | `ops/machine/`, `ops/strategia/` | „zsynchronizowane dziś" | Nie istniały tutaj do 31.07. Ten plik zakłada `ops/strategia/`. |
