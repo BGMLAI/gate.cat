@@ -1,0 +1,14 @@
+# SEEN.log — chronologiczny zapis decyzji z uzasadnieniem
+#
+# Schemat: data | źródło | co | decyzja | dlaczego
+# Ten plik jest append-only. Nie poprawiamy wpisów — dopisujemy sprostowanie.
+
+2026-07-29 | rada wielomodelowa | 3 niezależnych recenzentów, zbieżna diagnoza | PIVOT: ICP, cennik, retro-scan | budujemy maszynę do zdobywania klientów, których potrzebowalibyśmy 368, zamiast tych, których potrzebujemy 18
+2026-07-29 | incydent | 6 maili do redakcji z wycofaną liczbą korpusu (1 085 159 zamiast 826 644) | 6 sprostowań + reguła nadrzędna FACTS.md | liczba pamiętana ominęła źródło prawdy; w jeden dzień reguła złapała 3 takie przypadki
+2026-07-30 | E-5 | Product Hunt: 5 upvote'ów, 0 przyrostu pobrań | kanał zamknięty bez relaunchu | PH nie konwertuje na B2B security tooling; NIE dowodzi, że produkt jest zły
+2026-07-31 | audyt repo vs .docx | retroscan opisany jako zbudowany 29.07 nie istnieje w repo | odbudowa | powstał na maszynie Windows i nie trafił do gita — "zbudowane" bez commita to nie jest zbudowane
+2026-07-31 | audyt repo vs .docx | gh zalogowane jako BGMLAI | blokada "nie odczytam logów CI" nie istnieje | .docx opisywał ograniczenie przeglądarki, nie terminala
+2026-07-31 | decyzja człowieka | cennik wg pełnej rekomendacji rady | Team 299, Business 399 jako główne CTA, Compliance od 900, wdrożenie 1500-2500 | przy 19 EUR do celu trzeba 484 klientów, przy 399 — 23
+2026-07-31 | decyzja człowieka | korpus spod Apache 2.0 | wydzielone WĘŻEJ niż zalecała rada | policies.py i bypass_suite.py jadą w pipie i są całą dystrybucją; ich wyjęcie zabiłoby cel 10 000 instalacji dla przychodu, którego nie ma
+2026-07-31 | pakiet B2B | PRICING.md sprzedawał "email alerts", w produkcie nie ma żadnego mailera | claim wycofany, FACTS.md F15 | pierwszy wycofany wiersz będący zdolnością, a nie liczbą — klient mógł za to zapłacić
+2026-07-31 | pakiet B2B | "Retention: 12 months" vs TIERS 30/90/365/1095 dni | claim poprawiony per tier, FACTS.md F14 | Solo dostawał 90 dni zamiast obiecanych 12 miesięcy

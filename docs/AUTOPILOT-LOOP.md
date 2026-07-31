@@ -38,6 +38,25 @@ początku każdego przebiegu i aktualizuje go na końcu. Kolejność przebiegu:
 
 ## CEL I STAN
 
+> **Aktualizacja 2026-07-31 — cel pętli ujednolicony.** Do 31.07 istniały dwa
+> równoległe cele: $2 000 w tym pliku i €2 000 „Próg 0" z rady 29.07. Od teraz
+> obowiązuje jeden: **€2 000 MRR = Próg 0**, a pełna drabina progów, ICP,
+> cennik i podział „co robi agent / co tylko człowiek" są w
+> [`ops/strategia/PLAN_SPRZEDAZY.md`](../ops/strategia/PLAN_SPRZEDAZY.md).
+> **Ten plik pozostaje stanem pętli; PLAN_SPRZEDAZY.md jest strategią.** Gdy
+> się nie zgadzają — wygrywa PLAN_SPRZEDAZY.md, a rozbieżność dopisujemy do
+> `ops/machine/SEEN.log`.
+>
+> Trzy rzeczy z tego wynikające dla każdego przebiegu pętli:
+> 1. Cennik zmienił się 31.07 (Team €299, Business €399 jako główne CTA,
+>    Compliance od €900, wdrożenie €1500–2500). **Nie cytować €149 ani „up to
+>    10 machines".**
+> 2. Wycofane 31.07: „email alerts" (w produkcie nie ma żadnego mailera —
+>    FACTS.md **F15**) i płaskie „Retention: 12 months" (serwer wymusza
+>    30/90/365/1095 dni per tier — **F14**).
+> 3. Kolejka operacyjna przeniesiona do
+>    [`ops/machine/QUEUE.md`](../ops/machine/QUEUE.md).
+
 | Metryka | Wartość | Stan na |
 |---|---|---|
 | Przychód gate.cat (potwierdzony w Gmail/Stripe) | **$0 / $2,000** | 2026-07-22 |
