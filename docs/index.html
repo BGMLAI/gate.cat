@@ -318,8 +318,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     var ref = urlRef || clean(readCookie(COOKIE));
     if (!ref) { return; }
 
-    var PARAM = "checkout[custom][ref]";
-    var ENCODED = encodeURIComponent(PARAM) + "=" + encodeURIComponent(ref);
     /* Stripe Payment Links attribute via client_reference_id. */
     var STRIPE_PARAM = "client_reference_id";
     var STRIPE_ENCODED = STRIPE_PARAM + "=" + encodeURIComponent(ref);
@@ -333,18 +331,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function rewrite() {
-      /* Lemon Squeezy checkout links. */
-      var lsLinks = document.querySelectorAll('a[href*="lemonsqueezy.com/checkout"]');
-      for (var i = 0; i < lsLinks.length; i++) {
-        var a = lsLinks[i];
-        var href = a.getAttribute("href");
-        if (!href) { continue; }
-        /* idempotent: never append the same custom ref twice. */
-        if (href.indexOf(encodeURIComponent(PARAM) + "=") !== -1 ||
-            href.indexOf(PARAM + "=") !== -1) { continue; }
-        var sep = href.indexOf("?") === -1 ? "?" : "&";
-        a.setAttribute("href", href + sep + ENCODED);
-      }
       /* Stripe payment links (buy.stripe.com) -- the live checkout. */
       var stripeLinks = document.querySelectorAll('a[href*="buy.stripe.com"]');
       for (var j = 0; j < stripeLinks.length; j++) {
