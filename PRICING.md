@@ -31,7 +31,12 @@ boring, and you keep the receipts.
 | gate version + policy-set version | your code, prompts, model outputs |
 | nothing else — the event schema is in the docs and the reporter is readable Python in the open repo | telemetry/analytics of any kind |
 
-Retention: 12 months, export anytime (JSON), delete-account = hard delete.
+Retention, per tier, as the server actually enforces it
+(`products/cloud/cloud_server.py`, `TIERS`): **Free 30 days · Solo 90 days ·
+Team 365 days · Business 3 years.** Export anytime (JSON), delete-account =
+hard delete. *(Corrected 2026-07-31: this page previously said a flat "12
+months", which is true for Team and understates Business, but overstates Solo
+by nine months. The code is the source of truth and the code says 90.)*
 One more honest boundary: the reporter's credentials live outside the agent's
 transcript, but an agent with full shell access could kill the reporter
 process. It cannot *rewrite* history that already left the machine — and a
@@ -50,7 +55,7 @@ environments an agent can reach — your own, and each client's.
 | The gate: veto engine + **Claude Code hook** (enforcement in the harness) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Framework adapters (crewAI/LangGraph) + a framework-agnostic `guard_callable` for everything else, AutoGen included — in-process convention, honestly weaker than the hook | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Local CLI dashboard + local reports | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Off-machine veto history** (the copy the agent has no credentials for) + email alerts | — | ✅ | ✅ | ✅ | ✅ |
+| **Off-machine veto history** (the copy the agent has no credentials for) + alert feed (`GET /v1/alerts`; **email delivery is not shipping yet** — see note under the table) | — | ✅ | ✅ | ✅ | ✅ |
 | Monthly report from the off-machine log | — | ✅ yours | ✅ fleet-wide | ✅ signed | ✅ signed, + control mapping |
 | Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ | ✅ | ✅ |
 | Seats | 1 | 1 | up to 25 | up to 25 | unlimited |
@@ -71,6 +76,15 @@ evidence-log wiring into your infrastructure, and the first signed report.
 We charge for it because it is real work, and because a buyer who won't pay for
 onboarding won't do the rollout either — which produces an unhappy customer and
 a refund three months later.
+
+**Correction, 2026-07-31 — alerts are a feed, not an email.** This page sold
+"email alerts" from Solo upward. The server stores an append-only alert feed
+per account and serves it at `GET /v1/alerts`, gated on the `alert_push`
+entitlement — but there is **no mail-sending integration in the product at
+all**, so nothing is currently emailed to you. You poll the feed or read it in
+the dashboard. Email delivery is a real gap, it is on the roadmap, and it is
+not in the price until it works. We found this while assembling the security
+one-pager and are writing it here rather than quietly deleting the word.
 
 **Solo is an anchor, not a recommendation.** If you are one developer auditing
 your own machine, you are also your own auditor, and an off-machine copy of

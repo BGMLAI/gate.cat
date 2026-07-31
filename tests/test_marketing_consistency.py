@@ -112,6 +112,67 @@ def test_unresolved_stripe_placeholders_never_reach_a_buyer():
         assert "⟦STRIPE:" not in text, f"{surface} carries an unresolved Stripe placeholder"
 
 
+def test_published_retention_matches_what_the_server_enforces():
+    """Retention is a contract term, so the copy tracks `TIERS`, not a memory.
+
+    PRICING.md and THREAT_MODEL_CLOUD.md both said a flat "12 months" from
+    launch until 2026-07-31. The server has always enforced 30/90/365/1095 by
+    tier — so a Solo subscriber was promised nine months they would not get.
+    FACTS.md F14 pins the real figures; this test stops the flat claim coming
+    back.
+    """
+    import re
+
+    server = (ROOT / "products" / "cloud" / "cloud_server.py").read_text()
+    enforced = dict(
+        re.findall(r'"(free|solo|team|business)":\s*\{\s*"retention_days":\s*(\d+)', server)
+    )
+    assert enforced == {"free": "30", "solo": "90", "team": "365", "business": "1095"}, (
+        f"TIERS changed to {enforced} — update FACTS.md F14 and PRICING.md together"
+    )
+
+    for surface in ("PRICING.md", "THREAT_MODEL_CLOUD.md"):
+        text = (ROOT / surface).read_text()
+        assert "Retention: 12 months" not in text, (
+            f"{surface} reintroduced the flat 12-month retention claim (FACTS.md F14)"
+        )
+
+
+def test_no_surface_sells_email_alerts_while_no_mailer_exists():
+    """Do not sell a delivery channel the product does not have.
+
+    FACTS.md F15: the server exposes an alert *feed* at `GET /v1/alerts`; there
+    is no mail-sending integration anywhere in the product. If someone wires a
+    real mailer, this test fails and tells them to re-pin F15 and put the word
+    back on purpose — which is the correct order of operations.
+    """
+    product_code = "\n".join(
+        p.read_text()
+        for p in list((ROOT / "products").rglob("*.py")) + list((ROOT / "gatecat").rglob("*.py"))
+        if "policies.py" not in p.name  # deny-list patterns mention mail APIs by design
+    )
+    mailer_present = any(
+        token in product_code
+        for token in ("import smtplib", "sendgrid", "resend.", "postmark", "mailgun")
+    )
+    assert not mailer_present, "a mailer landed — re-pin FACTS.md F15 before selling email alerts"
+
+    for surface in ("PRICING.md", "docs/index.html", "docs/llms.txt", "README.md",
+                    "docs/SAMPLE_REPORT.md"):
+        text = (ROOT / surface).read_text()
+        # A *quoted* "email alerts" is the retired phrase being documented —
+        # that is how FACTS.md records a withdrawn claim, and it must stay
+        # legal. An unquoted one is a sale.
+        offending = [
+            line for line in text.splitlines()
+            if "email alert" in line.lower()
+            and '"email alert' not in line.lower()
+            and "not shipping" not in line.lower()
+            and "roadmap" not in line.lower()
+        ]
+        assert not offending, f"{surface} sells email alerts: {offending[:1]}"
+
+
 def test_landing_html_cannot_keep_stale_install_copy():
     nginx_site = (ROOT / "ops" / "nginx" / "gatecat.site.conf").read_text()
 
