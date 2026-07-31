@@ -17,8 +17,37 @@ Prospekt wchodzi na listę tylko z kompletem:
 |---|---|---|
 | Software house / agencja **20–100 osób** | 0–10 | LinkedIn, strona „O nas", Clutch |
 | **Pracuje na infrastrukturze klientów** | 0–35 | oferta DevOps/SRE/managed hosting, status partnera AWS/GCP, case study z przejęciem produkcji |
-| **Zespół używa Claude Code albo Cursora** | 0–35 | wpis na blogu inżynierskim, prelekcja, ogłoszenie o pracę wymieniające narzędzie, publiczna aktywność na GitHubie |
+| **Zespół używa Claude Code albo Cursora** | 0–35 | patrz §1.1 — to jest najtrudniejsze do zweryfikowania i najważniejsze |
 | **Nazwany decydent z publiczną drogą kontaktu** | 0–20 | founder/CTO/head of engineering; wyłącznie adresy firmowe i profile publiczne |
+
+### 1.1. Jak weryfikować adopcję agentów — metoda z 31.07
+
+Pierwsze podejście (szukanie wpisów na blogu i prelekcji) dało **zero
+potwierdzeń na kilkanaście polskich software house'ów**. Nie dlatego, że nie
+używają — dlatego, że nikt o tym nie pisze. Metoda, która zadziałała, jest
+tańsza i twardsza, bo opiera się na artefakcie, a nie na deklaracji:
+
+**Przeszukać publiczne repozytoria organizacji na GitHubie pod kątem:**
+
+| Sygnał | Co znaczy | Siła |
+|---|---|---|
+| `CLAUDE.md` / `AGENTS.md` / `.cursorrules` **we własnym repo** (nie forku) | zespół skonfigurował agenta pod ten projekt | **30** |
+| To samo + firma nazywa narzędzie własnym tekstem (README, opis skilla) | przyznana, świadoma adopcja | **35** |
+| `Co-Authored-By: Claude` w historii commitów | agent faktycznie pisał kod, który poszedł na produkcję | wzmacnia powyższe |
+| Katalog `.claude/` z `settings.json` w repo | uzgodniona polityka uprawnień w zespole — **najbliżej naszego ICP, jaki istnieje** | **35** |
+| `AI-assisted development` bez nazwy narzędzia | coś jest, nie wiadomo co | 18 |
+| brak | — | **0** |
+
+Jak przeszukać, bez logowania i bez API:
+`https://github.com/orgs/<org>/repositories?sort=updated` → dla każdego repo
+`https://raw.githubusercontent.com/<org>/<repo>/HEAD/CLAUDE.md` (i `AGENTS.md`,
+`.cursorrules`) → oraz `https://github.com/<org>/<repo>/commits` z grepem na
+`Co-Authored-By: Claude`. Code search na GitHubie jest za loginem, a
+nieuwierzytelnione REST API kończy się na 60 zapytaniach/h — HTML wystarcza.
+
+⚠️ **Zawsze sprawdzić, czy repo nie jest forkiem.** `CLAUDE.md` w forku cudzego
+projektu to plik *upstreamu*, nie dowód na tę firmę. Na kilkanaście trafień
+cztery okazały się forkami i nie liczą się.
 
 **Dyskwalifikacja bezwzględna:** CISO w enterprise (poproszą o nasz SOC 2,
 którego nie mamy), solo-dev i freelancer (jest własnym audytorem — nie kupi w

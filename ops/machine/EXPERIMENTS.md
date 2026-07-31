@@ -11,7 +11,7 @@ znaczy zmianę kierunku, nie „popracujmy nad copy". Ten plik istnieje po to,
 | E-3 | `gatecat upgrade` w CLI | — | — | nieuruchomiony |
 | E-4 | Trial z kartą | — | — | nieuruchomiony |
 | E-5 | Product Hunt daje dystrybucję do B2B security tooling | wzrost pobrań | 29.07 → 30.07 | ❌ **NEGATYWNY.** 5 upvote'ów, 16 followersów, 0 komentarzy zewnętrznych, 0 przyrostu pobrań. Kanał zamknięty bez relaunchu. |
-| **E-6** | **Darmowy retro-scan na danych prospekta otwiera rozmowę, której nie otwiera żaden komunikat marketingowy** | **≥2 z 20 prospektów przyjmuje skan I umawia rozmowę o wersji płatnej** | **03.08 → 11.08** | — |
+| **E-6** | **Darmowy retro-scan na danych prospekta otwiera rozmowę, której nie otwiera żaden komunikat marketingowy** | **≥2 z 16** prospektów przyjmuje skan I umawia rozmowę o wersji płatnej — mianownik ustalony 31.07 (patrz niżej) | **03.08 → 11.08** | — |
 | E-7 | Licencja korpusu ma kupca | ≥1 rozmowa handlowa z dostawcą harnessu/sandboxa | 15.08 → 15.09 | — |
 
 ## E-5 — czego ten wynik NIE dowodzi
@@ -19,6 +19,19 @@ znaczy zmianę kierunku, nie „popracujmy nad copy". Ten plik istnieje po to,
 Nie dowodzi, że produkt jest zły, ani że nikt nie zapłaci. Dowodzi, że Product
 Hunt nie konwertuje na B2B security tooling. Próba na pytanie „czy ktoś
 zapłaci" ma nadal rozmiar zero.
+
+## E-6 — dlaczego mianownik to 16, a nie 20
+
+Research 31.07 zakwalifikował **16** firm z **potwierdzoną** adopcją agentów
+(artefakt w publicznym repo — `CLAUDE.md` / `AGENTS.md` / `.cursorrules` we
+własnym, nie sforkowanym repo, albo `Co-Authored-By: Claude` w historii
+commitów; metoda w `E6_METODA.md` §1.1). Osiem kolejnych firm ma idealny profil
+infrastrukturalny, ale **niezweryfikowaną** adopcję.
+
+Mianownik zostaje na 16. Dopchnięcie do 20 firmami z niezweryfikowaną adopcją
+podniosłoby próg procentowo, nie podnosząc szansy — i zamieniłoby wynik w
+liczbę, której nie da się zinterpretować. **Próg zapisany 31.07, przed
+pierwszą wysyłką.** Ośmiu z tieru 3 nie wysyłamy w turze 1.
 
 ## E-6 — protokół odczytu
 
