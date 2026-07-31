@@ -307,6 +307,16 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-31 19:22 UTC — przebieg #221: merge fixu CI ownera (`5b46e90`) — master sam się naprawił.** Owner wypchnął
+  `5b46e90 fix(ci): drop dead Lemon Squeezy ref-capture from landing; scope cookieless guard` — **sam naprawił czerwony
+  master CI** (ten sam problem document.cookie/cookieless, który zdiagnozowałem w #170). Zmergowane: `docs/index.html`
+  auto-merge czysto (jego −14 linii LS ref-capture + moje V2); konflikt tylko w `test_marketing_consistency.py`
+  (jego scoped-guard vs mój) → **wziąłem wersję ownera** (`count(document.cookie)==2` + `"gc_ref"` — precyzyjniejsza,
+  zgodna ze zmergowanym index.html: dokładnie 2 = readCookie+writeCookie gc_ref). `test_marketing_consistency` 17 passed.
+  **Skutek: master CI zielony sam z siebie** (już nie tylko przez PR #27). Flagowane w #220 rozjazdy (show_hn/lobsters
+  „4 allows", README demo-linki) NIETKNIĘTE przez `5b46e90` — nadal czekają na ownera / merge PR #27. Poczta: 0 płatności
+  gate.cat, 0 nowego inbound (drafty Julian/Melvyn czekają). PR #27 CI zielone; 0 za / master. Bez pisania do usera.
+
 - **2026-07-31 18:22 UTC — przebieg #220: merge demo-GIF ownera + fix 2 rozjazdów FACTS w launch-copy + fix relative-links README.**
   Master `7eb5596` (owner: breadth-demo GIF `veto_catches` — README + `docs/demos/*.cast/.gif/.sh` + show_hn) → zmergowany.
   Konflikt `show_hn_ready.md` rozwiązany (OBIE sekcje: moje „gałęzie modów HN" + owner „Asset: demo GIF gotowy").
