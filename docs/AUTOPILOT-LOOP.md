@@ -307,6 +307,18 @@ naraz). Publikuje user/sesja lokalna; każdy live URL → issue #9.
 
 ## LOG PĘTLI
 
+- **2026-07-31 18:22 UTC — przebieg #220: merge demo-GIF ownera + fix 2 rozjazdów FACTS w launch-copy + fix relative-links README.**
+  Master `7eb5596` (owner: breadth-demo GIF `veto_catches` — README + `docs/demos/*.cast/.gif/.sh` + show_hn) → zmergowany.
+  Konflikt `show_hn_ready.md` rozwiązany (OBIE sekcje: moje „gałęzie modów HN" + owner „Asset: demo GIF gotowy").
+  **FIX FACTS-consistency (mandat „copy spójne z FACTS"):** body show_hn + lobsters miały „826 644 … **4 allows** …
+  known gap (**runtime-assembly**)" — sprzeczne z recountem → poprawione na **2 allows** (F1b) + **3 named gaps, 2 slip
+  the product** (F4; runtime-assembly to ten ŁAPANY, nie miss). **FIX README:** demo-linki ownera
+  `](docs/demos/veto_catches.sh/.cast)` były RELATYWNE → 404 na PyPI (README=long_description) + fail
+  `test_readme_has_no_relative_markdown_links` → absolutne blob-URL. `test_marketing_consistency` 17 passed. Poczta:
+  0 płatności gate.cat, 0 nowego inbound (drafty Julian/Melvyn czekają). PR #27 CI zielone; 0 za / master.
+  **Do usera: flag** — master-kopie show_hn/lobsters mają jeszcze „4 allows/1 gap" (fix PRZED wklejką na HN/lobste.rs);
+  README na masterze ma relative demo-linki (404 na PyPI przy publish 0.4.19). Merge PR #27 naprawia oba na masterze.
+
 - **2026-07-31 00:22–17:21 UTC — przebiegi #202-219: HOLD (rolling; monitoring-only, panel v7; sync master daily-metrics `30be075`).** Poczta: 0 płatności gate.cat
   (Stripe = tylko szum: Radar-pricing + KYC innych kont), 0 nowego inbound wymagającego akcji (drafty Julian
   `r-6752863379386098879` + Melvyn `r1068399915179941169` nadal czekają na wysyłkę ownera; reszta wątków domknięta;
