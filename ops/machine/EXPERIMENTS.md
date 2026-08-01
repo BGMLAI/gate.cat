@@ -57,7 +57,7 @@ Odczyt 11.08 wypełnia **tę** tabelę, nie prozę:
 | # | Wysłano | Otworzył | Uruchomił skan | Odesłał raport / pokazał | Umówił rozmowę | Powód odmowy (dosłownie) |
 |---|---|---|---|---|---|---|
 | P1 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
-| P2 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
+| P2 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | ⚠️ **AUTORESPONDER OBU ADRESATÓW** — jeden wraca 10.08, drugi 17.08. Poza zasięgiem przez całe okno |
 | P3 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
 | P4 | 2026-08-01 12:56 UTC ✅ | — | — | — | — | — |
 | P5 | 2026-08-01 12:57 UTC ✅ | — | — | — | — | — |
@@ -71,6 +71,32 @@ przez `in:sent`, nie przez toast Gmaila, i zbackfillowana do ledgera
 
 Pozostałe 13 — w weryfikacji. Każdy z ich repo, nie z szablonu (patrz
 `E6_METODA.md` §3.1).
+
+### ⚠️ Sierpień — zagrożenie dla ważności odczytu, zapisane PRZED odczytem
+
+P2 odpowiedział w ciągu 30 sekund dwoma autoresponderami: obaj adresaci są
+poza biurem, jeden wraca **10.08**, drugi **17.08**. Odczyt jest **11.08**.
+
+To nie jest brak zainteresowania. To jest **brak pomiaru** — i gdyby wpadło do
+mianownika jako „nie odpowiedział", eksperyment policzyłby urlop jako dowód, że
+oferta nie działa.
+
+Problem jest szerszy niż jedna firma. Lista to software house'y z PL, FR, IT,
+BE, NL, CH, UK, CZ, NO, a **pierwsze dwa tygodnie sierpnia to szczyt urlopów w
+Europie kontynentalnej**. Realistycznie część dwudziestki jest nieosiągalna
+niezależnie od jakości maila.
+
+**Decyzja do podjęcia teraz, nie 11.08** — bo po zobaczeniu wyniku każda zmiana
+reguły jest już racjonalizacją:
+
+1. **Mianownik zostaje 20.** Nie wycinamy nikogo po fakcie.
+2. **Autoresponder jest odnotowywany dosłownie w kolumnie „powód odmowy"** i
+   przy odczycie liczony jako *niezmierzony*, nie jako *nie*. Wynik 11.08
+   raportujemy w dwóch liczbach: `x/20` i `x/(20 − niezmierzeni)`.
+3. **Jeśli niezmierzonych będzie ≥5**, odczyt 11.08 jest wstępny, a wiążący
+   zapada **25.08** — po powrotach z urlopów. Próg ≥2 pozostaje bez zmian.
+
+Punkt 3 jest zapisany 01.08, przy 7 wysłanych i zerowej wiedzy o wyniku.
 
 **Powód odmowy zapisujemy dosłownie, cytatem.** To jest najważniejsza kolumna w
 całym eksperymencie i jedyne dane jakościowe, jakie z niego wyjdą.
