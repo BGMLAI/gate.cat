@@ -51,3 +51,5 @@
 2026-08-01 | kanal | DKIM nie znaleziony na jankiewi.cz ani bgml.ai (sprawdzone selektory google/default/selector1/2/s1/s2/k1/mail/dkim) | do wlaczenia w Workspace przed skalowaniem outboundu | przy 4 mailach dziennie SPF wystarcza; przy 15 brak DKIM zaczyna kosztowac
 2026-08-01 | E-6 | podpisy w mailach 04-07 zmienione z bogumil@bgml.ai na bogumil@jankiewi.cz | zgodnosc nadawcy z podpisem | rozjazd koperty z podpisem to sygnal spamowy i wyglada niechlujnie u technicznego kupca
 2026-08-01 | E-6 | trzy wyslane maile (P1-P3) maja w podpisie bgml.ai | bez akcji naprawczej | Cloudflare Email Routing na bgml.ai ODBIERA i przekazuje, wiec odpowiedzi dojda; problem dotyczy tylko wysylki
+2026-08-01 | E-6 | P4-P7 (JoliCode, SoftwareMill, Appvia, SparkFabrik) wyslane 12:56-12:57 UTC z jankiewi.cz, potwierdzone w in:sent | 7 z 20 | wysylka potwierdzana zapytaniem, nie deklaracja - ta sama regula co przy P1-P3
+2026-08-01 | E-6 | dzienny licznik: 7 maili E-6 w jednym dniu przy limicie 15 z playbooka | mieszcimy sie, ale zostalo 8 | limit istnieje po to, zeby petla nie zamienila sie w kampanie
