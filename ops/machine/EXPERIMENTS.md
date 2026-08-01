@@ -51,8 +51,22 @@ tłumaczyć wyniku doborem listy — ani w jedną, ani w drugą stronę.
 
 Odczyt 11.08 wypełnia **tę** tabelę, nie prozę:
 
+> ⚠️ **Bez nazw firm w tej tabeli.** Repo jest publiczne (reguła 9). Mapowanie
+> P1…P20 na nazwy żyje poza repo, razem z listą prospektów.
+
 | # | Wysłano | Otworzył | Uruchomił skan | Odesłał raport / pokazał | Umówił rozmowę | Powód odmowy (dosłownie) |
 |---|---|---|---|---|---|---|
+| P1 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
+| P2 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
+| P3 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
+
+**Start faktyczny: 01.08**, nie 03.08 — wysyłka ruszyła dwa dni przed planem.
+Odczyt zostaje **11.08** (10 dni okna, wystarczająco). Wysyłka zweryfikowana
+przez `in:sent`, nie przez toast Gmaila, i zbackfillowana do ledgera
+`gatecat_mail.py`, żeby strażnik duplikatów znał tę trójkę.
+
+Pozostałe 17 — do napisania. Każdy z ich repo, nie z szablonu (patrz
+`E6_METODA.md` §3.1).
 
 **Powód odmowy zapisujemy dosłownie, cytatem.** To jest najważniejsza kolumna w
 całym eksperymencie i jedyne dane jakościowe, jakie z niego wyjdą.
