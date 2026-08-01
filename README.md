@@ -110,6 +110,22 @@ see what it's watched and stopped. Fail-closed: a missing or erroring engine
 blocks rather than allowing. In a throwaway CI/sandbox it disarms itself and
 logs a no-op (`GATECAT_VETO_EPHEMERAL=0` forces it armed).
 
+### One-command install (Claude Code plugin)
+
+Prefer not to edit `settings.json` by hand? gate.cat ships as a native Claude
+Code plugin. From inside Claude Code:
+
+```
+/plugin marketplace add BGMLAI/gate.cat
+/plugin install gate-cat@gate-cat
+```
+
+That registers the same `PreToolUse` veto for `Bash|Write|Edit`. The
+(dependency-free) engine is fetched into a plugin-managed venv on the next
+`SessionStart`, so there's nothing else to install — ask the agent to run
+`rm -rf ~/project` and watch it get blocked. Same fail-closed guarantee: if the
+engine can't load, the action is blocked, not waved through.
+
 Framework adapters (crewAI / LangGraph) exist too, plus a framework-agnostic
 `guard_callable` that wraps any plain callable — that is the supported route for
 AutoGen and anything else, and there is no AutoGen-specific adapter. All of them
