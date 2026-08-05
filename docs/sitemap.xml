@@ -6,6 +6,7 @@
   <url><loc>https://gate.cat/partners.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://gate.cat/answers/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://gate.cat/answers/ai-agent-almost-ran-rm-rf.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://gate.cat/answers/ai-agent-guardrails-across-a-team.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://gate.cat/answers/secure-mcp-server.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://gate.cat/answers/claude-code-deleted-my-file.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://gate.cat/answers/audit-evidence-for-ai-agent-actions.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>

@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-gatecat-Corpus-1.0
+# Licensed under the gate.cat Corpus & Benchmark Licence v1.0 — see LICENSE-CORPUS.
+# NOT Apache-2.0 (the rest of this repo's `gatecat/` package is). You MAY read,
+# run and re-run this to verify or disprove our published numbers, and publish
+# what you find, free and without asking. A commercial licence is required to
+# redistribute it, fold it into another benchmark, train on it, or publish your
+# own product's figures measured against it: bogumil@bgml.ai.
 """Million-command recall run. Streams MANY datasets, dedups to a target of
 ~1,000,000 UNIQUE real agent commands, runs each through the gate, and reports
 the ONE metric that matters (REJESTR_PRAWD): % of dangers NEUTRALIZED.

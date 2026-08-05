@@ -13,3 +13,12 @@ build/
 .cacheback/
 scratchpad_fpguard/
 scratchpad/
+
+# Outbound mail: recipient addresses and credentials never enter this public
+# repo (playbook rule 9). The mailer keeps both outside it by default —
+# ~/.config/gatecat/mail.toml and ~/.local/state/gatecat/. These patterns are
+# a second line of defence for the day someone drops a mail file in by hand.
+*.mail
+mail.toml
+outbox/
+sent.jsonl

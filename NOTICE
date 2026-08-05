@@ -1,0 +1,36 @@
+gate.cat
+Copyright (c) 2026 Bogumił Jankiewicz / BGML
+
+This product includes software developed by Bogumił Jankiewicz / BGML,
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+-------------------------------------------------------------------------------
+MIXED LICENSING — read LICENSING.md
+-------------------------------------------------------------------------------
+
+The `gatecat/` package — everything installed by `pip install gate-cat`,
+including the veto engine, all default policy walls, the reproducible bypass
+suite, the Claude Code hook and every framework adapter — is licensed under the
+Apache License 2.0 and is not affected by the notice below.
+
+A separate set of files — the large-corpus evaluation harness and its
+adjudicated result artifacts, listed in section 1 of LICENSE-CORPUS — is
+licensed under the gate.cat Corpus & Benchmark Licence v1.0 (LICENSE-CORPUS)
+with effect from 2026-07-31. That licence permits reading, running, reproducing
+and publicly disputing our published claims free of charge and without
+registration; it requires a commercial licence for redistribution, inclusion in
+another benchmark, model training, or publishing third-party product figures
+measured against it.
+
+The Corpus & Benchmark Licence is not retroactive. Versions of those files
+published before 2026-07-31 were published under the Apache License 2.0 and
+remain available under it.
+
+-------------------------------------------------------------------------------
+UPSTREAM DATA
+-------------------------------------------------------------------------------
+
+The evaluation corpus is derived from public datasets published by third
+parties, each under its own licence. No rights in that upstream data are
+granted by either licence above. Provenance — dataset repo ids, split names and
+measurement dates — is recorded in RECALL.md and in each result artifact.
