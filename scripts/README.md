@@ -22,7 +22,16 @@ python scripts/corpus_eval.py --source nemotron <corpus>   # eval against the Ne
 
 ## What these are NOT
 
-Not the test suite (`pytest`; 892 green in CI as of v0.4.1 — see FACTS.md F3) and not the bypass suite
-(`python -m gatecat.integrations.bypass_suite`, which prints its own known gaps). Those run with
-zero extra dependencies. These corpus scripts exist purely so the recall claim is checkable by a
-skeptic, not taken on faith.
+Not the test suite (`pytest`; the current pass count is pinned in FACTS.md F3, not hard-coded here)
+and not the bypass suite (`python -m gatecat.integrations.bypass_suite`, which prints its own known
+gaps). Those run with zero extra dependencies. These corpus scripts exist purely so the recall claim
+is checkable by a skeptic, not taken on faith.
+
+The fastest one to run, no datasets required:
+
+```bash
+python scripts/recall_danger_axis.py   # 43/43 known danger classes through the FULL gate
+```
+
+It prints a per-class verdict (31 `block`, 12 `warn`, 0 allowed) and 0/13 benign twins false-blocked
+— the exact split RECALL.md documents (FACTS.md F1a). If your run disagrees, that's a bug report we want.

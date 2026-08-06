@@ -56,7 +56,9 @@ def test_xsell_excludes_purchased_pack(monkeypatch):
     html = m.xsell_html("gatecat-pack-fintech-1.0.0.zip")
     assert "Fintech" not in html                       # bought -> excluded
     assert "PaaS" in html and "HTTP-API Breadth" in html
-    assert html.count("client_reference_id=pack-xsell") == 2
+    # preview page before checkout, never a blind buy.stripe.com link
+    assert html.count("packs.html?source=pack-xsell") == 2
+    assert "buy.stripe.com" not in html
     assert "teams.html?source=pack-xsell" in html      # Cloud Solo line
     assert "&euro;29" in html and "&euro;19" in html
 

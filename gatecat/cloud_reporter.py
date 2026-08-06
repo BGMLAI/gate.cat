@@ -102,7 +102,23 @@ def ship(endpoint: str | None = None, api_key: str | None = None,
     if send_raw is None:
         send_raw = os.environ.get("GATECAT_CLOUD_SEND_RAW") == "1"
     from gatecat import cloud_crypto  # [cloud] extra; only imported on the ship path
-    key = cloud_crypto.load_or_create_key()
+    # Capability probe, BEFORE opening or advancing any cursor file. AES-GCM needs
+    # the [cloud] extra (cryptography); load_or_create_key() is stdlib-only and
+    # succeeds WITHOUT it, but encrypt_event() then raises RuntimeError. If we
+    # entered the ship loop in that state, every event would hit the per-event
+    # `except: continue`, the loop would still read to EOF, and the cursor would
+    # advance past unshipped events -- silently destroying the ENTIRE off-machine
+    # paid history and reporting {"shipped": 0, "reason": "ok"}. Fail LOUD here and
+    # touch nothing. (Also catches a corrupt key file, which used to escape ship()
+    # as an unhandled exception, breaking the "raises nothing" contract.)
+    try:
+        key = cloud_crypto.load_or_create_key()
+        cloud_crypto.encrypt_event(key, {"_probe": True})
+    except Exception as e:
+        return {"shipped": 0, "reason": (
+            f"cloud encryption unavailable ({type(e).__name__}): install the "
+            "[cloud] extra -> pip install -U 'gate-cat[cloud]' "
+            "(no events shipped, cursor untouched)")}
     shipped = 0
     for path in _log_paths():
         cursor_file = path + STATE_SUFFIX

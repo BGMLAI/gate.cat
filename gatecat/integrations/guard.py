@@ -488,6 +488,35 @@ def _analyze_delete_class(
                     policy="DELETE_ANALYZER", level=verdict.level)
 
 
+def _analyze_scaffold_class(
+    source: str, action: str, policies: Sequence[Policy],
+    *, cwd: str | None, env: dict | None, home: str | None,
+) -> Decision | None:
+    """Run the scaffold-overwrite analyzer (WARN-ONLY). Returns a warn Decision
+    when a create-vite-family scaffolder / degit targets an existing non-empty
+    directory (the #80730 overwrite shape), else None. NEVER returns a block.
+
+    Fail-closed-to-None: any import/call error defers (this class is advisory, so
+    degrading to today's gap is safer than crashing the gate or warn-storming)."""
+    try:
+        from gatecat.integrations.action_analysis import analyze_scaffold_overwrite
+    except Exception:
+        return None
+    import os
+    resolved_home = home or os.path.expanduser("~").replace("\\", "/")
+    resolved_cwd = (cwd or os.getcwd()).replace("\\", "/")
+    try:
+        verdict = analyze_scaffold_overwrite(
+            action, home=resolved_home, cwd=resolved_cwd, env=env)
+    except Exception:
+        return None
+    if verdict is None:
+        return None
+    # analyze_scaffold_overwrite only ever returns a warn; pin blocked=False.
+    return Decision(blocked=False, reason=verdict.reason,
+                    policy="SCAFFOLD_OVERWRITE", level="warn")
+
+
 def check_action(
     source: str,
     action: str,
@@ -553,9 +582,19 @@ def check_action(
 
     shadow_on = shadow_enabled(shadow)
 
+    # Inert literals (git-commit-message / echo / grep bodies) are blanked ONCE
+    # here, up front, so BOTH the delete analyzer AND the regex walls judge the
+    # same content-stripped text. Doing it only before evaluate() (as it used to)
+    # let a `git clean -f` inside a commit MESSAGE reach the delete analyzer and
+    # false-block a benign `git commit -m "...git clean -f..."` (issue #4 / F1).
+    # Stripping only ever turns a false-block into an allow, never masks a real
+    # verb (`| sh`/interpreter pipes keep their body). log/raise below still use
+    # the ORIGINAL `action`, so the audit trail is verbatim.
+    engine_action = _strip_data_heredocs_safe(action)
+
     # Target-anchored delete analyzer first (D-narrow: real cwd/env from the
     # harness). Only handles the delete class; returns None for everything else.
-    del_decision = _analyze_delete_class(source, action, policies, cwd=cwd, env=env, home=home)
+    del_decision = _analyze_delete_class(source, engine_action, policies, cwd=cwd, env=env, home=home)
     engine_policies = policies
     deferred_warn = None  # a delete-analyzer WARN pending the deny-wall pass
     if del_decision is None:
@@ -594,11 +633,32 @@ def check_action(
                          policy="DELETE_ANALYZER", context=action, stages=stages)
             return del_decision.with_stages(stages)
 
+    # Scaffold-overwrite analyzer (SCAFFOLD_OVERWRITE) - WARN-ONLY. A create-vite
+    # -family scaffolder or degit whose target is an existing NON-EMPTY dir can
+    # irreversibly overwrite it (the #80730 shape). It NEVER blocks: a WARN is
+    # log+allow, so it CANNOT false-block a benign fresh scaffold (protects the
+    # F1a 0/13 headline). Reuses the delete analyzer's single `deferred_warn` slot
+    # - only considered when no delete WARN is already pending - and surfaces at
+    # the tail ONLY if no deny-wall fired first, so a chained hard-block
+    # (`npm create vite@latest . && rm -rf /`, whose rm is delete-class and already
+    # handled above) still wins. Runs on engine_action (post inert-literal/heredoc
+    # strip) so a scaffolder inside a commit message can't warn.
+    if deferred_warn is None:
+        scaffold_decision = _analyze_scaffold_class(
+            source, engine_action, policies, cwd=cwd, env=env, home=home)
+        if scaffold_decision is None:
+            stages.append(("scaffold-analyzer", "n/a", "not a scaffold-overwrite action"))
+        else:
+            stages.append(("scaffold-analyzer", "warn",
+                           f"{scaffold_decision.policy}: {scaffold_decision.reason}"[:200]))
+            deferred_warn = scaffold_decision
+
     # Data-heredoc bodies (cat>file<<EOF ... EOF) are a document/script being
-    # WRITTEN, not commands - strip them before the regex walls so a literal
-    # "DROP TABLE"/"terraform destroy" inside written docs can't false-block
-    # (content-vs-command class). Executed heredocs (bash<<EOF) are untouched.
-    engine_action = _strip_data_heredocs_safe(action)
+    # WRITTEN, not commands - already stripped into `engine_action` above (once,
+    # shared with the delete analyzer) so a literal "DROP TABLE"/"terraform
+    # destroy"/"git clean -f" inside written docs or a commit message can't
+    # false-block (content-vs-command class). Executed heredocs (bash<<EOF) are
+    # untouched.
     try:
         decision = evaluate(source, engine_action, engine_policies)
     except EngineUnavailable as exc:

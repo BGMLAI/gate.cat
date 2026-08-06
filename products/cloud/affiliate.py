@@ -95,6 +95,16 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
             status          TEXT,
             created_at      TEXT
         );
+        -- Stripe object ids that all point at the same referral: a real
+        -- charge.refunded Charge has NO .subscription field, and a pack refund
+        -- carries only a payment_intent while the referral is keyed on the
+        -- Checkout Session id. Aliases are written at capture/accrual time so
+        -- the clawback can resolve payment_intent/invoice/charge -> the key
+        -- the referral was stored under.
+        CREATE TABLE IF NOT EXISTS affiliate_ref_aliases (
+            alias            TEXT PRIMARY KEY,
+            subscription_key TEXT
+        );
         """
     )
     conn.commit()
@@ -258,12 +268,90 @@ def extract_event_uid_stripe(payload: dict) -> str:
         payload.get("type") if isinstance(payload, dict) else "")
 
 
+def _alias_put(aliases: dict[str, str]) -> None:
+    """Store Stripe object-id aliases -> the referral's subscription key.
+    Best-effort and idempotent (INSERT OR IGNORE keeps the FIRST mapping)."""
+    pairs = [(str(a), str(k)) for a, k in aliases.items() if a and k]
+    if not pairs:
+        return
+    conn = _connect()
+    try:
+        conn.executemany(
+            "INSERT OR IGNORE INTO affiliate_ref_aliases(alias, subscription_key) "
+            "VALUES (?, ?)", pairs)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _alias_resolve(*candidates: str) -> str:
+    """First subscription key any of the candidate Stripe ids maps to, or ''."""
+    keys = [str(c) for c in candidates if c]
+    if not keys:
+        return ""
+    conn = _connect()
+    try:
+        for key in keys:
+            row = conn.execute(
+                "SELECT subscription_key FROM affiliate_ref_aliases "
+                "WHERE alias=?", (key,)).fetchone()
+            if row and row[0]:
+                return str(row[0])
+    finally:
+        conn.close()
+    return ""
+
+
+def _payment_uid_stripe(payload: dict, event_name: str) -> str:
+    """Idempotency key for an ACCRUAL, keyed on the underlying invoice/payment
+    rather than the delivery event.
+
+    Stripe announces the SAME first subscription payment up to three times
+    (checkout.session.completed, invoice.paid, invoice.payment_succeeded),
+    each under a different ``evt_`` id -- keying accruals on the event id
+    books 60-90% of month one instead of 30%. The underlying invoice id is
+    identical across all three, so it is the correct dedupe key:
+
+      * invoice.*                      -> stripe:inv:<invoice id>
+      * checkout (subscription mode)   -> stripe:inv:<obj.invoice>, falling
+        back to stripe:cs:<session id> when the session carries no invoice
+      * checkout (payment mode / pack) -> stripe:pi:<obj.payment_intent>,
+        falling back to stripe:cs:<session id>
+
+    Webhook re-deliveries reuse the same underlying ids, so retries stay
+    idempotent too (strictly stronger than the old evt-id key)."""
+    obj = _stripe_object(payload)
+    if event_name.startswith("invoice."):
+        inv = obj.get("id")
+        if inv:
+            return "stripe:inv:" + str(inv)
+    if event_name == "checkout.session.completed":
+        if obj.get("mode") == "payment":
+            pi = obj.get("payment_intent")
+            if isinstance(pi, dict):
+                pi = pi.get("id")
+            if pi:
+                return "stripe:pi:" + str(pi)
+        else:
+            inv = obj.get("invoice")
+            if isinstance(inv, dict):
+                inv = inv.get("id")
+            if inv:
+                return "stripe:inv:" + str(inv)
+        if obj.get("id"):
+            return "stripe:cs:" + str(obj.get("id"))
+    # Unknown shape: fall back to the event id (old behavior, still UNIQUE).
+    return extract_event_uid_stripe(payload)
+
+
 def record_referral_stripe(payload: dict, account_email: str = "",
                            tier: str = "") -> dict:
     """Capture a Stripe referral on checkout.session.completed: read the ref from
     client_reference_id, store subscription_id -> ref so later renewals (which
     carry no client_reference_id) still attribute. Idempotent per subscription.
-    Returns a small result dict; never raises into the activation path."""
+    Also aliases the session's payment_intent / invoice / session id to the
+    referral key, so a later charge.refunded (which carries none of the ref
+    context) can still resolve its clawback. Never raises into activation."""
     ref = extract_ref_stripe(payload)
     if not ref:
         return {"affiliate": False, "reason": "no ref"}
@@ -271,6 +359,15 @@ def record_referral_stripe(payload: dict, account_email: str = "",
     if not sub_id:
         return {"affiliate": False, "reason": "no subscription id"}
     record_referral(sub_id, ref, account_email or "", tier or "")
+    obj = _stripe_object(payload)
+    pi = obj.get("payment_intent")
+    if isinstance(pi, dict):
+        pi = pi.get("id")
+    inv = obj.get("invoice")
+    if isinstance(inv, dict):
+        inv = inv.get("id")
+    _alias_put({str(pi or ""): sub_id, str(inv or ""): sub_id,
+                str(obj.get("id") or ""): sub_id})
     return {"affiliate": True, "ref_code": ref, "subscription_id": sub_id}
 
 
@@ -289,9 +386,25 @@ def accrue_from_stripe(payload: dict, event_name: str) -> dict:
     if total_cents <= 0:
         return {"affiliate": False, "reason": "no amount"}
     amount = int(round(RATE * total_cents))
-    event_uid = extract_event_uid_stripe(payload)
+    # Key on the underlying invoice/payment, NOT the delivery event: the same
+    # first payment arrives as up to three different event types with three
+    # different evt_ ids (see _payment_uid_stripe).
+    event_uid = _payment_uid_stripe(payload, event_name)
     inserted = _insert_commission(subscription_id, ref_code, event_name,
                                   event_uid, amount, currency, "accrued")
+    # Alias this payment's charge/payment_intent to the referral key so a
+    # later charge.refunded (a Charge object with NO .subscription field on
+    # real Stripe payloads) can resolve its clawback.
+    obj = _stripe_object(payload)
+    charge = obj.get("charge")
+    if isinstance(charge, dict):
+        charge = charge.get("id")
+    pi = obj.get("payment_intent")
+    if isinstance(pi, dict):
+        pi = pi.get("id")
+    _alias_put({str(charge or ""): subscription_id,
+                str(pi or ""): subscription_id,
+                str(obj.get("id") or ""): subscription_id})
     return {"affiliate": True, "ref_code": ref_code, "amount_cents": amount,
             "currency": currency, "idempotent": not inserted,
             "event_uid": event_uid}
@@ -301,8 +414,27 @@ def clawback_from_stripe(payload: dict, event_name: str) -> dict:
     """Clawback from a Stripe refund (charge.refunded / refunded invoice): insert
     a NEGATIVE commission for the same subscription so the ledger nets out.
     Amount = -30% of the refunded amount (falls back to the most recent accrual
-    when the refund carries no amount). Idempotent per Stripe event id."""
-    subscription_id = extract_subscription_id_stripe(payload)
+    when the refund carries no amount). Idempotent per Stripe event id.
+
+    Resolution chain (a REAL charge.refunded Charge has no .subscription, and
+    a pack refund carries only payment_intent while the referral is keyed on
+    the Checkout Session id): obj.subscription -> alias(payment_intent) ->
+    alias(invoice) -> alias(charge id / obj id)."""
+    obj = _stripe_object(payload)
+    sub = obj.get("subscription")
+    if isinstance(sub, dict):
+        sub = sub.get("id")
+    subscription_id = str(sub) if sub else ""
+    if not subscription_id or not lookup_ref(subscription_id):
+        pi = obj.get("payment_intent")
+        if isinstance(pi, dict):
+            pi = pi.get("id")
+        inv = obj.get("invoice")
+        if isinstance(inv, dict):
+            inv = inv.get("id")
+        resolved = _alias_resolve(str(pi or ""), str(inv or ""),
+                                  str(obj.get("id") or ""))
+        subscription_id = resolved or subscription_id or str(obj.get("id") or "")
     ref_code = lookup_ref(subscription_id)
     if not ref_code:
         return {"affiliate": False, "reason": "no referral"}

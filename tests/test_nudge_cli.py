@@ -106,5 +106,7 @@ def test_report_footer_links_offmachine_copy():
                           "policy": "DELETE_ANALYZER", "context": "rm -rf x"}],
                         month="2026-07")
     assert "https://gate.cat/teams.html?source=report" in out
+    # regression: a literal '*' shipped inside the pasteable URL once
+    assert "?source=report*" not in out
     assert "EUR 19/mo" in out
     out.encode("ascii")  # report stays paste-safe (same bar as test_dashboard)
