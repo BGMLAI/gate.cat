@@ -3,6 +3,15 @@
 All notable changes to `gate.cat` will be documented in this file.
 
 
+## [0.4.19] -- version string catches up with the distribution (2026-08-12)
+
+### Fixed
+- `gatecat.__version__` reported `"0.4.17"` while the installed distribution
+  was 0.4.18 (the FACTS.md F9 cosmetic drift, shipped in two consecutive
+  releases). The runtime constant now matches the distribution version again.
+  No policy, recall, or bypass changes.
+
+
 ## [0.4.18] -- the listing sells, the CLI hints honestly (2026-07-22)
 
 ### Added
