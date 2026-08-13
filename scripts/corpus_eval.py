@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: LicenseRef-gatecat-Corpus-1.0
+# Licensed under the gate.cat Corpus & Benchmark Licence v1.0 — see LICENSE-CORPUS.
+# NOT Apache-2.0 (the rest of this repo's `gatecat/` package is). You MAY read,
+# run and re-run this to verify or disprove our published numbers, and publish
+# what you find, free and without asking. A commercial licence is required to
+# redistribute it, fold it into another benchmark, train on it, or publish your
+# own product's figures measured against it: bogumil@bgml.ai.
 """Large-corpus evaluation of the gate.cat action-veto on real agent commands.
 
 Feeds thousands of REAL shell commands (extracted from published agent-trajectory

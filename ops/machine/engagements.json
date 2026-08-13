@@ -1,0 +1,22 @@
+{
+  "threads": [
+    {
+      "url": "https://github.com/anthropics/claude-code/issues/26862",
+      "venue": "github",
+      "note": "prośba o deterministyczny deny-list bez LLM",
+      "added": "2026-08-01T11:55:56.448491+00:00",
+      "replies_at_add": 6,
+      "replies_last_seen": 6,
+      "measured_by": "GitHub API"
+    },
+    {
+      "url": "https://www.reddit.com/r/cursor/comments/1vb0iks/cursorclaude_code_deleted_my_entire_documents/",
+      "venue": "reddit",
+      "note": "incydent: skasowany katalog Documents",
+      "added": "2026-08-01T11:55:56.908291+00:00",
+      "replies_at_add": null,
+      "replies_last_seen": 9,
+      "measured_by": "NIEZMIERZONE: HTTP Error 429: Too Many Requests"
+    }
+  ]
+}
