@@ -85,6 +85,8 @@ trusted.
   phones nowhere. Cloud activates only when you set an API key.
 - **Not** a backup of your code or data — only of your veto **history**.
 
-Retention: 12 months, export any time (`cloud report` reads it), delete-account
+Retention: enforced per tier by `products/cloud/cloud_server.py` `TIERS` —
+free 30 days, solo 90, team 365, business 3 years. Export any time
+(`cloud report` reads it), delete-account
 = hard delete of your ciphertext. Apache-2.0 client; the reporter and the crypto
 are readable Python in the open repo — audit them.

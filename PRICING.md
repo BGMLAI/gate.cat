@@ -31,7 +31,12 @@ boring, and you keep the receipts.
 | gate version + policy-set version | your code, prompts, model outputs |
 | nothing else — the event schema is in the docs and the reporter is readable Python in the open repo | telemetry/analytics of any kind |
 
-Retention: 12 months, export anytime (JSON), delete-account = hard delete.
+Retention, per tier, as the server actually enforces it
+(`products/cloud/cloud_server.py`, `TIERS`): **Free 30 days · Solo 90 days ·
+Team 365 days · Business 3 years.** Export anytime (JSON), delete-account =
+hard delete. *(Corrected 2026-07-31: this page previously said a flat "12
+months", which is true for Team and understates Business, but overstates Solo
+by nine months. The code is the source of truth and the code says 90.)*
 One more honest boundary: the reporter's credentials live outside the agent's
 transcript, but an agent with full shell access could kill the reporter
 process. It cannot *rewrite* history that already left the machine — and a
@@ -40,24 +45,100 @@ Full boundary, both directions: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md).
 
 ## Tiers
 
-| | **Free** | **Solo — €19/mo** *(your agent, on the record)* | **Team — €149/mo flat, up to 10 machines** *(one policy, whole fleet)* | **Business** | **White-glove** |
+Priced per **seat band** and per **protected environment**, not per machine.
+Agents run headless and in CI now; the number of machines stopped tracking the
+number of things that can go wrong. What tracks it is how many production
+environments an agent can reach — your own, and each client's.
+
+| | **Free** | **Solo — €19/mo** | **Team — €299/mo** *(one policy, whole fleet)* | **Business — €399/mo** *(evidence in your infra)* | **Compliance — from €900/mo** *(proof, not just a log)* |
 |---|---|---|---|---|---|
 | The gate: veto engine + **Claude Code hook** (enforcement in the harness) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Framework adapters (crewAI/LangGraph) + a framework-agnostic `guard_callable` for everything else, AutoGen included — in-process convention, honestly weaker than the hook | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Local CLI dashboard + local reports | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Off-machine veto history** (the copy the agent has no credentials for) + email alerts | — | ✅ | ✅ | ✅ | ✅ |
-| Monthly report from the off-machine log | — | ✅ yours | ✅ fleet-wide | ✅ signed, + control mapping | ✅ custom scope |
-| Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ *(rolling out)* | ✅ | ✅ |
+| **Off-machine veto history** (the copy the agent has no credentials for) + alert feed (`GET /v1/alerts`; **email delivery is not shipping yet** — see note under the table) | — | ✅ | ✅ | ✅ | ✅ |
+| Monthly report from the off-machine log | — | ✅ yours | ✅ fleet-wide | ✅ signed | ✅ signed, + control mapping |
+| Shared signed policy file for a fleet (pull-only, local review) | — | — | ✅ | ✅ | ✅ |
+| Seats | 1 | 1 | up to 25 | up to 25 | unlimited |
+| Protected environments | — | 1 | 3 | 3 | 5 included, then per environment |
 | Evidence log self-hosted in **your** infra | — | — | — | ✅ | ✅ |
-| Support | community | email | priority | dedicated | dedicated + custom policies |
-| Price | €0 forever | €19/mo | €149/mo flat | €399/mo | custom |
-| | | [**Start Solo →**](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09) | [**Start Team →**](https://buy.stripe.com/9B66oA5xj2eIaly2Vo67S0a) | [**Start Business →**](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) | [email us](mailto:bogumil@bgml.ai?subject=gate.cat%20white-glove) |
+| VAT invoice + bank transfer, DPA, sub-processor list, security one-pager | — | — | ✅ | ✅ | ✅ |
+| Policy packs (versioned, with regression) | — | — | 1 included | all included | all included |
+| **Proof of enforcement** — evidence the gate was *armed*, not just that the log is clean | — | — | — | — | ✅ *(see below — dated, and not shipping yet)* |
+| Control mapping (SOC 2 CC6.1/CC7.2/CC8.1, ISO 27001 A.8.x, ISO 42001) + questionnaire support | — | — | — | — | ✅ |
+| Support | community | email | priority | priority | dedicated, SLA |
+| Price | €0 forever | €19/mo | €299/mo | €399/mo | €900–1,200/mo |
+| | | [**Start Solo →**](https://buy.stripe.com/7sY6oAaRD5qU79m2Vo67S09) | ⟦STRIPE:team-299⟧ | [**Start Business →**](https://buy.stripe.com/7sYdR2e3PcTm2T6cvY67S0b) | [**Talk to us →**](mailto:bogumil@bgml.ai?subject=gate.cat%20Compliance) |
 
-Stripe checkout is live and is the payment channel. Billing
-includes automatic tax handling, cancellation at any time and a
-**30-day full refund, no questions asked.**
+**Onboarding — €1,500–2,500 one-time.** Required for Compliance, optional for
+Business: environment inventory, policy tuning against your real traffic
+(usually a retro-scan of your existing agent sessions first), hook rollout,
+evidence-log wiring into your infrastructure, and the first signed report.
+We charge for it because it is real work, and because a buyer who won't pay for
+onboarding won't do the rollout either — which produces an unhappy customer and
+a refund three months later.
 
-## Policy Packs — €29 one-time (available now)
+**Correction, 2026-07-31 — alerts are a feed, not an email.** This page sold
+"email alerts" from Solo upward. The server stores an append-only alert feed
+per account and serves it at `GET /v1/alerts`, gated on the `alert_push`
+entitlement — but there is **no mail-sending integration in the product at
+all**, so nothing is currently emailed to you. You poll the feed or read it in
+the dashboard. Email delivery is a real gap, it is on the roadmap, and it is
+not in the price until it works. We found this while assembling the security
+one-pager and are writing it here rather than quietly deleting the word.
+
+**Solo is an anchor, not a recommendation.** If you are one developer auditing
+your own machine, you are also your own auditor, and an off-machine copy of
+your own veto history is worth less to you than €19. The free gate is the
+honest answer for that case and it is not crippled. Solo exists for the person
+who wants the receipts anyway.
+
+Stripe checkout is the payment channel for Solo and Business, with automatic
+tax handling, cancellation at any time and a **30-day full refund, no questions
+asked.** Team, Compliance and onboarding go through
+[invoice and bank transfer](docs/sales/BUYING.md) — EU B2B reverse charge with
+a valid VAT number.
+
+### What "proof of enforcement" means, and why it isn't in the price yet
+
+The uncomfortable version, stated by us first: **a clean veto log is
+indistinguishable from a gate that was switched off.** Anyone with Apache-2.0
+source can comment out the hook in ten seconds and produce a perfectly clean
+log — because there was nothing to log. That is the same "an unfalsifiable
+clean number" criticism we level at other vendors, and it applies to our own
+paid tier as written today.
+
+Moving the *log* off-machine was the easy half. Moving the *proof that the gate
+was armed* is the half that a compliance buyer is actually paying for:
+heartbeat with signed gate + policy-set version, gaps in the heartbeat surfaced
+as findings rather than silence, and configuration attestation your auditor can
+sample.
+
+**Status: designed, not shipped.** It is what defines the Compliance tier and
+it is why that tier is sold with a conversation and an onboarding engagement
+rather than a checkout button. If you buy Compliance today you are a design
+partner and we will say so in writing, with the dates. We would rather lose the
+sale than have you discover this from your auditor.
+
+## Policy Packs — €29 one-time, or €19/mo maintained
+
+A one-time price on a security rule set was an order-of-magnitude mistake and
+we are correcting it in the direction that costs the customer less to leave:
+the **one-time €29 stays exactly as it is** — same wheel, same instant
+delivery, and anyone who bought it keeps it forever, including the rules as
+shipped. What it never included, and could not include, is the part that
+actually decays: your stack's destructive surface changes every time a vendor
+adds an API verb, and a pack pinned to 2026 is a pack that quietly stops
+covering you.
+
+**Maintained packs — €19/mo per pack (⟦STRIPE:pack-sub⟧)** add what a one-time
+purchase structurally cannot: new rules as the vendor's API grows, a version
+number you can cite in an audit, and a regression run proving each update still
+fires on its danger and stays silent on its benign twin. Same model as Semgrep
+and Snyk rule sets, for the same reason. **All packs are included in Team,
+Business and Compliance** — if you are on a paid tier, do not buy these
+separately.
+
+
 
 The 71 core policies are free forever and cover the universal, catastrophic
 classes — that's the open-core rule: **safety everyone needs is never
@@ -89,12 +170,35 @@ silently running without it.
   `results/million_recall_2026-07-28.json`; a bypass suite that prints its own
   gaps) and pick whichever you trust.
 - **Team:** nearest per-seat alternatives price at $39–100 *per user per
-  month* (market snapshot, 2026-07-08). Flat €149 costs less from the second
-  developer onward and doesn't tax your team's growth up to 10 devs — larger
-  fleets, email us.
-- **Pilot & White-glove:** one runaway `terraform destroy` loop cost a team
-  ~$106k; one agent dropped a production database. The pilot is priced at a
-  fraction of a single incident.
+  month* (market snapshot, 2026-07-08). Flat €299 for up to 25 seats is
+  €12/seat at the top of the band, and it does not tax your team's growth.
+- **Agency or software house running client infrastructure:** the number to
+  compare against is not a tool budget, it is one clause in one SOW. If an
+  agent with your credentials touches a client's production, the question in
+  the room afterwards is who authorised the change — and "nothing did" is an
+  answer you only get to give once. Compliance is roughly one billable day a
+  month, and it is a line item you can pass through.
+- **Compliance:** one runaway `terraform destroy` loop cost a team ~$106k; one
+  agent dropped a production database. The tier is priced at a fraction of a
+  single incident, and the onboarding fee is less than the cost of assembling
+  the same evidence by hand for one audit cycle.
+
+## Corpus, benchmark and OEM
+
+Two things sit outside the subscription ladder because they are not
+subscriptions:
+
+- **Evaluation corpus licence — €10–40k/year.** The adjudicated corpus behind
+  our published recall numbers, licensed for use in *your* evaluation. Built
+  for agent-platform, harness and sandbox vendors who need to show their own
+  safety figures and would rather not spend a quarter assembling a corpus.
+  Terms: [LICENSE-CORPUS](LICENSE-CORPUS). Reading, re-running and publicly
+  disputing our numbers stays free and needs no licence.
+- **OEM / embedded — from €7k/month.** The gate embedded in your agent
+  platform or developer product, with your policy set and your support
+  boundary.
+
+Both: bogumil@bgml.ai.
 
 ## "Isn't a deny-list trivially bypassable?"
 

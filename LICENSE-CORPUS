@@ -1,0 +1,163 @@
+gate.cat Corpus & Benchmark Licence
+Version 1.0 — effective 2026-07-31
+
+Copyright (c) 2026 Bogumił Jankiewicz / BGML. All rights reserved.
+
+-------------------------------------------------------------------------------
+0. WHY THIS LICENCE EXISTS, IN ONE PARAGRAPH
+-------------------------------------------------------------------------------
+
+The gate.cat engine is Apache-2.0 and stays Apache-2.0 forever. Someone could
+rebuild that engine in a weekend. What they could not rebuild in a weekend is
+the adjudicated evaluation corpus: hundreds of thousands of real agent commands
+run through a full pipeline, with every catalog-flagged disagreement inspected
+by hand and written down. That corpus is an evaluation asset, and evaluation
+assets are what other people's agent platforms need in order to show their own
+safety numbers. So the corpus is licensed separately from the engine.
+
+This licence is deliberately generous about the one thing that matters most to
+us — that anyone can check our published claims for themselves, for free, with
+no permission and no registration. It is deliberately restrictive about one
+other thing — repackaging the corpus as somebody else's benchmark.
+
+-------------------------------------------------------------------------------
+1. WHAT THIS LICENCE COVERS ("the Corpus Materials")
+-------------------------------------------------------------------------------
+
+  (a) scripts/corpus_million.py
+  (b) scripts/corpus_million_globaldedup.py
+  (c) scripts/corpus_eval.py
+  (d) results/million_recall_2026-07-08.json
+  (e) results/million_recall_2026-07-08_passed.json
+  (f) results/million_recall_2026-07-28.json
+  (g) any future adjudicated corpus run, benchmark release, danger-class
+      catalog extension or regression pack that this repository or its
+      maintainer publishes and marks as Corpus Materials.
+
+-------------------------------------------------------------------------------
+2. WHAT THIS LICENCE DOES **NOT** COVER
+-------------------------------------------------------------------------------
+
+Everything else in this repository remains under the Apache License 2.0 (see
+LICENSE). That explicitly and permanently includes:
+
+  - the entire `gatecat/` package — the veto engine, all 71 default policy
+    walls (`gatecat/integrations/policies.py`), the reproducible bypass suite
+    (`gatecat/integrations/bypass_suite.py`), the Claude Code hook and every
+    framework adapter. This is the product you install with `pip install
+    gate-cat`. It is free forever, complete, and nothing in it is held back,
+    rate-limited or downgraded by this licence. That promise is load-bearing
+    and this licence does not touch it.
+  - `scripts/recall_danger_axis.py` and `scripts/corpus_recall.py` — the
+    43-class danger catalog and its runner. These stay Apache-2.0 on purpose:
+    they are how any reader reproduces our headline recall claim with nothing
+    but `pip install gate-cat` and no datasets. A claim nobody can re-run is
+    a rumour, and we would rather be checkable than clever.
+
+-------------------------------------------------------------------------------
+3. WHAT YOU MAY DO WITHOUT ASKING (the verification grant)
+-------------------------------------------------------------------------------
+
+Permission is granted, free of charge, to any person obtaining a copy of the
+Corpus Materials, for the following purposes:
+
+  3.1 READ and study them, in whole or in part, for any reason.
+
+  3.2 RUN them, including re-running an entire corpus measurement from the
+      public upstream datasets, in order to verify, reproduce, audit,
+      falsify or dispute any claim gate.cat has published.
+
+  3.3 PUBLISH the results of doing so — including results that contradict
+      ours, including in a competitor's marketing, including without
+      contacting us first. We do not require notice, approval, embargo or
+      right of reply. If our numbers are wrong we would rather read it in
+      public than not know.
+
+  3.4 QUOTE excerpts of the Corpus Materials in journalism, academic work,
+      security research or public discussion, with attribution.
+
+  3.5 INTERNALLY EVALUATE your own systems against the Corpus Materials
+      inside your own organisation, provided the results stay internal.
+
+No registration, no key, no email address, no click-through. Sections 3.1
+through 3.5 survive any future version of this licence for the Corpus
+Materials as published at the time you obtained them.
+
+-------------------------------------------------------------------------------
+4. WHAT REQUIRES A COMMERCIAL LICENCE
+-------------------------------------------------------------------------------
+
+The following require a separate written licence from the copyright holder:
+
+  4.1 REDISTRIBUTION of the Corpus Materials, or of any dataset derived from
+      them, whether standalone, bundled, mirrored or as part of a larger work.
+
+  4.2 INCORPORATION into another evaluation suite, benchmark, leaderboard,
+      certification scheme, dataset or product offered to third parties.
+
+  4.3 TRAINING, fine-tuning or distilling any machine-learning model on the
+      Corpus Materials, or on outputs derived from them.
+
+  4.4 EXTERNAL-FACING EVALUATION — using the Corpus Materials to produce
+      safety, recall or coverage figures that you publish, or show to your
+      customers, investors, auditors or regulators, about a product or
+      service you offer. (Publishing figures about *gate.cat* is section 3.3
+      and is always free.)
+
+  4.5 SERVICE PROVISION — offering evaluation, benchmarking, certification or
+      audit services to third parties, where the Corpus Materials form part
+      of what you deliver.
+
+To licence any of the above: bogumil@bgml.ai, subject line "corpus licence".
+Typical shapes are an annual corpus licence, or a one-off "run your agent
+through our benchmark" engagement. Academic and non-commercial research use
+under 4.1–4.4 is granted on request and we have not yet refused anyone.
+
+-------------------------------------------------------------------------------
+5. WHAT THIS LICENCE HONESTLY CANNOT DO
+-------------------------------------------------------------------------------
+
+This licence takes effect 2026-07-31 and is not retroactive. Every version of
+the files listed in section 1 that was published in this repository before that
+date was published under the Apache License 2.0, and the Apache-2.0 grant is
+irrevocable for those versions. Anyone who obtained them under Apache-2.0 keeps
+Apache-2.0 rights to those exact versions, including the right to redistribute
+them. Git history preserves those versions and we are not rewriting it.
+
+We are stating this plainly rather than quietly, because a licence notice that
+overreaches its own effective date is the kind of thing a buyer's counsel finds
+in ten minutes, and finding it would cost us more than the clause could ever
+be worth. Going forward is the only direction this licence can work in, and
+going forward is enough.
+
+-------------------------------------------------------------------------------
+6. ATTRIBUTION
+-------------------------------------------------------------------------------
+
+When exercising the section 3 grant, cite as:
+
+  gate.cat evaluation corpus, run of <DATE>, <ARTIFACT FILENAME>,
+  https://github.com/BGMLAI/gate.cat
+
+Every corpus-derived number must carry its measurement date and, for
+HuggingFace sources, the dataset repo id *and* the split name — upstream renames
+splits without notice, and a corpus figure quoted bare is not a claim. This is
+the same rule we hold ourselves to in FACTS.md, for the same reason: we shipped
+a 23.8% overcount for three weeks because that rule was missing.
+
+-------------------------------------------------------------------------------
+7. NO WARRANTY
+-------------------------------------------------------------------------------
+
+THE CORPUS MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE CORPUS MATERIALS OR
+THEIR USE.
+
+The Corpus Materials are derived from public upstream datasets, each under its
+own licence, and this licence grants no rights in that upstream data. Section 1
+covers our harness, our adjudication and our derived artifacts — not the
+underlying third-party records. Upstream provenance is recorded in RECALL.md
+and in each artifact's header.

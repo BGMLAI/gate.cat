@@ -1,0 +1,115 @@
+# Rejestr eksperymentów
+
+Zasada: eksperyment ma **próg zapisany PRZED odczytem**. Wynik poniżej progu
+znaczy zmianę kierunku, nie „popracujmy nad copy". Ten plik istnieje po to,
+żeby w dniu odczytu nie dało się progu przenegocjować.
+
+| ID | Hipoteza | Próg | Start → odczyt | Wynik |
+|---|---|---|---|---|
+| E-1 | Plan roczny podnosi konwersję | — | — | nieuruchomiony |
+| E-2 | Repricing packów | — | — | zastąpiony przez zmianę cennika 31.07 |
+| E-3 | `gatecat upgrade` w CLI | — | — | nieuruchomiony |
+| E-4 | Trial z kartą | — | — | nieuruchomiony |
+| E-5 | Product Hunt daje dystrybucję do B2B security tooling | wzrost pobrań | 29.07 → 30.07 | ❌ **NEGATYWNY.** 5 upvote'ów, 16 followersów, 0 komentarzy zewnętrznych, 0 przyrostu pobrań. Kanał zamknięty bez relaunchu. |
+| **E-6** | **Darmowy retro-scan na danych prospekta otwiera rozmowę, której nie otwiera żaden komunikat marketingowy** | **≥2 z 20** prospektów przyjmuje skan I umawia rozmowę o wersji płatnej — mianownik ustalony 31.07 (patrz niżej) | **03.08 → 11.08** | — |
+| E-7 | Licencja korpusu ma kupca | ≥1 rozmowa handlowa z dostawcą harnessu/sandboxa | 15.08 → 15.09 | — |
+
+## E-5 — czego ten wynik NIE dowodzi
+
+Nie dowodzi, że produkt jest zły, ani że nikt nie zapłaci. Dowodzi, że Product
+Hunt nie konwertuje na B2B security tooling. Próba na pytanie „czy ktoś
+zapłaci" ma nadal rozmiar zero.
+
+## E-6 — skąd mianownik 20
+
+Poprzedni zapis mówił „≥2/16" i był ostrożnościowy: pierwsza tura researchu
+potwierdziła adopcję agentów u 16 firm, ale odpowiedzialność za infrastrukturę
+klienta tylko u 11 z nich. Poszerzony research (31.07, wieczór) zamknął listę
+na **20 firmach, gdzie zweryfikowane są OBA warunki** — agent u nich pracuje
+*i* firma odpowiada kontraktowo za produkcję klienta. To jest ostrzejszy próg
+niż poprzedni, mimo wyższego mianownika.
+
+Rezerwa: 10 firm tuż pod cięciem (kilka z lepszym ICP niż dolna połowa
+dwudziestki, tylko z nieodrobionym decydentem) i 8 z idealną infrą, ale
+niezweryfikowaną adopcją — tych **nie wysyłamy w turze 1**, bo psułyby
+mianownik.
+
+**Próg zapisany 31.07, przed pierwszą wysyłką.**
+
+### Wariant listy — zapisać PRZED 03.08, nie po
+
+Zagrożenie, które trzeba unieważnić z góry: gdyby lista powstała z blogów i
+prelekcji, wybierałaby firmy **gadatliwe**, a nie firmy **w bólu** — i wynik
+E-6 mierzyłby skłonność do publikowania, nie istnienie problemu.
+
+Nie powstała. **16 z 20 pozycji opiera się na artefaktach w repo i na
+ogłoszeniach o pracę** — sygnałach, których nikt nie publikuje dla wizerunku.
+Prelekcje dały zero. Ten zapis istnieje po to, żeby 11.08 nie dało się
+tłumaczyć wyniku doborem listy — ani w jedną, ani w drugą stronę.
+
+## E-6 — protokół odczytu
+
+Odczyt 11.08 wypełnia **tę** tabelę, nie prozę:
+
+> ⚠️ **Bez nazw firm w tej tabeli.** Repo jest publiczne (reguła 9). Mapowanie
+> P1…P20 na nazwy żyje poza repo, razem z listą prospektów.
+
+| # | Wysłano | Otworzył | Uruchomił skan | Odesłał raport / pokazał | Umówił rozmowę | Powód odmowy (dosłownie) |
+|---|---|---|---|---|---|---|
+| P1 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
+| P2 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | ⚠️ **AUTORESPONDER OBU ADRESATÓW** — jeden wraca 10.08, drugi 17.08. Poza zasięgiem przez całe okno |
+| P3 | 2026-08-01 12:05 UTC ✅ | — | — | — | — | — |
+| P4 | 2026-08-01 12:56 UTC ✅ | — | — | — | — | — |
+| P5 | 2026-08-01 12:57 UTC ✅ | — | — | — | — | — |
+| P6 | 2026-08-01 12:57 UTC ✅ | — | — | — | — | — |
+| P7 | 2026-08-01 12:57 UTC ✅ | — | — | — | — | — |
+
+**7 z 20 wysłanych 01.08.** Start faktyczny: 01.08, nie 03.08 — wysyłka ruszyła dwa dni przed planem.
+Odczyt zostaje **11.08** (10 dni okna, wystarczająco). Wysyłka zweryfikowana
+przez `in:sent`, nie przez toast Gmaila, i zbackfillowana do ledgera
+`gatecat_mail.py`, żeby strażnik duplikatów znał tę trójkę.
+
+Pozostałe 13 — w weryfikacji. Każdy z ich repo, nie z szablonu (patrz
+`E6_METODA.md` §3.1).
+
+### ⚠️ Sierpień — zagrożenie dla ważności odczytu, zapisane PRZED odczytem
+
+P2 odpowiedział w ciągu 30 sekund dwoma autoresponderami: obaj adresaci są
+poza biurem, jeden wraca **10.08**, drugi **17.08**. Odczyt jest **11.08**.
+
+To nie jest brak zainteresowania. To jest **brak pomiaru** — i gdyby wpadło do
+mianownika jako „nie odpowiedział", eksperyment policzyłby urlop jako dowód, że
+oferta nie działa.
+
+Problem jest szerszy niż jedna firma. Lista to software house'y z PL, FR, IT,
+BE, NL, CH, UK, CZ, NO, a **pierwsze dwa tygodnie sierpnia to szczyt urlopów w
+Europie kontynentalnej**. Realistycznie część dwudziestki jest nieosiągalna
+niezależnie od jakości maila.
+
+**Decyzja do podjęcia teraz, nie 11.08** — bo po zobaczeniu wyniku każda zmiana
+reguły jest już racjonalizacją:
+
+1. **Mianownik zostaje 20.** Nie wycinamy nikogo po fakcie.
+2. **Autoresponder jest odnotowywany dosłownie w kolumnie „powód odmowy"** i
+   przy odczycie liczony jako *niezmierzony*, nie jako *nie*. Wynik 11.08
+   raportujemy w dwóch liczbach: `x/20` i `x/(20 − niezmierzeni)`.
+3. **Jeśli niezmierzonych będzie ≥5**, odczyt 11.08 jest wstępny, a wiążący
+   zapada **25.08** — po powrotach z urlopów. Próg ≥2 pozostaje bez zmian.
+
+Punkt 3 jest zapisany 01.08, przy 7 wysłanych i zerowej wiedzy o wyniku.
+
+**Powód odmowy zapisujemy dosłownie, cytatem.** To jest najważniejsza kolumna w
+całym eksperymencie i jedyne dane jakościowe, jakie z niego wyjdą.
+
+Rozróżnienie, które decyduje o interpretacji wyniku <2/20:
+
+- **Odmowa „nie mam tego problemu" / brak reakcji** → hipoteza o bólu ICP jest
+  fałszywa. Zmiana kierunku: inne ICP albo inny produkt.
+- **Odmowa „nie uruchomię obcego narzędzia na naszych transkryptach"** →
+  hipoteza o bólu **nie została zmierzona**. Narzędzie jest bezzależnościowe,
+  bezsieciowe, read-only i redaguje sekrety właśnie po to, żeby zdjąć tę
+  obiekcję; jeśli mimo to blokuje, problemem jest sposób dostarczenia, nie
+  oferta. Wtedy E-6 powtarzamy z inną formą (skan na ich maszynie przez
+  screen-share, albo raport z **naszych** danych jako przykład).
+
+Bez tego rozróżnienia wynik 0/20 jest nieinterpretowalny.
