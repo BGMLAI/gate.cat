@@ -1,0 +1,25 @@
+{
+  "name": "gate-cat",
+  "displayName": "gate.cat",
+  "version": "0.4.18",
+  "description": "Deterministic, fail-closed veto for AI coding agents. A PreToolUse hook that blocks catastrophic Bash/Write/Edit actions (rm -rf under a protected root, disk wipe, prod-DB drop, secret exfil, git force-push, curl|sh, runaway loops) before they execute — exit 2 with the reason fed back to the model. Pattern/rule-based, not an LLM: it enforces a curated deny-list and can miss commands outside it; every allow AND block is logged to ~/.gatecat/veto_log.jsonl for false-block adjudication.",
+  "author": {
+    "name": "gate.cat",
+    "email": "bogumil@jankiewi.cz",
+    "url": "https://gate.cat"
+  },
+  "homepage": "https://gate.cat",
+  "repository": "https://github.com/BGMLAI/gate.cat",
+  "license": "Apache-2.0",
+  "keywords": [
+    "security",
+    "agent-safety",
+    "guardrails",
+    "veto",
+    "deny-list",
+    "hooks",
+    "pretooluse",
+    "fail-closed"
+  ],
+  "hooks": "./hooks/hooks.json"
+}

@@ -1,0 +1,28 @@
+{
+  "description": "gate.cat — deterministic fail-closed veto. SessionStart ensures the (zero-dependency) veto engine is installed; PreToolUse runs every Bash/Write/Edit through the gate and blocks catastrophic actions before they execute (exit 2, reason on stderr).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gatecat-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/gatecat_bootstrap.py\"",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gatecat-python.sh\" \"${CLAUDE_PLUGIN_ROOT}/hooks/gatecat_veto_hook.py\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

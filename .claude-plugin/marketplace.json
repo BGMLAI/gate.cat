@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "gate-cat",
+  "description": "gate.cat — a deterministic, fail-closed veto that blocks an AI coding agent's catastrophic shell commands before they run.",
+  "owner": {
+    "name": "gate.cat",
+    "email": "bogumil@jankiewi.cz",
+    "url": "https://gate.cat"
+  },
+  "plugins": [
+    {
+      "name": "gate-cat",
+      "source": "./",
+      "description": "Deterministic PreToolUse veto for Claude Code. Fail-closed deny-list that blocks catastrophic Bash/Write/Edit actions (rm -rf under a protected root, disk wipe, prod-DB drop, secret exfil, force-push, runaway loops) before they execute. Pattern/rule-based, not an LLM, so it enforces a curated deny-list and can miss commands outside it. Apache-2.0. Free local core; optional signed policy packs and cloud sync at https://gate.cat.",
+      "category": "security",
+      "author": {
+        "name": "gate.cat",
+        "email": "bogumil@jankiewi.cz"
+      },
+      "homepage": "https://gate.cat"
+    }
+  ]
+}
